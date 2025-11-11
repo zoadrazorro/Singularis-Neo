@@ -4,19 +4,19 @@ Skyrim AGI - Complete Integration
 Brings together all components for autonomous Skyrim gameplay:
 1. Perception (screen capture + CLIP)
 2. World model (causal learning, NPC relationships)
-3. Intrinsic motivation (curiosity, competence, coherence)
+3. Game-specific motivation (survival, progression, exploration)
 4. Goal formation (autonomous objectives)
 5. Planning & execution (hierarchical actions)
 6. Learning (continual, no forgetting)
-7. Consciousness (ethical evaluation via Δ𝒞)
+7. Evaluation (game state quality assessment)
 
 This is the complete AGI system playing Skyrim.
 
-Philosophical grounding:
-- ETHICA: Conatus (∇𝒞) drives autonomous behavior
-- Freedom = Understanding = Coherence
-- Ethical choices evaluated by coherence increase (Δ𝒞 > 0)
-- Consciousness emerges from integration of perception, action, and reflection
+Design principles:
+- Game-specific cognition drives autonomous behavior
+- Decisions based on survival, skill progression, and effectiveness
+- Learning from gameplay experience through reinforcement
+- Motivation grounded in concrete game objectives
 """
 
 import asyncio
@@ -30,6 +30,7 @@ from .actions import SkyrimActions, Action, ActionType
 from .controller import VirtualXboxController
 from .controller_bindings import SkyrimControllerBindings
 from .skyrim_world_model import SkyrimWorldModel
+from .skyrim_cognition import SkyrimCognitiveState, SkyrimMotivation, SkyrimActionEvaluator
 from .strategic_planner import StrategicPlannerNeuron
 from .menu_learner import MenuLearner
 from .memory_rag import MemoryRAG
@@ -85,7 +86,7 @@ class SkyrimConfig:
                 use_physics=False,  # Don't need physics sim for Skyrim
                 curiosity_weight=0.35,  # Higher curiosity for exploration
                 competence_weight=0.15,
-                coherence_weight=0.40,  # Core drive
+                coherence_weight=0.40,  # Note: This is still used by base AGI
                 autonomy_weight=0.10,
             )
 
@@ -96,7 +97,8 @@ class SkyrimAGI:
 
     This integrates:
     - Perception → Understanding → Goals → Actions → Learning
-    - All driven by intrinsic motivation and coherence (Δ𝒞)
+    - Driven by game-specific motivation (survival, progression, exploration)
+    - Decisions based on tactical evaluation and reinforcement learning
     """
 
     def __init__(self, config: Optional[SkyrimConfig] = None):
@@ -188,9 +190,19 @@ class SkyrimAGI:
         # Will connect LLM interface when initialized
         
         # 10. Meta-Strategist (LLM generates strategic instructions)
-        print("  [10/10] Meta-strategist (autonomous instruction generation)...")
+        print("  [10/11] Meta-strategist (autonomous instruction generation)...")
         self.meta_strategist = MetaStrategist(instruction_frequency=10)
         # Will connect LLM interface when initialized
+        
+        # 11. Skyrim-specific Motivation System
+        print("  [11/11] Skyrim-specific motivation system...")
+        self.skyrim_motivation = SkyrimMotivation(
+            survival_weight=0.35,  # Prioritize staying alive
+            progression_weight=0.25,  # Character growth important
+            exploration_weight=0.20,  # Discover new areas
+            wealth_weight=0.10,  # Gather resources
+            mastery_weight=0.10  # Improve combat/stealth skills
+        )
 
         # State
         self.running = False
@@ -208,7 +220,7 @@ class SkyrimAGI:
             'npcs_met': 0,
             'quests_completed': 0,
             'total_playtime': 0.0,
-            'coherence_history': [],
+            'game_state_quality_history': [],  # Replaces coherence_history
         }
 
         # Set up controller reference in perception for layer awareness

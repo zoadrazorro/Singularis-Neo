@@ -7,10 +7,10 @@ Handles all action execution in Skyrim:
 3. Hierarchical action composition
 4. Action sequences and macros
 
-Philosophical grounding:
-- ETHICA Part III: Actions express the mode's striving (conatus)
-- Agency emerges from the ability to act autonomously
-- Actions are chosen to maximize Δ𝒞 (coherence increase)
+Design principles:
+- Actions represent gameplay capabilities in Skyrim
+- Hierarchical organization (high-level strategies → low-level inputs)
+- Actions chosen based on game state and tactical evaluation
 """
 
 import time

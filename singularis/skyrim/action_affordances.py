@@ -10,10 +10,10 @@ as part of its world model, enabling strategic decisions like:
 - "Multiple enemies → stay in Combat layer for defensive options"
 - "Need to heal → switch to Menu layer for inventory access"
 
-Philosophical grounding:
-- ETHICA: Understanding affordances = understanding causal powers
-- Enactive cognition: Perception is perception of action possibilities
-- Strategic reasoning requires knowing what actions are possible
+Design principles:
+- Understanding affordances enables strategic action selection
+- Action layers map to different gameplay contexts in Skyrim
+- Context-appropriate actions improve gameplay effectiveness
 """
 
 from typing import Dict, List, Set, Optional, Any

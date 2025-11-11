@@ -13,10 +13,10 @@ Features:
 - Input recording and playback
 - Configurable sensitivity and response curves
 
-Philosophical grounding:
-- ETHICA Part III: Actions express embodied agency
-- Controller input represents more fluid, analog agency vs discrete keyboard
-- Enables more natural expression of movement and intention
+Design principles:
+- Controller input provides more fluid, analog control than keyboard
+- Natural for Skyrim's movement and camera systems
+- Enables smooth, game-appropriate actions
 """
 
 import time

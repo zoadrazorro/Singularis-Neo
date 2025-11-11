@@ -7,10 +7,11 @@ Handles all perception for the Skyrim environment:
 3. Game state reading (via mods or OCR)
 4. Object detection and NPC tracking
 
-Philosophical grounding:
-- ETHICA Part II: Mind-body unity requires embodied perception
-- Enactive cognition: Meaning emerges from sensorimotor engagement
-- Intelligence requires grounding in perception, not just language
+Design principles:
+- Perception grounded in actual gameplay visuals
+- CLIP vision provides semantic understanding of game scenes
+- Real-time processing for gameplay decisions
+- Scene classification enables context-appropriate actions
 """
 
 import numpy as np
