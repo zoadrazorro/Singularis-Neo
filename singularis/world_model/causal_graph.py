@@ -59,6 +59,23 @@ class CausalNode:
 
 
 @dataclass
+class CausalEdge:
+    """
+    A causal edge representing a causal relationship.
+    
+    Attributes:
+        cause: The causing variable
+        effect: The effect variable
+        strength: Strength of causal relationship (0-1)
+        confidence: Confidence in this relationship (0-1)
+    """
+    cause: str
+    effect: str
+    strength: float = 1.0
+    confidence: float = 1.0
+
+
+@dataclass
 class Intervention:
     """
     An intervention: do(X=x)
@@ -106,15 +123,26 @@ class CausalGraph:
             self.graph.add_node(name)
         return self.nodes[name]
 
-    def add_edge(self, cause: str, effect: str, strength: float = 1.0):
+    def add_edge(self, cause_or_edge, effect: Optional[str] = None, strength: float = 1.0):
         """
         Add causal edge: cause → effect
 
         Args:
-            cause: Parent variable
-            effect: Child variable
+            cause_or_edge: Either a CausalEdge object or a string (cause variable)
+            effect: Child variable (if cause_or_edge is a string)
             strength: Causal strength (learned from data)
         """
+        # Handle both CausalEdge objects and string arguments
+        if isinstance(cause_or_edge, CausalEdge):
+            edge = cause_or_edge
+            cause = edge.cause
+            effect = edge.effect
+            strength = edge.strength
+        else:
+            cause = cause_or_edge
+            if effect is None:
+                raise ValueError("effect must be provided when cause is a string")
+        
         # Ensure nodes exist
         self.add_node(cause)
         self.add_node(effect)

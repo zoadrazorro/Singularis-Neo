@@ -110,6 +110,26 @@ class SkyrimPerception:
     """
     Perception layer for Skyrim.
 
+    def detect_collision(self, threshold: float = 0.01, window: int = 3) -> bool:
+        """
+        Detect visual collision by checking if the visual embedding has not changed significantly for several frames.
+        Args:
+            threshold: Cosine distance threshold for considering "no movement" (collision)
+            window: Number of consecutive frames to check
+        Returns:
+            True if collision likely, False otherwise
+        """
+        if len(self.perception_history) < window:
+            return False
+        import numpy as np
+        recent = self.perception_history[-window:]
+        diffs = [
+            np.linalg.norm(recent[i]['visual_embedding'] - recent[i-1]['visual_embedding'])
+            for i in range(1, window)
+        ]
+        return all(d < threshold for d in diffs)
+
+
     Capabilities:
     1. Capture screen and encode with CLIP
     2. Classify scene type

@@ -16,17 +16,13 @@ Pillow>=9.0.0  # Image processing
 # git+https://github.com/openai/CLIP.git  # Vision-language model (optional, install separately)
 
 # Physics simulation (optional)
-# pybullet>=3.2.0  # Physics engine (uncomment if needed)
+pybullet>=3.2.0  # Physics engine (uncomment if needed)
 
 # Data processing
 scipy>=1.7.0  # Scientific computing
 
 # Skyrim Integration (Phase 7)
 mss>=9.0.0  # Screen capture
-pyautogui>=0.9.54  # Keyboard/mouse control
+pyautogui>=0.9.54  # Keyboard/mouse control (fallback)
+vgamepad>=0.0.8  # Virtual Xbox controller for better game input
 # git+https://github.com/openai/CLIP.git  # Install separately for vision
-
-# Optional: For future enhancements
-# anthropic>=0.7.0  # For Claude API
-# openai>=1.0.0     # For OpenAI API
-# matplotlib>=3.7.0 # For visualization

@@ -17,6 +17,7 @@ Philosophical grounding:
 
 from .intrinsic_motivation import (
     IntrinsicMotivation,
+    MotivationType,
     CuriosityDrive,
     CompetenceDrive,
     CoherenceDrive
@@ -27,6 +28,7 @@ from .hierarchical_planner import HierarchicalPlanner, Plan, Action
 
 __all__ = [
     'IntrinsicMotivation',
+    'MotivationType',
     'CuriosityDrive',
     'CompetenceDrive',
     'CoherenceDrive',

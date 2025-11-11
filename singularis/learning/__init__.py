@@ -6,10 +6,14 @@ from .text_processor import (
     CurriculumLoader,
     LearningProgress,
 )
+from .continual_learner import ContinualLearner
+from .compositional_knowledge import CompositionalKnowledgeBuilder
 
 __all__ = [
     "TextProcessor",
     "TextChunk",
     "CurriculumLoader",
     "LearningProgress",
+    "ContinualLearner",
+    "CompositionalKnowledgeBuilder",
 ]

@@ -20,6 +20,11 @@ from enum import Enum
 import asyncio
 
 try:
+    from .controller import VirtualXboxController
+except ImportError:
+    VirtualXboxController = None  # Controller not available
+
+try:
     import pyautogui
     PYAUTOGUI_AVAILABLE = True
     # Safety settings
@@ -125,7 +130,8 @@ class SkyrimActions:
         self,
         use_game_api: bool = False,
         custom_keys: Optional[Dict[ActionType, str]] = None,
-        dry_run: bool = False
+        dry_run: bool = False,
+        controller: Optional[Any] = None  # Accepts VirtualXboxController
     ):
         """
         Initialize action controller.
@@ -134,9 +140,11 @@ class SkyrimActions:
             use_game_api: Use game API instead of keyboard/mouse
             custom_keys: Custom key bindings
             dry_run: Don't actually execute (for testing)
+            controller: Optional VirtualXboxController instance
         """
         self.use_game_api = use_game_api
         self.dry_run = dry_run
+        self.controller = controller
 
         # Key bindings
         self.keys = self.DEFAULT_KEYS.copy()
@@ -158,6 +166,34 @@ class SkyrimActions:
             'errors': 0,
         }
 
+        # ActionType to controller action name mapping
+        self._controller_action_map = {
+            ActionType.MOVE_FORWARD: "move_forward",
+            ActionType.MOVE_BACKWARD: "move_backward",
+            ActionType.MOVE_LEFT: "move_left",
+            ActionType.MOVE_RIGHT: "move_right",
+            ActionType.JUMP: "jump",
+            ActionType.SPRINT: "sprint",
+            ActionType.SNEAK: "sneak",
+            ActionType.ATTACK: "attack",
+            ActionType.POWER_ATTACK: "power_attack",
+            ActionType.BLOCK: "block",
+            ActionType.SHOUT: "shout",
+            ActionType.ACTIVATE: "activate",
+            ActionType.WAIT: "wait",
+            ActionType.SLEEP: "sleep",
+            ActionType.OPEN_INVENTORY: "menu",  # Maps to menu open
+            ActionType.OPEN_MAP: "map",  # Needs custom binding
+            ActionType.OPEN_MAGIC: "magic",  # Needs custom binding
+            ActionType.OPEN_SKILLS: "skills",  # Needs custom binding
+            ActionType.LOOK_UP: "look_up",
+            ActionType.LOOK_DOWN: "look_down",
+            ActionType.LOOK_LEFT: "look_left",
+            ActionType.LOOK_RIGHT: "look_right",
+            ActionType.QUICK_SAVE: "quick_save",  # Needs custom binding
+            ActionType.QUICK_LOAD: "quick_load",  # Needs custom binding
+        }
+
     def _initialize_game_api(self):
         """Initialize game API."""
         print("Game API not yet implemented - using keyboard/mouse")
@@ -173,6 +209,7 @@ class SkyrimActions:
         Returns:
             Success status
         """
+        print(f"[DEBUG] SkyrimActions.execute: {action.action_type.value} | Duration: {action.duration} | Controller layer: {self.controller.active_layer if self.controller else None}")
         if self.dry_run:
             print(f"[DRY RUN] Would execute: {action.action_type.value}")
             self.action_history.append(action)
@@ -181,21 +218,41 @@ class SkyrimActions:
         try:
             start_time = time.time()
 
+            # Controller integration: if controller is set, only use controller for action execution
+            if self.controller is not None:
+                ctrl_action_name = self._controller_action_map.get(action.action_type)
+                print(f"[DEBUG] Controller mapping: {ctrl_action_name}")
+                if ctrl_action_name is not None:
+                    result = await self.controller.execute_action(ctrl_action_name)
+                    if action.duration > 0:
+                        await asyncio.sleep(action.duration)
+                    duration = time.time() - start_time
+                    self.stats['actions_executed'] += 1
+                    self.stats['total_duration'] += duration
+                    self.action_history.append(action)
+                    if len(self.action_history) > 1000:
+                        self.action_history = self.action_history[-1000:]
+                    return result
+                else:
+                    print(f"[ERROR] No controller mapping for {action.action_type.value}")
+                    self.stats['errors'] += 1
+                    return False
+
+            # Fallback to game API only (no keyboard/mouse fallback)
             if self.use_game_api and self._game_api:
+                print(f"[DEBUG] Fallback to game API for {action.action_type.value}")
                 success = await self._execute_via_api(action)
             else:
-                success = await self._execute_via_input(action)
+                print(f"[ERROR] Keyboard/mouse fallback is disabled when controller is present.")
+                self.stats['errors'] += 1
+                return False
 
-            # Update stats
             duration = time.time() - start_time
             self.stats['actions_executed'] += 1
             self.stats['total_duration'] += duration
-
-            # Record in history
             self.action_history.append(action)
             if len(self.action_history) > 1000:
                 self.action_history = self.action_history[-1000:]
-
             return success
 
         except Exception as e:
@@ -312,17 +369,76 @@ class SkyrimActions:
             if random.random() < 0.1:
                 await self.execute(Action(ActionType.JUMP))
 
+    async def look_horizontal(self, degrees: float):
+        """
+        Look left/right by specified degrees.
+        
+        Args:
+            degrees: Positive = right, negative = left
+        """
+        if self.controller is not None:
+            # Map degrees to right stick X axis: assume max degrees = 45 maps to stick 1.0
+            magnitude = max(-1.0, min(1.0, degrees / 45.0))
+            await self.controller.look(magnitude, 0, duration=abs(degrees) / 45.0)
+            await self.controller.look(0, 0, duration=0.05)
+            return
+        if not PYAUTOGUI_AVAILABLE:
+            print(f"[DUMMY] Looking {degrees} degrees")
+            return
+        # Convert degrees to pixel movement (approximate)
+        # Skyrim sensitivity varies, but ~3 pixels per degree is common
+        pixels = int(degrees * 3)
+        # Move in small steps for smooth camera movement
+        steps = max(10, abs(pixels) // 20)
+        step_size = pixels / steps
+        for _ in range(steps):
+            pyautogui.moveRel(step_size, 0, duration=0.02)
+            await asyncio.sleep(0.01)
+    
+    async def look_vertical(self, degrees: float):
+        """
+        Look up/down by specified degrees.
+        
+        Args:
+            degrees: Positive = up, negative = down
+        """
+        if self.controller is not None:
+            # Map degrees to right stick Y axis: assume max degrees = 30 maps to stick 1.0
+            magnitude = max(-1.0, min(1.0, degrees / 30.0))
+            await self.controller.look(0, magnitude, duration=abs(degrees) / 30.0)
+            await self.controller.look(0, 0, duration=0.05)
+            return
+        if not PYAUTOGUI_AVAILABLE:
+            print(f"[DUMMY] Looking {degrees} degrees vertically")
+            return
+        # Convert degrees to pixel movement
+        pixels = int(degrees * 3)
+        # Move in small steps
+        steps = max(10, abs(pixels) // 20)
+        step_size = pixels / steps
+        for _ in range(steps):
+            pyautogui.moveRel(0, -step_size, duration=0.02)  # Negative because screen Y is inverted
+            await asyncio.sleep(0.01)
+
     async def look_around(self):
-        """Look around (move camera)."""
+        """Look around (move camera randomly)."""
+        import random
+        if self.controller is not None:
+            # Random right stick movement
+            h = random.uniform(-0.7, 0.7)
+            v = random.uniform(-0.4, 0.4)
+            await self.controller.look(h, v, duration=0.5)
+            await self.controller.look(0, 0, duration=0.05)
+            return
         if not PYAUTOGUI_AVAILABLE:
             print("[DUMMY] Looking around")
             return
-
-        # Move mouse to simulate looking
-        import random
-        dx = random.randint(-100, 100)
-        dy = random.randint(-50, 50)
-        pyautogui.moveRel(dx, dy, duration=0.5)
+        # Random horizontal look
+        h_degrees = random.uniform(-45, 45)
+        await self.look_horizontal(h_degrees)
+        # Random vertical look (smaller range to avoid looking at sky/ground too much)
+        v_degrees = random.uniform(-20, 20)
+        await self.look_vertical(v_degrees)
 
     # Action sequences
 
@@ -358,7 +474,7 @@ class SkyrimActions:
     async def quick_save_checkpoint(self):
         """Quick save the game."""
         await self.execute(Action(ActionType.QUICK_SAVE))
-        print("✓ Game saved")
+        print("OK Game saved")
 
     def get_action_history(self, n: int = 10) -> List[Action]:
         """Get recent action history."""
@@ -415,4 +531,4 @@ if __name__ == "__main__":
 
     asyncio.run(test())
 
-    print("\n✓ Action tests complete")
+    print("\nOK Action tests complete")

@@ -14,16 +14,18 @@ Philosophical grounding:
 - Conatus (ℭ): Striving requires understanding intervention outcomes
 """
 
-from .causal_graph import CausalGraph, CausalNode, Intervention
+from .causal_graph import CausalGraph, CausalNode, CausalEdge, Intervention
 from .vision_module import VisionModule
 from .physics_engine import PhysicsEngine
-from .world_model_orchestrator import WorldModelOrchestrator
+from .world_model_orchestrator import WorldModelOrchestrator, WorldState
 
 __all__ = [
     'CausalGraph',
     'CausalNode',
+    'CausalEdge',
     'Intervention',
     'VisionModule',
     'PhysicsEngine',
     'WorldModelOrchestrator',
+    'WorldState',
 ]

@@ -31,6 +31,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from singularis.skyrim import SkyrimAGI, SkyrimConfig
+from singularis.skyrim.controller import VirtualXboxController
+from singularis.skyrim.controller_bindings import SkyrimControllerBindings
 from singularis.agi_orchestrator import AGIConfig
 
 
@@ -58,8 +60,14 @@ async def basic_demo():
         )
     )
 
+    # Controller and bindings
+    controller = VirtualXboxController(dry_run=config.dry_run)
+    bindings = SkyrimControllerBindings(controller)
+    bindings.switch_to_exploration()
     # Create AGI
     agi = SkyrimAGI(config)
+    agi.controller = controller
+    agi.bindings = bindings
 
     # Initialize LLM (optional - works without it)
     print("\nInitializing LLM consciousness...")
@@ -137,8 +145,14 @@ async def custom_demo():
         save_interval=300,  # 5 minutes
     )
 
+    # Controller and bindings
+    controller = VirtualXboxController(dry_run=config.dry_run)
+    bindings = SkyrimControllerBindings(controller)
+    bindings.switch_to_exploration()
     # Create AGI
     agi = SkyrimAGI(config)
+    agi.controller = controller
+    agi.bindings = bindings
 
     # Initialize LLM if requested
     if use_llm:

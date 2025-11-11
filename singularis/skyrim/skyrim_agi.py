@@ -27,6 +27,8 @@ from dataclasses import dataclass
 # Skyrim-specific modules
 from .perception import SkyrimPerception, SceneType, GameState
 from .actions import SkyrimActions, Action, ActionType
+from .controller import VirtualXboxController
+from .controller_bindings import SkyrimControllerBindings
 from .skyrim_world_model import SkyrimWorldModel
 
 # Base AGI components
@@ -109,10 +111,15 @@ class SkyrimAGI:
 
         # 3. Skyrim actions
         print("  [3/4] Skyrim actions...")
+        # Controller and bindings
+        self.controller = VirtualXboxController(dry_run=self.config.dry_run)
+        self.bindings = SkyrimControllerBindings(self.controller)
+        self.bindings.switch_to_exploration()
         self.actions = SkyrimActions(
             use_game_api=self.config.use_game_api,
             custom_keys=self.config.custom_keys,
-            dry_run=self.config.dry_run
+            dry_run=self.config.dry_run,
+            controller=self.controller
         )
 
         # 4. Skyrim world model
@@ -138,7 +145,8 @@ class SkyrimAGI:
             'coherence_history': [],
         }
 
-        print("✓ Skyrim AGI initialized\n")
+        print("Skyrim AGI initialization complete.")
+        print("[OK] Skyrim AGI initialized\n")
 
     async def initialize_llm(self):
         """Initialize LLM (async)."""
@@ -179,9 +187,9 @@ class SkyrimAGI:
                 cycle_count += 1
                 cycle_start = time.time()
 
-                print(f"\n{'─' * 60}")
+                print(f"\n{'-' * 60}")
                 print(f"CYCLE {cycle_count} ({time.time() - start_time:.1f}s elapsed)")
-                print(f"{'─' * 60}")
+                print(f"{'-' * 60}")
 
                 # 1. PERCEIVE
                 perception = await self.perception.perceive()
@@ -196,7 +204,7 @@ class SkyrimAGI:
                 # Detect changes
                 changes = self.perception.detect_change()
                 if changes['changed']:
-                    print(f"⚠ Change detected: {changes}")
+                    print(f"[WARN] Change detected: {changes}")
 
                 # 2. UPDATE WORLD MODEL
                 # Convert perception to world state
@@ -224,13 +232,13 @@ class SkyrimAGI:
                 print(f"  Autonomy: {mot_state.autonomy:.2f}")
 
                 # 4. FORM/UPDATE GOALS
-                if not self.agi.goals.has_active_goals() or cycle_count % 10 == 0:
-                    goal = self.agi.goals.generate_goal(
+                if len(self.agi.goal_system.get_active_goals()) == 0 or cycle_count % 10 == 0:
+                    goal = self.agi.goal_system.generate_goal(
                         dominant_drive.value,
                         {'scene': scene_type.value, 'location': game_state.location_name}
                     )
                     self.current_goal = goal.description
-                    print(f"\n🎯 New goal: {self.current_goal}")
+                    print(f"\n[GOAL] New goal: {self.current_goal}")
 
                 # 5. PLAN ACTION
                 action = await self._plan_action(
@@ -239,7 +247,7 @@ class SkyrimAGI:
                     goal=self.current_goal
                 )
 
-                print(f"\n→ Action: {action}")
+                print(f"\n-> Action: {action}")
 
                 # 6. EXECUTE ACTION
                 before_state = game_state.to_dict()
@@ -292,12 +300,12 @@ class SkyrimAGI:
 
                 # Cycle complete
                 cycle_duration = time.time() - cycle_start
-                print(f"\n✓ Cycle complete ({cycle_duration:.2f}s)")
+                print(f"\n[OK] Cycle complete ({cycle_duration:.2f}s)")
 
         except KeyboardInterrupt:
-            print("\n\n⚠ User interrupted - stopping gracefully...")
+            print("\n\n[WARN] User interrupted - stopping gracefully...")
         except Exception as e:
-            print(f"\n\n❌ Error during gameplay: {e}")
+            print(f"\n\n[ERROR] Error during gameplay: {e}")
             import traceback
             traceback.print_exc()
         finally:
@@ -331,32 +339,55 @@ class SkyrimAGI:
         # Use LLM consciousness for complex decisions
         if self.agi.consciousness_llm and not self.config.dry_run:
             query = f"""
-            I'm in {scene_type.value} at {game_state.location_name}.
+            You are an autonomous agent in Skyrim.
+            Scene: {scene_type.value} at {game_state.location_name}
+            Health: {game_state.health}, Magicka: {game_state.magicka}, Stamina: {game_state.stamina}
+            Inventory: {getattr(game_state, 'inventory_summary', 'unknown')}
+            Nearby NPCs: {getattr(game_state, 'nearby_npcs', 'unknown')}
+            Recent actions: {getattr(game_state, 'recent_actions', 'unknown')}
             Current goal: {goal}
             Dominant motivation: {dominant.value}
 
-            What should I do next? Choose one action:
+            Available actions include (but are not limited to):
             - explore (move and look around)
             - combat (if enemies present)
             - interact (talk/loot/activate)
             - navigate (move to specific location)
             - rest (recover health/stamina)
+            - stealth (sneak, pickpocket, hide)
+            - dialogue (talk, persuade, intimidate)
+            - look around (large sweeping camera movements)
+            - focus camera on moving or new objects/NPCs
+            - use magic or items
+            - open inventory/map/skills
+            - creative or unconventional actions
+
+            You are encouraged to look at things that move or appear unexpectedly, or to perform large camera sweeps to scan the area when appropriate. Please select the single most contextually appropriate action for this situation. If possible, suggest creative, stealth, dialogue, or camera/look actions when relevant. Avoid repeating the same action as the previous turn unless it is clearly optimal. Respond with only the chosen action and a brief rationale.
             """
 
             try:
+                print("[LLM] Calling LM Studio for action planning...")
+                print(f"[LLM] Query: {query.strip()}")
                 result = await self.agi.process(query)
+                print(f"[LLM] Raw LLM response: {result}")
                 response = result.get('consciousness_response', {}).get('response', 'explore')
+                print(f"[LLM] Parsed LLM action string: {response}")
 
                 # Parse response to action
                 if 'explore' in response.lower():
+                    print("[LLM] AGI will: explore")
                     return 'explore'
                 elif 'combat' in response.lower() or 'attack' in response.lower():
+                    print("[LLM] AGI will: combat")
                     return 'combat'
                 elif 'interact' in response.lower() or 'talk' in response.lower():
+                    print("[LLM] AGI will: interact")
                     return 'interact'
                 elif 'navigate' in response.lower() or 'move' in response.lower():
+                    print("[LLM] AGI will: navigate")
                     return 'navigate'
                 elif 'rest' in response.lower():
+                    print("[LLM] AGI will: rest")
                     return 'rest'
             except Exception as e:
                 print(f"  LLM planning failed: {e}, using heuristic")
@@ -369,51 +400,6 @@ class SkyrimAGI:
                 return 'combat'
             else:
                 return 'practice'
-        elif dominant == MotivationType.COHERENCE:
-            return 'quest_objective'
-        else:
-            return 'explore'
-
-    async def _execute_action(self, action: str, scene_type: SceneType):
-        """
-        Execute planned action.
-
-        Args:
-            action: Action to execute
-            scene_type: Current scene type
-        """
-        if action == 'explore':
-            await self.actions.explore_area(duration=3.0)
-
-        elif action == 'combat':
-            await self.actions.combat_sequence("Enemy")
-
-        elif action == 'interact':
-            await self.actions.execute(Action(ActionType.ACTIVATE))
-
-        elif action == 'navigate':
-            await self.actions.move_forward(duration=2.0)
-
-        elif action == 'rest':
-            await self.actions.execute(Action(ActionType.WAIT))
-
-        elif action == 'practice':
-            # Practice combat skills
-            await self.actions.execute(Action(ActionType.ATTACK))
-
-        elif action == 'quest_objective':
-            # Work on quest (simplified)
-            await self.actions.move_forward(duration=2.0)
-
-        else:
-            # Default: explore
-            await self.actions.explore_area(duration=2.0)
-
-    def _print_final_stats(self):
-        """Print final statistics."""
-        print(f"\nFinal Statistics:")
-        print(f"  Cycles: {self.stats['cycles_completed']}")
-        print(f"  Actions: {self.stats['actions_taken']}")
         print(f"  Playtime: {self.stats['total_playtime'] / 60:.1f} minutes")
 
         if self.stats['coherence_history']:
@@ -426,6 +412,63 @@ class SkyrimAGI:
         print(f"  NPCs met: {skyrim_stats['npc_relationships']}")
         print(f"  Locations: {skyrim_stats['locations_discovered']}")
 
+        action_stats = self.actions.get_stats()
+        print(f"\nActions:")
+        print(f"  Total executed: {action_stats['actions_executed']}")
+        print(f"  Errors: {action_stats['errors']}")
+
+    async def _execute_action(self, action: str, scene_type: SceneType):
+        """
+        Execute planned action.
+
+        Args:
+            action: Action to execute
+            scene_type: Current scene type
+        """
+        print(f"[DEBUG] Executing action: {action} | Scene: {scene_type} | Active layer: {self.controller.active_layer}")
+        # Sync action layer to context
+        if action in ('explore', 'navigate', 'quest_objective', 'practice'):
+            self.bindings.switch_to_exploration()
+        elif action == 'combat':
+            self.bindings.switch_to_combat()
+        elif action == 'interact':
+            self.bindings.switch_to_exploration()
+        elif action == 'rest':
+            self.bindings.switch_to_exploration()
+        # Extend with menu/dialogue/stealth as needed
+        print(f"[DEBUG] After layer switch: {self.controller.active_layer}")
+
+        if action == 'explore':
+            await self.actions.explore_area(duration=3.0)
+        elif action == 'combat':
+            await self.actions.combat_sequence("Enemy")
+        elif action == 'interact':
+            await self.actions.execute(Action(ActionType.ACTIVATE))
+        elif action == 'navigate':
+            await self.actions.move_forward(duration=2.0)
+        elif action == 'rest':
+            await self.actions.execute(Action(ActionType.WAIT))
+        elif action == 'practice':
+            await self.actions.execute(Action(ActionType.ATTACK))
+        elif action == 'quest_objective':
+            await self.actions.move_forward(duration=2.0)
+        else:
+            await self.actions.explore_area(duration=2.0)
+
+    def _print_final_stats(self):
+        """Print final statistics."""
+        print(f"\nFinal Statistics:")
+        print(f"  Cycles: {self.stats['cycles_completed']}")
+        print(f"  Actions: {self.stats['actions_taken']}")
+        print(f"  Playtime: {self.stats['total_playtime'] / 60:.1f} minutes")
+        if self.stats['coherence_history']:
+            avg_coherence = sum(self.stats['coherence_history']) / len(self.stats['coherence_history'])
+            print(f"  Avg Coherence: {avg_coherence:.3f}")
+        skyrim_stats = self.skyrim_world.get_stats()
+        print(f"\nWorld Model:")
+        print(f"  Causal edges learned: {skyrim_stats['causal_edges']}")
+        print(f"  NPCs met: {skyrim_stats['npc_relationships']}")
+        print(f"  Locations: {skyrim_stats['locations_discovered']}")
         action_stats = self.actions.get_stats()
         print(f"\nActions:")
         print(f"  Total executed: {action_stats['actions_executed']}")

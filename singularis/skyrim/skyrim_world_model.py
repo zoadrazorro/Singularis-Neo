@@ -117,7 +117,7 @@ class SkyrimWorldModel:
             confidence=0.85
         ))
 
-        print("✓ Initialized Skyrim causal relationships")
+        print("[OK] Initialized Skyrim causal relationships")
 
     def learn_from_experience(
         self,
@@ -369,7 +369,7 @@ class SkyrimWorldModel:
     def get_stats(self) -> Dict[str, Any]:
         """Get world model statistics."""
         return {
-            'causal_edges': len(self.causal_graph.edges),
+            'causal_edges': len(self.causal_graph.graph.edges()),
             'npc_relationships': len(self.npc_relationships),
             'locations_discovered': len(self.locations),
             'locations_explored': sum(1 for loc in self.locations.values() if loc['explored']),

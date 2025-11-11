@@ -151,7 +151,12 @@ class MetaOrchestratorLLM:
         logger.info("\n[STAGE 2] Expert Selection")
         if selected_experts is None:
             selected_experts = self.select_experts(context)
-        logger.info(f"Selected experts: {selected_experts}")
+        # Ensure selected_experts is a non-empty list
+        if not isinstance(selected_experts, list):
+            selected_experts = list(selected_experts) if selected_experts else []
+        if not selected_experts:
+            selected_experts = ['reasoning']
+        logger.info(f"Selected experts: {selected_experts} (type: {type(selected_experts)})")
 
         # STAGE 3: Expert Consultation
         logger.info("\n[STAGE 3] Expert Consultation")
@@ -433,9 +438,8 @@ class MetaOrchestratorLLM:
             selected.add('memory')  # Historical context
 
         # Always include at least 3 experts
-        if len(selected) < 3:
+        if len(selected) < 1:
             selected.add('reasoning')
-            selected.add('philosophical')
 
         return sorted(list(selected))
 

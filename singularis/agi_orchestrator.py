@@ -155,27 +155,27 @@ class AGIOrchestrator:
         self.current_state: Optional[WorldState] = None
         self.running = False
 
-        print("✓ AGI system initialized\n")
+        print("[OK] AGI system initialized\n")
 
     async def initialize_llm(self):
         """Initialize LLM client (async)."""
         try:
             config = LMStudioConfig(
                 base_url=self.config.lm_studio_url,
-                model_name=self.config.lm_studio_model
+                model_name='microsoft/phi-4'
             )
             client = LMStudioClient(config)
             llm_interface = ExpertLLMInterface(client)
 
             self.consciousness_llm = MetaOrchestratorLLM(
-                llm_interface=llm_interface,
+                llm_client=client,
                 consciousness_threshold=self.config.consciousness_threshold,
                 coherentia_threshold=self.config.coherentia_threshold,
                 ethical_threshold=self.config.ethical_threshold
             )
-            print("✓ LLM consciousness engine ready")
+            print("[OK] LLM consciousness engine ready")
         except Exception as e:
-            print(f"⚠ LLM initialization failed: {e}")
+            print(f"[WARNING] LLM initialization failed: {e}")
             print("  Continuing without LLM (template mode)")
 
     async def perceive(
@@ -349,7 +349,7 @@ class AGIOrchestrator:
             # 6. Sleep between cycles
             await asyncio.sleep(2.0)
 
-        print(f"\n✓ Autonomous operation complete. Ran {cycle_count} cycles.\n")
+        print(f"\n[OK] Autonomous operation complete. Ran {cycle_count} cycles.\n")
         self.running = False
 
     def stop(self):
@@ -429,7 +429,7 @@ if __name__ == "__main__":
                 print(f"  {key}: {val}")
 
         print("\n" + "=" * 60)
-        print("✓ AGI SYSTEM TEST COMPLETE")
+        print("[OK] AGI SYSTEM TEST COMPLETE")
         print("=" * 60)
 
     asyncio.run(main())
