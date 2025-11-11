@@ -275,8 +275,9 @@ class ReinforcementLearner:
             batch_size: Batch size for training
             replay_capacity: Capacity of replay buffer
         """
-        # Actions available in Skyrim
+        # Actions available in Skyrim (both high-level and low-level)
         self.actions = [
+            # High-level strategic actions
             'explore',
             'combat',
             'navigate',
@@ -286,7 +287,19 @@ class ReinforcementLearner:
             'switch_to_combat',
             'switch_to_exploration',
             'switch_to_menu',
-            'switch_to_stealth'
+            'switch_to_stealth',
+            # Low-level movement actions
+            'move_forward',
+            'move_backward',
+            'move_left',
+            'move_right',
+            'jump',
+            'sneak',
+            'attack',
+            'activate',
+            'power_attack',
+            'block',
+            'backstab'
         ]
 
         self.action_to_idx = {a: i for i, a in enumerate(self.actions)}

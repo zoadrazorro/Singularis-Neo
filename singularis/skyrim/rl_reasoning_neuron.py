@@ -157,26 +157,25 @@ Be concise, strategic, and grounded in both the learned Q-values and the situati
         """Build prompt for LLM reasoning about Q-values."""
         
         # Format Q-values
-        q_value_str = "\n".join([
-            f"  {action}: Q={q_val:.3f}" for action, q_val in sorted_actions[:5]
+        q_summary = "\n".join([
+            f"  - {action}: Q={q_val:.3f}" + 
+            (" (HIGH - learned as very effective)" if q_val > 0.5 else
+             " (MODERATE - sometimes effective)" if q_val > 0.0 else
+             " (LOW/NEGATIVE - learned as ineffective)")
+            for action, q_val in sorted_actions[:5]
         ])
         
-        # Extract key state info
-        health = state.get('health', 100)
-        in_combat = state.get('in_combat', False)
-        scene = state.get('scene', 'unknown')
-        layer = state.get('current_action_layer', 'Exploration')
+        # Get meta-strategic guidance if available
+        meta_strategy = context.get('meta_strategy', '')
         
-        # Extract context
-        motivation = context.get('motivation', 'unknown')
-        terrain = context.get('terrain_type', 'unknown')
-        
-        prompt = f"""REINFORCEMENT LEARNING Q-VALUE ANALYSIS
+        prompt = f"""RL Q-VALUE ANALYSIS:
 
-CURRENT STATE:
-- Health: {health:.0f}/100
-- In Combat: {in_combat}
-- Scene: {scene}
+Current State:
+- Scene: {state.get('scene', 'unknown')}
+- Health: {state.get('health', 100):.0f}/100
+- In Combat: {state.get('in_combat', False)}
+- Terrain Type: {context.get('terrain_type', 'unknown')}
+- Dominant Drive: {context.get('motivation', 'unknown')}
 - Action Layer: {layer}
 - Terrain: {terrain}
 

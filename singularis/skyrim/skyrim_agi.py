@@ -35,10 +35,12 @@ from .menu_learner import MenuLearner
 from .memory_rag import MemoryRAG
 from .reinforcement_learner import ReinforcementLearner
 from .rl_reasoning_neuron import RLReasoningNeuron
+from .meta_strategist import MetaStrategist
 
 # Base AGI components
 from ..agi_orchestrator import AGIOrchestrator, AGIConfig
 from ..agency import MotivationType
+from ..llm.lmstudio_client import LMStudioClient, LMStudioConfig, ExpertLLMInterface
 
 
 @dataclass
@@ -181,8 +183,13 @@ class SkyrimAGI:
             self.rl_learner = None
         
         # 9. RL Reasoning Neuron (LLM thinks about RL)
-        print("  [9/9] RL reasoning neuron (LLM-enhanced RL)...")
+        print("  [9/10] RL reasoning neuron (LLM-enhanced RL)...")
         self.rl_reasoning_neuron = RLReasoningNeuron()
+        # Will connect LLM interface when initialized
+        
+        # 10. Meta-Strategist (LLM generates strategic instructions)
+        print("  [10/10] Meta-strategist (autonomous instruction generation)...")
+        self.meta_strategist = MetaStrategist(instruction_frequency=10)
         # Will connect LLM interface when initialized
 
         # State
@@ -223,13 +230,30 @@ class SkyrimAGI:
             # Connect LLM to RL reasoning neuron
             if hasattr(self.agi.consciousness_llm, 'llm_interface'):
                 self.rl_reasoning_neuron.llm_interface = self.agi.consciousness_llm.llm_interface
-                print("[LLM] ✓ RL reasoning neuron connected to LLM")
+                print("[LLM] ✓ RL reasoning neuron connected to main LLM")
                 print(f"[LLM] LLM interface type: {type(self.rl_reasoning_neuron.llm_interface)}")
             else:
                 print("[LLM] ⚠️ consciousness_llm has no llm_interface attribute")
                 print(f"[LLM] Available attributes: {dir(self.agi.consciousness_llm)}")
         else:
             print("[LLM] ⚠️ LLM consciousness engine is None - RL reasoning will use heuristics")
+        
+        # Initialize separate Mistral LLM for meta-strategist
+        try:
+            print("\n[META-LLM] Initializing Mistral-7B for meta-strategic reasoning...")
+            mistral_config = LMStudioConfig(
+                base_url=self.config.lm_studio_url,
+                model_name='mistralai/mistral-7b-instruct-v0.3'
+            )
+            mistral_client = LMStudioClient(mistral_config)
+            mistral_interface = ExpertLLMInterface(mistral_client)
+            
+            self.meta_strategist.llm_interface = mistral_interface
+            print("[META-LLM] ✓ Meta-strategist connected to Mistral-7B")
+            print(f"[META-LLM] Model: {mistral_config.model_name}")
+        except Exception as e:
+            print(f"[META-LLM] ⚠️ Mistral initialization failed: {e}")
+            print("[META-LLM] Meta-strategist will use heuristic strategies")
 
     async def autonomous_play(self, duration_seconds: Optional[int] = None):
         """
@@ -451,6 +475,15 @@ class SkyrimAGI:
                     success=success
                 )
                 
+                # Record observation for meta-strategist
+                if self.rl_learner:
+                    reward = self.rl_learner.compute_reward(before_state, str(action), after_state)
+                    self.meta_strategist.observe(
+                        state=before_state,
+                        action=str(action),
+                        reward=reward
+                    )
+                
                 # Store cognitive memory in RAG
                 self.memory_rag.store_cognitive_memory(
                     situation=before_state,
@@ -577,11 +610,23 @@ class SkyrimAGI:
             print("[PLANNING] Using RL-based action selection with LLM reasoning...")
             print(f"[PLANNING] RL reasoning neuron LLM status: {'Connected' if self.rl_reasoning_neuron.llm_interface else 'Using heuristics'}")
             
+            # Check if meta-strategist should generate new instruction
+            if await self.meta_strategist.should_generate_instruction():
+                q_values = self.rl_learner.get_q_values(state_dict)
+                instruction = await self.meta_strategist.generate_instruction(
+                    current_state=state_dict,
+                    q_values=q_values,
+                    motivation=motivation.dominant_drive().value
+                )
+            
             # Get Q-values from RL
             q_values = self.rl_learner.get_q_values(state_dict)
             print(f"[RL] Q-values: {', '.join([f'{k}={v:.2f}' for k, v in sorted(q_values.items(), key=lambda x: x[1], reverse=True)[:3]])}")
             
-            # Use RL reasoning neuron to think about Q-values
+            # Get meta-strategic context
+            meta_context = self.meta_strategist.get_active_instruction_context()
+            
+            # Use RL reasoning neuron to think about Q-values (with meta-strategic guidance)
             rl_reasoning = await self.rl_reasoning_neuron.reason_about_q_values(
                 state=state_dict,
                 q_values=q_values,
@@ -591,7 +636,8 @@ class SkyrimAGI:
                     'terrain_type': self.skyrim_world.classify_terrain_from_scene(
                         scene_type.value,
                         game_state.in_combat
-                    )
+                    ),
+                    'meta_strategy': meta_context  # Add strategic guidance
                 }
             )
             
@@ -1092,6 +1138,14 @@ Based on the terrain type and physical state, select the most appropriate action
         print(f"  Avg confidence: {rl_neuron_stats['avg_confidence']:.3f}")
         print(f"  Avg coherence: {rl_neuron_stats['avg_coherence']:.3f}")
         print(f"  Patterns learned: {rl_neuron_stats['patterns_learned']}")
+        
+        # Meta-strategist stats
+        meta_stats = self.meta_strategist.get_stats()
+        print(f"\nMeta-Strategist (Mistral-7B):")
+        print(f"  Active instructions: {meta_stats['active_instructions']}")
+        print(f"  Total generated: {meta_stats['total_generated']}")
+        print(f"  Current cycle: {meta_stats['current_cycle']}")
+        print(f"  Cycles since last: {meta_stats['cycles_since_last']}")
 
     def stop(self):
         """Stop autonomous play."""
