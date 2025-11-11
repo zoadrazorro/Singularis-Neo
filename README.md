@@ -1,0 +1,2 @@
+# Singularis
+Singularis Consciousness Engine
