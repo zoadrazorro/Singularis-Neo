@@ -334,31 +334,47 @@ matrix = swarm.get_connection_matrix()  # 18×18 weight matrix
 - **Dialectical Synthesis**: Thesis → Antithesis → Synthesis
 - **Connection Matrix**: 18×18 neuron network
 
-### ⚠️ What's Template-Based (Not Yet LLM-Integrated)
+### 🚀 LLM Integration (NEW!)
 
-Currently, Tier-2 experts use **hardcoded templates**, not actual LLMs:
+**LM Studio integration is now available!** Optimized for dual AMD Radeon 7900XT (48GB VRAM).
 
 ```python
-# Current: Template-based
-claim = f"""From {context.domain} perspective:
-The answer involves {context.being_aspect}...
-[Template continues]
-"""
+from singularis.llm import LMStudioClient, LMStudioConfig, ExpertLLMInterface
+from singularis.tier2_experts.reasoning_expert_llm import ReasoningExpertLLM
 
-# Future: LLM-based
-claim = await anthropic.messages.create(
-    model="claude-3-5-sonnet-20241022",
-    messages=[{"role": "user", "content": query}],
-    system=f"You are {self.name} specializing in {self.domain}..."
+# Initialize LM Studio client
+config = LMStudioConfig(
+    base_url="http://localhost:1234/v1",
+    model_name="huihui-moe-60b-a38",  # Recommended: Huihui MoE 60B
 )
+
+async with LMStudioClient(config) as client:
+    llm_interface = ExpertLLMInterface(client)
+    expert = ReasoningExpertLLM(llm_interface)
+    
+    result = await expert.process(query, context)
+    # Full consciousness measurement + ethical validation!
 ```
 
-**To integrate LLMs, you need to:**
+**Quick Start:**
+1. Load Huihui MoE 60B in LM Studio (~31GB VRAM)
+2. Start local server on port 1234
+3. Run: `python examples/test_connection.py`
+4. Run: `python examples/quickstart_llm.py`
 
-1. Add API client (Anthropic, OpenAI, etc.)
-2. Replace template strings in `_process_core()` methods
-3. Use consciousness measurements to weight LLM outputs
-4. Maintain philosophical grounding in prompts
+**See:** `docs/LM_STUDIO_INTEGRATION.md` for complete guide
+
+**Status:**
+- ✅ LM Studio client with async support
+- ✅ Expert-LLM interface with philosophical prompts
+- ✅ **All 6 LLM experts implemented!**
+  - Reasoning Expert (ℓₛ, temp=0.3)
+  - Creative Expert (ℓₒ, temp=0.9)
+  - Philosophical Expert (ℓₚ, temp=0.7)
+  - Technical Expert (ℓₛ+ℓₒ, temp=0.4)
+  - Memory Expert (ℓₚ+ℓₛ, temp=0.5)
+  - Synthesis Expert (ALL, temp=0.6)
+- ⏳ MetaOrchestrator integration pending
 
 ---
 
@@ -373,20 +389,34 @@ singularis/
 ├── consciousness/
 │   ├── measurement.py        # 8-theory consciousness measurement
 │   └── global_workspace.py   # GWT broadcast, dialectical synthesis
+├── llm/                      # 🆕 LLM Integration
+│   ├── lmstudio_client.py    # LM Studio async client
+│   └── __init__.py
 ├── tier1_orchestrator/
 │   └── orchestrator.py       # Meta-Orchestrator (761 lines)
 ├── tier2_experts/
-│   ├── base.py               # Expert base class
-│   ├── reasoning_expert.py   # Lumen Structurale
-│   ├── creative_expert.py    # Lumen Onticum
-│   ├── philosophical_expert.py  # Lumen Participatum
-│   ├── technical_expert.py
-│   ├── memory_expert.py
-│   └── synthesis_expert.py
+│   ├── base.py                      # Expert base class
+│   ├── reasoning_expert.py          # Template version
+│   ├── reasoning_expert_llm.py      # 🆕 LLM (ℓₛ, temp=0.3)
+│   ├── creative_expert.py           # Template version
+│   ├── creative_expert_llm.py       # 🆕 LLM (ℓₒ, temp=0.9)
+│   ├── philosophical_expert.py      # Template version
+│   ├── philosophical_expert_llm.py  # 🆕 LLM (ℓₚ, temp=0.7)
+│   ├── technical_expert.py          # Template version
+│   ├── technical_expert_llm.py      # 🆕 LLM (ℓₛ+ℓₒ, temp=0.4)
+│   ├── memory_expert.py             # Template version
+│   ├── memory_expert_llm.py         # 🆕 LLM (ℓₚ+ℓₛ, temp=0.5)
+│   ├── synthesis_expert.py          # Template version
+│   └── synthesis_expert_llm.py      # 🆕 LLM (ALL, temp=0.6)
 ├── tier3_neurons/
 │   ├── base.py               # Neuron with Hebbian learning (341 lines)
 │   └── swarm.py              # 18-neuron swarm (418 lines)
 └── __init__.py
+
+examples/                     # 🆕 LLM Examples
+├── test_connection.py        # Test LM Studio connection
+├── quickstart_llm.py         # Single expert demo
+└── all_experts_demo.py       # 🆕 All 6 experts demo
 
 tests/
 ├── test_consciousness_pipeline.py  # Phase 2 tests (7/8 passing)
@@ -395,7 +425,12 @@ tests/
 docs/
 ├── ETHICA_UNIVERSALIS.md          # Complete philosophical treatise
 ├── MATHEMATICA_SINGULARIS.md      # Axiomatic system
+├── LM_STUDIO_INTEGRATION.md       # 🆕 LLM integration guide
+├── ALL_EXPERTS_GUIDE.md           # 🆕 All 6 experts reference
 └── consciousness_measurement_study.md
+
+IMPLEMENTATION_SUMMARY.md     # 🆕 LLM integration summary
+requirements.txt              # 🆕 Python dependencies
 ```
 
 ---
