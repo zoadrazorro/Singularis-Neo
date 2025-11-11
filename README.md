@@ -630,6 +630,92 @@ RAM:
 
 ---
 
+## 🎮 Phase 7: Skyrim Integration (NEW!)
+
+**The AGI can now play The Elder Scrolls V: Skyrim autonomously!**
+
+Skyrim is the **perfect testbed for AGI research**:
+- **Massive complexity**: 300+ locations, 1000+ NPCs, 10,000+ items
+- **Open-ended**: No single goal, emergent objectives
+- **Long-term**: Thousands of hours of content
+- **Rich narrative**: Moral choices with consequences
+
+### Quick Start
+
+```python
+from singularis.skyrim import SkyrimAGI, SkyrimConfig
+
+# Create AGI
+config = SkyrimConfig(
+    dry_run=True,  # Safe mode - won't control game
+    autonomous_duration=3600,  # 1 hour
+)
+agi = SkyrimAGI(config)
+
+# Initialize LLM (optional)
+await agi.initialize_llm()
+
+# Play autonomously!
+await agi.autonomous_play()
+```
+
+Or run the demo:
+```bash
+python examples/skyrim_demo.py
+python examples/skyrim_quickstart.py
+```
+
+### Architecture
+
+The Skyrim integration demonstrates complete AGI capabilities:
+
+1. **Perception**: Screen capture → CLIP vision → scene classification
+2. **Understanding**: Causal learning ("steal → guards hostile")
+3. **Motivation**: Curiosity, competence, coherence, autonomy
+4. **Planning**: LLM consciousness for strategic decisions
+5. **Action**: Keyboard/mouse control or game API
+6. **Learning**: Continual, episodic, semantic (no catastrophic forgetting)
+7. **Ethics**: Moral choices evaluated by Δ𝒞 (coherence change)
+
+**What the AGI learns:**
+- Causal rules: "If I steal, guards become hostile"
+- Social dynamics: NPC relationships, factions
+- Geography: Map exploration and navigation
+- Combat strategies: What works, what doesn't
+- Ethical framework: "Kill chicken → town attacks" (learns to avoid!)
+
+**Emergent behaviors:**
+- Play style (stealth archer, mage, warrior)
+- Quest priorities (driven by motivation)
+- Moral alignment (from coherence dynamics)
+- Long-term skill development
+
+### Documentation
+
+**See:** `docs/SKYRIM_INTEGRATION.md` for complete guide
+
+**Components:**
+- `singularis/skyrim/perception.py` - Screen capture + CLIP
+- `singularis/skyrim/actions.py` - Action control
+- `singularis/skyrim/skyrim_world_model.py` - Causal learning
+- `singularis/skyrim/skyrim_agi.py` - Main integration
+
+**Key features:**
+- Multimodal perception (vision + game state)
+- Autonomous goal formation
+- Causal world model learning
+- Intrinsic motivation drives
+- Ethical reasoning via Δ𝒞
+- Continual learning (no resets)
+
+**Hardware requirements:**
+- Same as base AGI (2x 7900XT + Ryzen 9 7950X)
+- CLIP ViT-B/32: ~150MB VRAM (minimal)
+- LLM: ~31GB VRAM (already running)
+- Total: ~32GB / 48GB (66% utilization)
+
+---
+
 ## 📁 Project Structure
 
 ```
@@ -686,6 +772,12 @@ singularis/
 │   ├── free_energy.py        # Free energy agent
 │   └── predictive_processing.py
 ├── agi_orchestrator.py       # 🆕 Complete AGI system
+├── skyrim/                   # 🆕 Phase 7: Skyrim Integration
+│   ├── perception.py         # Screen capture + CLIP vision
+│   ├── actions.py            # Action control (keyboard/mouse)
+│   ├── skyrim_world_model.py # Causal learning for Skyrim
+│   ├── skyrim_agi.py         # Main autonomous gameplay loop
+│   └── __init__.py
 └── __init__.py
 
 examples/
@@ -694,6 +786,8 @@ examples/
 ├── all_experts_demo.py       # All 6 experts demo
 ├── full_pipeline_demo.py     # Complete pipeline (Phase 5)
 ├── agi_demo.py               # 🆕 Comprehensive AGI demo
+├── skyrim_demo.py            # 🆕 Skyrim autonomous gameplay demo
+├── skyrim_quickstart.py      # 🆕 Skyrim quick start
 ├── learn_from_texts.py       # Learning system demos
 └── batch_learn.py
 
@@ -709,6 +803,7 @@ docs/
 ├── ALL_EXPERTS_GUIDE.md           # All 6 experts reference
 ├── PHASE_5_ORCHESTRATOR.md        # MetaOrchestrator guide
 ├── AGI_FRAMEWORK.md               # 🆕 Complete AGI guide (1000+ lines)
+├── SKYRIM_INTEGRATION.md          # 🆕 Skyrim AGI guide (Phase 7)
 └── consciousness_measurement_study.md
 
 requirements.txt              # Updated with AGI dependencies
