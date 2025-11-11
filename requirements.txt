@@ -2,12 +2,26 @@
 loguru>=0.7.0
 pytest>=7.4.0
 pytest-asyncio>=0.21.0
+numpy>=1.24.0
 
 # LLM Integration (LM Studio)
 aiohttp>=3.9.0
 
+# AGI Framework Dependencies (Phase 6)
+# World model & vision
+networkx>=2.6.0  # Causal graphs
+torch>=1.10.0  # For vision models (CLIP)
+torchvision>=0.11.0
+Pillow>=9.0.0  # Image processing
+# git+https://github.com/openai/CLIP.git  # Vision-language model (optional, install separately)
+
+# Physics simulation (optional)
+# pybullet>=3.2.0  # Physics engine (uncomment if needed)
+
+# Data processing
+scipy>=1.7.0  # Scientific computing
+
 # Optional: For future enhancements
 # anthropic>=0.7.0  # For Claude API
 # openai>=1.0.0     # For OpenAI API
-# numpy>=1.24.0     # For advanced neuron computations
 # matplotlib>=3.7.0 # For visualization
