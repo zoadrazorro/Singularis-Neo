@@ -33,6 +33,7 @@ from .skyrim_world_model import SkyrimWorldModel
 from .strategic_planner import StrategicPlannerNeuron
 from .menu_learner import MenuLearner
 from .memory_rag import MemoryRAG
+from .reinforcement_learner import ReinforcementLearner
 
 # Base AGI components
 from ..agi_orchestrator import AGIOrchestrator, AGIConfig
@@ -66,6 +67,12 @@ class SkyrimConfig:
     # Learning
     surprise_threshold: float = 0.3  # Threshold for learning from surprise
     exploration_weight: float = 0.5  # How much to favor exploration
+
+    # Reinforcement Learning
+    use_rl: bool = True  # Enable RL-based learning
+    rl_learning_rate: float = 0.01  # Q-network learning rate
+    rl_epsilon_start: float = 0.3  # Initial exploration rate
+    rl_train_freq: int = 5  # Train every N cycles
 
     def __post_init__(self):
         """Initialize base config if not provided."""
@@ -141,26 +148,44 @@ class SkyrimAGI:
             base_world_model=self.agi.world_model
         )
         
-        # 5. Strategic Planner Neuron
+        # 5. Strategic Planner Neuron (will connect RL learner later)
         print("  [5/6] Strategic planner neuron...")
         self.strategic_planner = StrategicPlannerNeuron(memory_capacity=100)
-        
+
         # 6. Menu Learner
         print("  [6/7] Menu interaction learner...")
         self.menu_learner = MenuLearner()
-        
+
         # 7. Memory RAG System
-        print("  [7/7] Memory RAG system...")
+        print("  [7/8] Memory RAG system...")
         self.memory_rag = MemoryRAG(
             perceptual_capacity=1000,
             cognitive_capacity=500
         )
+
+        # 8. Reinforcement Learning System
+        if self.config.use_rl:
+            print("  [8/8] Reinforcement learning system...")
+            self.rl_learner = ReinforcementLearner(
+                state_dim=64,
+                learning_rate=self.config.rl_learning_rate,
+                epsilon_start=self.config.rl_epsilon_start
+            )
+            # Try to load saved model
+            self.rl_learner.load('skyrim_rl_model.pkl')
+
+            # Connect RL learner to strategic planner
+            self.strategic_planner.set_rl_learner(self.rl_learner)
+        else:
+            self.rl_learner = None
 
         # State
         self.running = False
         self.current_perception: Optional[Dict[str, Any]] = None
         self.current_goal: Optional[str] = None
         self.last_save_time = time.time()
+        self.last_state: Optional[Dict[str, Any]] = None  # For RL experience tracking
+        self.last_action: Optional[str] = None
 
         # Statistics
         self.stats = {
@@ -340,6 +365,15 @@ class SkyrimAGI:
 
                 # 6. EXECUTE ACTION
                 before_state = game_state.to_dict()
+                # Add motivation to state for RL
+                before_state.update({
+                    'scene': scene_type.value,
+                    'curiosity': mot_state.curiosity,
+                    'competence': mot_state.competence,
+                    'coherence': mot_state.coherence,
+                    'autonomy': mot_state.autonomy
+                })
+
                 try:
                     await self._execute_action(action, scene_type)
                     self.stats['actions_taken'] += 1
@@ -360,6 +394,18 @@ class SkyrimAGI:
                 # Perceive again to see outcome
                 after_perception = await self.perception.perceive()
                 after_state = after_perception['game_state'].to_dict()
+                # Add motivation to after_state for RL
+                after_mot = self.agi.motivation.compute_motivation(
+                    state=after_state,
+                    context=motivation_context
+                )
+                after_state.update({
+                    'scene': after_perception['scene_type'].value,
+                    'curiosity': after_mot.curiosity,
+                    'competence': after_mot.competence,
+                    'coherence': after_mot.coherence,
+                    'autonomy': after_mot.autonomy
+                })
 
                 # Learn causal relationships
                 self.skyrim_world.learn_from_experience(
@@ -439,6 +485,25 @@ class SkyrimAGI:
                     importance=0.5
                 )
 
+                # RL: Store experience and train
+                if self.rl_learner is not None:
+                    # Store experience for RL
+                    self.rl_learner.store_experience(
+                        state_before=before_state,
+                        action=str(action),
+                        state_after=after_state,
+                        done=False
+                    )
+
+                    # Train periodically
+                    if cycle_count % self.config.rl_train_freq == 0:
+                        print(f"[RL] Training at cycle {cycle_count}...")
+                        self.rl_learner.train_step()
+
+                    # Save RL model periodically
+                    if cycle_count % 50 == 0:
+                        self.rl_learner.save('skyrim_rl_model.pkl')
+
                 # 8. UPDATE STATS
                 self.stats['cycles_completed'] = cycle_count
                 self.stats['total_playtime'] = time.time() - start_time
@@ -478,7 +543,7 @@ class SkyrimAGI:
     ) -> str:
         """
         Plan next action based on perception, motivation, and goal.
-        Now includes layer-aware strategic reasoning.
+        Now includes RL-based learning and layer-aware strategic reasoning.
 
         Args:
             perception: Current perception data
@@ -495,6 +560,26 @@ class SkyrimAGI:
 
         print(f"[PLANNING] Current layer: {current_layer}")
         print(f"[PLANNING] Available actions: {available_actions}")
+
+        # Prepare state dict for RL
+        state_dict = game_state.to_dict()
+        state_dict.update({
+            'scene': scene_type.value,
+            'curiosity': motivation.curiosity,
+            'competence': motivation.competence,
+            'coherence': motivation.coherence,
+            'autonomy': motivation.autonomy
+        })
+
+        # Use RL-based action selection if enabled
+        if self.rl_learner is not None:
+            print("[PLANNING] Using RL-based action selection...")
+            action = self.rl_learner.select_action(
+                state_dict,
+                available_actions=available_actions
+            )
+            print(f"[RL] Selected action: {action}")
+            return action
 
         # Get strategic analysis from world model (layer effectiveness)
         strategic_analysis = self.skyrim_world.get_strategic_layer_analysis(
@@ -967,6 +1052,17 @@ Based on the terrain type and physical state, select the most appropriate action
         print(f"  Perceptual memories: {rag_stats['perceptual_memories']}")
         print(f"  Cognitive memories: {rag_stats['cognitive_memories']}")
         print(f"  Total memories: {rag_stats['total_memories']}")
+
+        # RL stats
+        if self.rl_learner is not None:
+            rl_stats = self.rl_learner.get_stats()
+            print(f"\nReinforcement Learning:")
+            print(f"  Total experiences: {rl_stats['total_experiences']}")
+            print(f"  Training steps: {rl_stats['training_steps']}")
+            print(f"  Avg reward: {rl_stats['avg_reward']:.3f}")
+            print(f"  Exploration rate (ε): {rl_stats['epsilon']:.3f}")
+            print(f"  Buffer size: {rl_stats['buffer_size']}")
+            print(f"  Avg Q-value: {rl_stats['avg_q_value']:.3f}")
 
     def stop(self):
         """Stop autonomous play."""

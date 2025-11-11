@@ -51,30 +51,42 @@ class StrategicPlannerNeuron:
     - Adapt to terrain and context
     """
     
-    def __init__(self, memory_capacity: int = 100):
+    def __init__(self, memory_capacity: int = 100, rl_learner=None):
         """
         Initialize strategic planner.
-        
+
         Args:
             memory_capacity: How many recent experiences to keep
+            rl_learner: Optional ReinforcementLearner for Q-value integration
         """
         self.memory_capacity = memory_capacity
-        
+        self.rl_learner = rl_learner
+
         # Recent experiences (episodic memory)
         self.episodic_memory: deque = deque(maxlen=memory_capacity)
-        
+
         # Learned patterns (semantic memory)
         self.learned_patterns: List[MemoryPattern] = []
-        
+
         # Current active plan
         self.active_plan: Optional[ActionPlan] = None
         self.plan_step: int = 0
-        
+
         # Success tracking
         self.plan_successes: int = 0
         self.plan_failures: int = 0
-        
+
         print("[PLANNER] Strategic Planner Neuron initialized")
+
+    def set_rl_learner(self, rl_learner):
+        """
+        Set RL learner for Q-value integration.
+
+        Args:
+            rl_learner: ReinforcementLearner instance
+        """
+        self.rl_learner = rl_learner
+        print("[PLANNER] Integrated with RL learner")
     
     def record_experience(
         self,
@@ -163,13 +175,13 @@ class StrategicPlannerNeuron:
         terrain_type: str
     ) -> Optional[ActionPlan]:
         """
-        Generate a multi-step action plan based on memory.
-        
+        Generate a multi-step action plan based on memory and RL Q-values.
+
         Args:
             current_state: Current game state
             goal: High-level goal (e.g., "explore", "survive", "progress")
             terrain_type: Current terrain classification
-            
+
         Returns:
             ActionPlan if one can be generated, None otherwise
         """
@@ -178,18 +190,48 @@ class StrategicPlannerNeuron:
             current_state,
             terrain_type
         )
-        
-        if not relevant_patterns:
-            # No learned patterns, return None to let LLM handle planning
-            print("[PLANNER] No learned patterns, deferring to LLM")
+
+        # If RL learner is available, use Q-values to enhance pattern selection
+        if self.rl_learner is not None and relevant_patterns:
+            print("[PLANNER] Using RL Q-values for plan selection...")
+            q_values = self.rl_learner.get_q_values(current_state)
+
+            # Score patterns by combining success rate with RL Q-values
+            best_pattern = None
+            best_score = -float('inf')
+
+            for pattern in relevant_patterns:
+                # Pattern score: success rate * frequency
+                pattern_score = pattern.success_rate * np.log1p(pattern.frequency)
+
+                # RL score: average Q-value of actions in pattern
+                rl_score = 0.0
+                for action in pattern.action_sequence:
+                    if action in q_values:
+                        rl_score += q_values[action]
+                rl_score /= len(pattern.action_sequence)
+
+                # Combined score: 60% pattern, 40% RL
+                combined_score = 0.6 * pattern_score + 0.4 * rl_score
+
+                if combined_score > best_score:
+                    best_score = combined_score
+                    best_pattern = pattern
+
+            if best_pattern is None:
+                print("[PLANNER] No suitable pattern found")
+                return None
+        elif relevant_patterns:
+            # Select best pattern based on success rate and relevance only
+            best_pattern = max(
+                relevant_patterns,
+                key=lambda p: p.success_rate * p.frequency
+            )
+        else:
+            # No learned patterns, return None to let RL/LLM handle planning
+            print("[PLANNER] No learned patterns, deferring to RL/LLM")
             return None
-        
-        # Select best pattern based on success rate and relevance
-        best_pattern = max(
-            relevant_patterns,
-            key=lambda p: p.success_rate * p.frequency
-        )
-        
+
         # Create plan from pattern
         plan = ActionPlan(
             goal=goal,
@@ -199,10 +241,10 @@ class StrategicPlannerNeuron:
             priority=self._calculate_priority(goal, current_state),
             terrain_context=terrain_type
         )
-        
+
         print(f"[PLANNER] Generated plan: {' → '.join(plan.steps)}")
         print(f"[PLANNER] Confidence: {plan.confidence:.2f}, Priority: {plan.priority:.2f}")
-        
+
         return plan
     
     def _find_relevant_patterns(
