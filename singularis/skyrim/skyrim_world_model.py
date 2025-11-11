@@ -8,10 +8,10 @@ Extends the base world model with Skyrim-specific knowledge:
 4. Combat and magic systems
 5. Geography and location knowledge
 
-Philosophical grounding:
-- ETHICA: Understanding causality = increasing adequacy = increasing freedom
+Design principles:
 - Causal learning enables prediction and planning
-- World model grounds agency in reality
+- Understanding game mechanics improves decision-making
+- World model grounds actions in game reality
 """
 
 from typing import Dict, List, Optional, Tuple, Any
@@ -576,48 +576,48 @@ class SkyrimWorldModel:
         consequences: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
-        Evaluate moral choice using coherence (Δ𝒞).
+        Evaluate moral choice using game-specific impact assessment.
 
         Args:
             choice: Description of choice
             consequences: Expected consequences
 
         Returns:
-            Evaluation with coherence delta
+            Evaluation with impact score
         """
-        # Estimate coherence change
-        # Negative actions (stealing, murder) decrease coherence
-        # Helpful actions increase coherence
+        # Estimate game impact
+        # Negative actions (stealing, murder) have negative consequences
+        # Helpful actions have positive outcomes
 
         negative_keywords = ['steal', 'kill', 'murder', 'betray', 'lie']
         positive_keywords = ['help', 'save', 'heal', 'defend', 'protect']
 
         choice_lower = choice.lower()
 
-        # Heuristic coherence estimate
-        delta_coherence = 0.0
+        # Heuristic impact estimate (replaces coherence delta)
+        impact_score = 0.0
 
         for keyword in negative_keywords:
             if keyword in choice_lower:
-                delta_coherence -= 0.1
+                impact_score -= 0.1  # Negative consequences (bounty, hostile NPCs)
 
         for keyword in positive_keywords:
             if keyword in choice_lower:
-                delta_coherence += 0.1
+                impact_score += 0.1  # Positive outcomes (rewards, friendship)
 
-        # Evaluate
-        if delta_coherence > 0.02:
-            ethical_status = "ETHICAL"
-        elif abs(delta_coherence) < 0.02:
-            ethical_status = "NEUTRAL"
+        # Evaluate outcome
+        if impact_score > 0.02:
+            outcome_status = "BENEFICIAL"  # Good for the player
+        elif abs(impact_score) < 0.02:
+            outcome_status = "NEUTRAL"  # Minimal impact
         else:
-            ethical_status = "UNETHICAL"
+            outcome_status = "DETRIMENTAL"  # Bad consequences
 
         return {
             'choice': choice,
-            'delta_coherence': delta_coherence,
-            'ethical_status': ethical_status,
-            'recommendation': ethical_status == "ETHICAL"
+            'impact_score': impact_score,
+            'outcome_status': outcome_status,
+            'recommendation': outcome_status == "BENEFICIAL"
         }
 
     def get_stats(self) -> Dict[str, Any]:
@@ -795,13 +795,13 @@ if __name__ == "__main__":
         "Help the wounded traveler",
         {'relationship': +0.1}
     )
-    print(f"   Help: {eval_help['ethical_status']} (Δ𝒞={eval_help['delta_coherence']:.2f})")
+    print(f"   Help: {eval_help['outcome_status']} (impact={eval_help['impact_score']:.2f})")
 
     eval_steal = wm.evaluate_moral_choice(
         "Steal the golden claw",
         {'bounty': +50}
     )
-    print(f"   Steal: {eval_steal['ethical_status']} (Δ𝒞={eval_steal['delta_coherence']:.2f})")
+    print(f"   Steal: {eval_steal['outcome_status']} (impact={eval_steal['impact_score']:.2f})")
 
     # Stats
     print(f"\n5. Stats: {wm.get_stats()}")

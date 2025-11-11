@@ -7,10 +7,11 @@ A forward-looking planning system that:
 3. Plans multi-step action sequences
 4. Adapts plans based on terrain and resources
 
-Philosophical grounding:
-- ETHICA: Adequate ideas enable prediction and planning
-- Planning increases power (potentia agendi)
-- Memory enables learning from experience
+Design principles:
+- Learning from past gameplay experiences
+- Multi-step planning for complex objectives
+- Context-aware adaptation to different situations
+- Memory-based prediction of action outcomes
 """
 
 from typing import List, Dict, Any, Optional, Tuple

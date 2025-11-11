@@ -3,20 +3,21 @@ RL Reasoning Neuron: LLM-Enhanced Reinforcement Learning
 
 This neuron uses LLM reasoning to interpret and enhance RL Q-values.
 Instead of blindly following Q-values, it reasons about:
-1. Why certain Q-values are high/low
-2. Whether the RL policy makes sense given the context
+1. Why certain Q-values are high/low based on game mechanics
+2. Whether the RL policy makes tactical sense for Skyrim
 3. Strategic considerations beyond immediate rewards
-4. Meta-learning from RL patterns
+4. Meta-learning from gameplay patterns
 
-Philosophical grounding:
-- ETHICA: Understanding (LLM) + Experience (RL) = Adequate Ideas
-- The LLM provides the "why" while RL provides the "what works"
-- Coherence emerges from integrating symbolic reasoning with learned values
+This provides interpretable decision-making by combining:
+- Learned Q-values (what empirically works in Skyrim)
+- Symbolic reasoning (why it works, game-specific tactics)
 """
 
 from typing import Dict, List, Optional, Any, Tuple
 import numpy as np
 from dataclasses import dataclass
+
+from .skyrim_cognition import SkyrimCognitiveState
 
 
 @dataclass
@@ -27,7 +28,7 @@ class RLReasoning:
     confidence: float
     q_value_interpretation: Dict[str, str]
     strategic_insight: str
-    coherence_score: float
+    tactical_score: float  # Replaces coherence_score with game-specific score
 
 
 class RLReasoningNeuron:
@@ -130,23 +131,23 @@ class RLReasoningNeuron:
     
     def _get_system_prompt(self) -> str:
         """Get system prompt for RL reasoning."""
-        return """You are an RL Reasoning Neuron - a specialized cognitive system that interprets reinforcement learning Q-values through strategic reasoning.
+        return """You are an RL Reasoning Neuron - a specialized cognitive system that interprets reinforcement learning Q-values for Skyrim gameplay.
 
 Your role:
-1. Analyze Q-values to understand what the RL system has learned
-2. Provide strategic interpretation of why certain actions have high/low values
-3. Consider context beyond immediate rewards (terrain, resources, long-term goals)
-4. Recommend actions that balance learned experience with strategic insight
-5. Increase coherence by explaining the "why" behind learned policies
+1. Analyze Q-values to understand what the RL system has learned from playing Skyrim
+2. Provide tactical interpretation of why certain actions have high/low values
+3. Consider game context beyond immediate rewards (terrain, combat situation, resources, long-term objectives)
+4. Recommend actions that balance learned experience with tactical insight
+5. Explain patterns in gameplay behavior through Q-value analysis
 
 Response format:
 ACTION: [recommended action]
-REASONING: [why this action makes sense strategically]
-Q-VALUE INTERPRETATION: [what the Q-values tell us about learned experience]
-STRATEGIC INSIGHT: [deeper pattern or meta-learning observation]
+REASONING: [why this action makes tactical sense for Skyrim]
+Q-VALUE INTERPRETATION: [what the Q-values tell us about learned gameplay experience]
+STRATEGIC INSIGHT: [deeper pattern or meta-learning observation about Skyrim mechanics]
 CONFIDENCE: [0.0-1.0]
 
-Be concise, strategic, and grounded in both the learned Q-values and the situational context."""
+Be concise, tactical, and grounded in both the learned Q-values and the Skyrim gameplay context."""
     
     def _build_reasoning_prompt(
         self,
@@ -282,8 +283,8 @@ Provide your analysis:"""
             else:
                 q_interp_dict[act] = "Low/negative value - learned as ineffective"
         
-        # Calculate coherence score (how well LLM reasoning aligns with Q-values)
-        coherence_score = self._calculate_coherence(
+        # Calculate tactical score (how well LLM reasoning aligns with Q-values)
+        tactical_score = self._calculate_tactical_score(
             action, sorted_actions, reasoning
         )
         
@@ -293,7 +294,7 @@ Provide your analysis:"""
             confidence=confidence,
             q_value_interpretation=q_interp_dict,
             strategic_insight=strategic_insight.strip(),
-            coherence_score=coherence_score
+            tactical_score=tactical_score
         )
     
     def _heuristic_reasoning(
@@ -335,20 +336,20 @@ Provide your analysis:"""
             confidence=0.6,
             q_value_interpretation=q_interp_dict,
             strategic_insight=strategic_insight,
-            coherence_score=0.5
+            tactical_score=0.5
         )
     
-    def _calculate_coherence(
+    def _calculate_tactical_score(
         self,
         recommended_action: str,
         sorted_actions: List[Tuple[str, float]],
         reasoning: str
     ) -> float:
         """
-        Calculate coherence between LLM reasoning and RL Q-values.
+        Calculate tactical score: how well LLM reasoning aligns with RL Q-values.
         
-        High coherence = LLM agrees with RL's learned policy
-        Low coherence = LLM overrides RL based on strategic reasoning
+        High score = LLM agrees with RL's learned policy (good tactical alignment)
+        Lower score = LLM overrides RL based on strategic reasoning
         """
         # Find rank of recommended action in Q-values
         action_rank = None
@@ -360,17 +361,17 @@ Provide your analysis:"""
         if action_rank is None:
             return 0.3  # Action not in sorted list
         
-        # Coherence decreases with rank
-        # Rank 0 (highest Q) = 1.0 coherence
-        # Rank 1 = 0.8 coherence
-        # Rank 2 = 0.6 coherence, etc.
-        coherence = max(0.2, 1.0 - (action_rank * 0.2))
+        # Score decreases with rank
+        # Rank 0 (highest Q) = 1.0 score
+        # Rank 1 = 0.8 score
+        # Rank 2 = 0.6 score, etc.
+        score = max(0.2, 1.0 - (action_rank * 0.2))
         
-        # Boost coherence if reasoning mentions Q-values positively
+        # Boost score if reasoning mentions Q-values positively
         if "high q" in reasoning.lower() or "learned" in reasoning.lower():
-            coherence += 0.1
+            score += 0.1
         
-        return min(1.0, coherence)
+        return min(1.0, score)
     
     def _extract_patterns(self, reasoning: RLReasoning):
         """Extract and store patterns from reasoning for meta-learning."""
@@ -405,14 +406,14 @@ Provide your analysis:"""
             return {
                 'total_reasonings': 0,
                 'avg_confidence': 0.0,
-                'avg_coherence': 0.0,
+                'avg_tactical_score': 0.0,
                 'patterns_learned': 0
             }
         
         return {
             'total_reasonings': len(self.reasoning_history),
             'avg_confidence': np.mean([r.confidence for r in self.reasoning_history]),
-            'avg_coherence': np.mean([r.coherence_score for r in self.reasoning_history]),
+            'avg_tactical_score': np.mean([r.tactical_score for r in self.reasoning_history]),
             'patterns_learned': sum(len(insights) for insights in self.pattern_insights.values()),
             'actions_with_insights': len(self.pattern_insights)
         }
