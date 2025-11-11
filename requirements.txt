@@ -21,6 +21,11 @@ Pillow>=9.0.0  # Image processing
 # Data processing
 scipy>=1.7.0  # Scientific computing
 
+# Skyrim Integration (Phase 7)
+mss>=9.0.0  # Screen capture
+pyautogui>=0.9.54  # Keyboard/mouse control
+# git+https://github.com/openai/CLIP.git  # Install separately for vision
+
 # Optional: For future enhancements
 # anthropic>=0.7.0  # For Claude API
 # openai>=1.0.0     # For OpenAI API
