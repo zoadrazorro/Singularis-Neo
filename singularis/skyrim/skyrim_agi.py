@@ -497,8 +497,7 @@ class SkyrimAGI:
         print(f"[PLANNING] Available actions: {available_actions}")
 
         # Get strategic analysis from world model (layer effectiveness)
-        strategic_analysis = self.skyrim_world.get_layer_strategic_analysis(
-            current_layer,
+        strategic_analysis = self.skyrim_world.get_strategic_layer_analysis(
             game_state.to_dict()
         )
         
