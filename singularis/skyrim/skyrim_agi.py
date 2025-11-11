@@ -554,9 +554,13 @@ class SkyrimAGI:
                 self.stats['cycles_completed'] = cycle_count
                 self.stats['total_playtime'] = time.time() - start_time
 
-                # Coherence tracking
-                current_coherence = 0.5 + mot_state.coherence * 0.5
-                self.stats['coherence_history'].append(current_coherence)
+                # Track game state quality (replaces coherence tracking)
+                try:
+                    cognitive_state = SkyrimCognitiveState.from_game_state(game_state.to_dict())
+                    self.stats['game_state_quality_history'].append(cognitive_state.overall_quality)
+                except Exception:
+                    # Fallback if cognitive state computation fails
+                    pass
 
                 # Auto-save periodically
                 if time.time() - self.last_save_time > self.config.save_interval:
@@ -656,7 +660,7 @@ class SkyrimAGI:
             )
             
             action = rl_reasoning.recommended_action
-            print(f"[RL-NEURON] Action: {action} (coherence: {rl_reasoning.coherence_score:.2f})")
+            print(f"[RL-NEURON] Action: {action} (tactical score: {rl_reasoning.tactical_score:.2f})")
             print(f"[RL-NEURON] Reasoning: {rl_reasoning.reasoning}")
             if rl_reasoning.strategic_insight:
                 print(f"[RL-NEURON] Insight: {rl_reasoning.strategic_insight}")
@@ -997,9 +1001,9 @@ Based on the terrain type and physical state, select the most appropriate action
                 return 'practice'
         print(f"  Playtime: {self.stats['total_playtime'] / 60:.1f} minutes")
 
-        if self.stats['coherence_history']:
-            avg_coherence = sum(self.stats['coherence_history']) / len(self.stats['coherence_history'])
-            print(f"  Avg Coherence: {avg_coherence:.3f}")
+        if self.stats['game_state_quality_history']:
+            avg_quality = sum(self.stats['game_state_quality_history']) / len(self.stats['game_state_quality_history'])
+            print(f"  Avg Game State Quality: {avg_quality:.3f}")
 
         skyrim_stats = self.skyrim_world.get_stats()
         print(f"\nWorld Model:")
@@ -1099,9 +1103,9 @@ Based on the terrain type and physical state, select the most appropriate action
         print(f"  Cycles: {self.stats['cycles_completed']}")
         print(f"  Actions: {self.stats['actions_taken']}")
         print(f"  Playtime: {self.stats['total_playtime'] / 60:.1f} minutes")
-        if self.stats['coherence_history']:
-            avg_coherence = sum(self.stats['coherence_history']) / len(self.stats['coherence_history'])
-            print(f"  Avg Coherence: {avg_coherence:.3f}")
+        if self.stats['game_state_quality_history']:
+            avg_quality = sum(self.stats['game_state_quality_history']) / len(self.stats['game_state_quality_history'])
+            print(f"  Avg Game State Quality: {avg_quality:.3f}")
         skyrim_stats = self.skyrim_world.get_stats()
         print(f"\nWorld Model:")
         print(f"  Causal edges learned: {skyrim_stats['causal_edges']}")
@@ -1150,7 +1154,7 @@ Based on the terrain type and physical state, select the most appropriate action
         print(f"\nRL Reasoning Neuron (LLM-Enhanced):")
         print(f"  Total reasonings: {rl_neuron_stats['total_reasonings']}")
         print(f"  Avg confidence: {rl_neuron_stats['avg_confidence']:.3f}")
-        print(f"  Avg coherence: {rl_neuron_stats['avg_coherence']:.3f}")
+        print(f"  Avg tactical score: {rl_neuron_stats['avg_tactical_score']:.3f}")
         print(f"  Patterns learned: {rl_neuron_stats['patterns_learned']}")
         
         # Meta-strategist stats
