@@ -4,17 +4,13 @@ Reinforcement Learning System for Skyrim AGI
 Implements genuine learning through:
 1. Q-Learning / Deep Q-Network (DQN)
 2. Experience Replay Buffer
-3. Reward Shaping
+3. Game-Specific Reward Shaping
 4. Policy Gradient Methods
 5. Online Learning
 
-This fixes the core issue: the AGI now LEARNS from experience,
-not just records it.
-
-Philosophical grounding:
-- ETHICA: Learning = increasing adequacy = increasing power
-- Conatus drives learning through reward maximization
-- Understanding emerges from trial and error
+This system learns what actions work in Skyrim through trial and error,
+using game-specific rewards (health, progress, resources) rather than
+abstract philosophical concepts.
 """
 
 import numpy as np
@@ -23,6 +19,8 @@ from dataclasses import dataclass
 from collections import deque
 import pickle
 import os
+
+from .skyrim_cognition import SkyrimCognitiveState
 
 
 @dataclass
@@ -109,11 +107,11 @@ class StateEncoder:
         # Surprise/novelty
         features[31] = state.get('surprise', 0.0)
 
-        # Motivation signals
-        features[32] = state.get('curiosity', 0.0)
-        features[33] = state.get('competence', 0.0)
-        features[34] = state.get('coherence', 0.0)
-        features[35] = state.get('autonomy', 0.0)
+        # Game-specific metrics (replacing abstract motivation)
+        features[32] = state.get('player_level', 1) / 81.0  # Level progress
+        features[33] = state.get('gold', 0) / 10000.0  # Wealth
+        features[34] = state.get('completed_quests', 0) / 100.0  # Quest progress
+        features[35] = state.get('equipment_quality', 0.3)  # Gear quality
 
         return features
 
@@ -405,9 +403,11 @@ class ReinforcementLearner:
         state_after: Dict[str, Any]
     ) -> float:
         """
-        Compute reward for transition (Reward Shaping).
+        Compute reward for transition using game-specific metrics.
 
         This is critical for learning! Rewards guide the agent.
+        Uses Skyrim-specific cognitive state evaluation instead of
+        abstract philosophical coherence.
 
         Args:
             state_before: State before action
@@ -461,9 +461,16 @@ class ReinforcementLearner:
         if action == 'rest' and health_after > 80:
             reward -= 0.2  # Penalty for resting when not needed
 
-        # 5. Coherence reward (increasing understanding)
-        coherence_delta = state_after.get('coherence', 0.5) - state_before.get('coherence', 0.5)
-        reward += coherence_delta * 2.0  # Strong reward for coherence increase
+        # 5. Game state quality reward (replaces coherence)
+        # Use Skyrim-specific cognitive evaluation
+        try:
+            cognitive_before = SkyrimCognitiveState.from_game_state(state_before)
+            cognitive_after = SkyrimCognitiveState.from_game_state(state_after)
+            quality_delta = cognitive_after.quality_change(cognitive_before)
+            reward += quality_delta * 2.0  # Strong reward for game state improvement
+        except Exception:
+            # Fallback if cognitive state fails
+            pass
 
         # 6. Success indicator (if action led to progress)
         if state_after.get('prev_action_success', False):
