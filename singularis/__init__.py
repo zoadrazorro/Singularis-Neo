@@ -36,7 +36,7 @@ from singularis.core.coherentia import calculate_coherentia, CoherentiaCalculato
 from singularis.consciousness.measurement import ConsciousnessMeasurement
 from singularis.tier1_orchestrator.orchestrator import MetaOrchestrator
 from singularis.tier2_experts.base import Expert
-from singularis.tier3_neurons.base import Neuron
+# from singularis.tier3_neurons.base import Neuron  # Phase 3 - Not yet implemented
 
 __all__ = [
     "Lumen",
@@ -49,5 +49,5 @@ __all__ = [
     "ConsciousnessMeasurement",
     "MetaOrchestrator",
     "Expert",
-    "Neuron",
+    # "Neuron",  # Phase 3
 ]
