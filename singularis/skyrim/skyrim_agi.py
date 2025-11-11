@@ -34,6 +34,7 @@ from .strategic_planner import StrategicPlannerNeuron
 from .menu_learner import MenuLearner
 from .memory_rag import MemoryRAG
 from .reinforcement_learner import ReinforcementLearner
+from .rl_reasoning_neuron import RLReasoningNeuron
 
 # Base AGI components
 from ..agi_orchestrator import AGIOrchestrator, AGIConfig
@@ -165,7 +166,7 @@ class SkyrimAGI:
 
         # 8. Reinforcement Learning System
         if self.config.use_rl:
-            print("  [8/8] Reinforcement learning system...")
+            print("  [8/9] Reinforcement learning system...")
             self.rl_learner = ReinforcementLearner(
                 state_dim=64,
                 learning_rate=self.config.rl_learning_rate,
@@ -178,6 +179,11 @@ class SkyrimAGI:
             self.strategic_planner.set_rl_learner(self.rl_learner)
         else:
             self.rl_learner = None
+        
+        # 9. RL Reasoning Neuron (LLM thinks about RL)
+        print("  [9/9] RL reasoning neuron (LLM-enhanced RL)...")
+        self.rl_reasoning_neuron = RLReasoningNeuron()
+        # Will connect LLM interface when initialized
 
         # State
         self.running = False
@@ -213,8 +219,17 @@ class SkyrimAGI:
         if hasattr(self.agi, 'consciousness_llm') and self.agi.consciousness_llm:
             print("[LLM] ✓ LLM consciousness engine initialized successfully")
             print(f"[LLM] Type: {type(self.agi.consciousness_llm)}")
+            
+            # Connect LLM to RL reasoning neuron
+            if hasattr(self.agi.consciousness_llm, 'llm_interface'):
+                self.rl_reasoning_neuron.llm_interface = self.agi.consciousness_llm.llm_interface
+                print("[LLM] ✓ RL reasoning neuron connected to LLM")
+                print(f"[LLM] LLM interface type: {type(self.rl_reasoning_neuron.llm_interface)}")
+            else:
+                print("[LLM] ⚠️ consciousness_llm has no llm_interface attribute")
+                print(f"[LLM] Available attributes: {dir(self.agi.consciousness_llm)}")
         else:
-            print("[LLM] ⚠️ LLM consciousness engine is None - will use heuristic planning only")
+            print("[LLM] ⚠️ LLM consciousness engine is None - RL reasoning will use heuristics")
 
     async def autonomous_play(self, duration_seconds: Optional[int] = None):
         """
@@ -573,12 +588,32 @@ class SkyrimAGI:
 
         # Use RL-based action selection if enabled
         if self.rl_learner is not None:
-            print("[PLANNING] Using RL-based action selection...")
-            action = self.rl_learner.select_action(
-                state_dict,
-                available_actions=available_actions
+            print("[PLANNING] Using RL-based action selection with LLM reasoning...")
+            print(f"[PLANNING] RL reasoning neuron LLM status: {'Connected' if self.rl_reasoning_neuron.llm_interface else 'Using heuristics'}")
+            
+            # Get Q-values from RL
+            q_values = self.rl_learner.get_q_values(state_dict)
+            print(f"[RL] Q-values: {', '.join([f'{k}={v:.2f}' for k, v in sorted(q_values.items(), key=lambda x: x[1], reverse=True)[:3]])}")
+            
+            # Use RL reasoning neuron to think about Q-values
+            rl_reasoning = await self.rl_reasoning_neuron.reason_about_q_values(
+                state=state_dict,
+                q_values=q_values,
+                available_actions=available_actions,
+                context={
+                    'motivation': motivation.dominant_drive().value,
+                    'terrain_type': self.skyrim_world.classify_terrain_from_scene(
+                        scene_type.value,
+                        game_state.in_combat
+                    )
+                }
             )
-            print(f"[RL] Selected action: {action}")
+            
+            action = rl_reasoning.recommended_action
+            print(f"[RL-NEURON] Action: {action} (coherence: {rl_reasoning.coherence_score:.2f})")
+            print(f"[RL-NEURON] Reasoning: {rl_reasoning.reasoning}")
+            if rl_reasoning.strategic_insight:
+                print(f"[RL-NEURON] Insight: {rl_reasoning.strategic_insight}")
             return action
 
         # Get strategic analysis from world model (layer effectiveness)
@@ -1063,6 +1098,14 @@ Based on the terrain type and physical state, select the most appropriate action
             print(f"  Exploration rate (ε): {rl_stats['epsilon']:.3f}")
             print(f"  Buffer size: {rl_stats['buffer_size']}")
             print(f"  Avg Q-value: {rl_stats['avg_q_value']:.3f}")
+        
+        # RL reasoning neuron stats
+        rl_neuron_stats = self.rl_reasoning_neuron.get_stats()
+        print(f"\nRL Reasoning Neuron (LLM-Enhanced):")
+        print(f"  Total reasonings: {rl_neuron_stats['total_reasonings']}")
+        print(f"  Avg confidence: {rl_neuron_stats['avg_confidence']:.3f}")
+        print(f"  Avg coherence: {rl_neuron_stats['avg_coherence']:.3f}")
+        print(f"  Patterns learned: {rl_neuron_stats['patterns_learned']}")
 
     def stop(self):
         """Stop autonomous play."""
