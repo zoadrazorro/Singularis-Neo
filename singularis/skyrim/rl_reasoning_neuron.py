@@ -176,25 +176,20 @@ Current State:
 - In Combat: {state.get('in_combat', False)}
 - Terrain Type: {context.get('terrain_type', 'unknown')}
 - Dominant Drive: {context.get('motivation', 'unknown')}
-- Action Layer: {layer}
-- Terrain: {terrain}
 
-LEARNED Q-VALUES (from experience):
-{q_value_str}
+Learned Q-Values (what the RL system has learned):
+{q_summary}
+{meta_strategy}
+Your task: Interpret these Q-values and recommend the best action.
 
-MOTIVATIONAL CONTEXT:
-- Dominant Drive: {motivation}
+Consider:
+1. What do the Q-values tell us about what the agent has learned?
+2. How do the learned values align with the current context?
+3. If there's meta-strategic guidance above, how should it influence the decision?
+4. Are there any surprising patterns in the Q-values?
+5. What strategic insights can we derive from these learned preferences?
 
-The Q-values above represent what the RL system has learned works well through trial and error.
-Higher Q-values = actions that historically led to better outcomes (survival, progress, coherence).
-
-TASK:
-1. Interpret what these Q-values tell us about the learned policy
-2. Consider if the highest Q-value action makes strategic sense given the context
-3. Recommend an action that balances learned experience with strategic reasoning
-4. Provide insight into patterns you observe
-
-Analyze and recommend:"""
+Provide your analysis:"""
         
         return prompt
     
