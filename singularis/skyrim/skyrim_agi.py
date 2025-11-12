@@ -817,6 +817,12 @@ class SkyrimAGI:
                     self.rl_reasoning_neuron.llm_interface = self.huihui_llm
                     self.meta_strategist.llm_interface = self.huihui_llm
                     self.strategic_planner.llm_interface = self.huihui_llm
+                    
+                    # Connect Huihui to AGI orchestrator as consciousness LLM
+                    # This enables full Singularis dialectical reasoning
+                    self.agi.consciousness_llm = self.huihui_llm
+                    self.consciousness_bridge.consciousness_llm = self.huihui_llm
+                    print("[PARALLEL] ✓ Huihui connected to AGI orchestrator (enables dialectical synthesis)")
                     print("[PARALLEL] ✓ Local LLMs connected to components")
                     
             except Exception as e:
@@ -1658,13 +1664,13 @@ Based on this visual and contextual data, provide:
                                     prompt=clip_context,
                                     max_tokens=256
                                 ),
-                                timeout=20.0  # 20 second timeout (Qwen3-VL can be slow)
+                                timeout=60.0  # 60 second timeout (Qwen3-VL can be slow)
                             )
                             perception['visual_analysis'] = visual_analysis.get('content', '')
                             # Log every Qwen3-VL analysis (since it only runs every 2nd cycle anyway)
                             print(f"[QWEN3-VL] Analysis: {visual_analysis.get('content', '')[:150]}...")
                         except asyncio.TimeoutError:
-                            print(f"[QWEN3-VL] Analysis timed out after 10s")
+                            print(f"[QWEN3-VL] Analysis timed out after 60s")
                             perception['visual_analysis'] = "[TIMEOUT] Visual analysis timed out"
                         
                     except Exception as e:
@@ -1793,6 +1799,141 @@ Based on this visual and contextual data, provide:
                     )
                     self.current_goal = goal.description
                     print(f"[REASONING] New goal: {self.current_goal}")
+                
+                # FULL SINGULARIS ORCHESTRATOR - Run periodically for deep strategic reasoning
+                # Uses Huihui for dialectical synthesis, expert consultation, meta-cognition
+                if cycle_count % 15 == 0 and self.huihui_llm:
+                    print("\n" + "="*70)
+                    print("FULL SINGULARIS AGI PROCESS - DIALECTICAL REASONING")
+                    print("="*70)
+                    
+                    # Build strategic query for the orchestrator
+                    strategic_query = f"""Skyrim Strategic Analysis:
+
+Location: {game_state.location_name}
+Health: {game_state.health}/100
+Combat: {'YES' if game_state.in_combat else 'NO'}
+Enemies: {game_state.enemies_nearby}
+Current Layer: {game_state.current_action_layer}
+
+Scene: {scene_type.value}
+Motivation: {mot_state.dominant_drive().value}
+Goal: {self.current_goal}
+
+Recent actions: {', '.join(self.action_history[-5:]) if self.action_history else 'none'}
+
+What is the most strategic approach to this situation? Consider:
+1. Immediate tactical needs
+2. Long-term strategic goals  
+3. Risk vs reward tradeoffs
+4. Layer transitions (Combat/Exploration/Menu/Stealth)
+5. Resource management"""
+
+                    try:
+                        # Call full AGI orchestrator with Huihui as consciousness LLM
+                        print("[SINGULARIS] Invoking full orchestrator (Huihui + 6 experts)...")
+                        singularis_result = await asyncio.wait_for(
+                            self.agi.process(
+                                query=strategic_query,
+                                context={
+                                    'game_state': game_state.to_dict(),
+                                    'scene': scene_type.value,
+                                    'cycle': cycle_count
+                                }
+                            ),
+                            timeout=90.0  # Full orchestrator needs more time
+                        )
+                        
+                        # Extract insights from full Singularis process
+                        consciousness_response = singularis_result.get('consciousness_response', {})
+                        strategic_insight = consciousness_response.get('response', '')
+                        coherence_delta = consciousness_response.get('coherentia_delta', 0.0)
+                        
+                        print(f"\n[SINGULARIS] Strategic Insight ({len(strategic_insight)} chars):")
+                        print(f"[SINGULARIS] {strategic_insight[:300]}...")
+                        print(f"[SINGULARIS] Coherence Δ𝒞: {coherence_delta:+.3f}")
+                        
+                        # Store in memory for future reference
+                        self.memory_rag.store_cognitive_memory(
+                            thought=strategic_insight,
+                            context={
+                                'type': 'strategic_analysis',
+                                'coherence_delta': coherence_delta,
+                                'location': game_state.location_name,
+                                'cycle': cycle_count
+                            }
+                        )
+                        
+                        # Update goal if Singularis generated one
+                        if 'generated_goal' in singularis_result:
+                            self.current_goal = singularis_result['generated_goal']
+                            print(f"[SINGULARIS] Updated goal: {self.current_goal}")
+                        
+                        # PASS TO CLAUDE - Get meta-strategic analysis from Claude Sonnet 4
+                        if self.hybrid_llm and hasattr(self.hybrid_llm, 'claude'):
+                            try:
+                                print("\n[CLAUDE-META] Sending Singularis insights to Claude for meta-analysis...")
+                                
+                                claude_meta_prompt = f"""You are receiving strategic insights from the Singularis AGI system (Huihui MoE with dialectical reasoning).
+
+SINGULARIS DIALECTICAL ANALYSIS:
+{strategic_insight}
+
+COHERENCE DELTA: {coherence_delta:+.3f}
+
+CURRENT SITUATION:
+- Location: {game_state.location_name}
+- Health: {game_state.health}/100
+- Combat: {'YES' if game_state.in_combat else 'NO'}
+- Layer: {game_state.current_action_layer}
+- Goal: {self.current_goal}
+
+As Claude Sonnet 4, provide meta-strategic analysis:
+
+1. **Validate Singularis Reasoning**: Does the dialectical synthesis make sense? Any blind spots?
+2. **Strategic Refinement**: How can we improve or extend this strategy?
+3. **Risk Assessment**: What are the key risks not mentioned?
+4. **Action Priority**: What should be the immediate next 3 actions?
+5. **Long-term Vision**: How does this fit into broader gameplay objectives?
+
+Be concise but insightful. Focus on what Singularis might have missed."""
+
+                                claude_response = await asyncio.wait_for(
+                                    self.hybrid_llm.generate_reasoning(
+                                        prompt=claude_meta_prompt,
+                                        system_prompt="You are Claude Sonnet 4, providing meta-strategic oversight of AGI reasoning.",
+                                        max_tokens=1024
+                                    ),
+                                    timeout=30.0
+                                )
+                                
+                                print(f"\n[CLAUDE-META] Meta-Strategic Analysis ({len(claude_response)} chars):")
+                                print(f"[CLAUDE-META] {claude_response[:400]}...")
+                                
+                                # Store Claude's meta-analysis
+                                self.memory_rag.store_cognitive_memory(
+                                    thought=f"CLAUDE META-ANALYSIS:\n{claude_response}",
+                                    context={
+                                        'type': 'claude_meta_strategy',
+                                        'based_on_singularis': True,
+                                        'location': game_state.location_name,
+                                        'cycle': cycle_count
+                                    }
+                                )
+                                
+                            except asyncio.TimeoutError:
+                                print("[CLAUDE-META] Timed out after 30s")
+                            except Exception as e:
+                                print(f"[CLAUDE-META] Error: {e}")
+                        
+                        print("="*70 + "\n")
+                        
+                    except asyncio.TimeoutError:
+                        print("[SINGULARIS] Full orchestrator timed out after 90s")
+                    except Exception as e:
+                        print(f"[SINGULARIS] Error in full orchestrator: {e}")
+                        import traceback
+                        traceback.print_exc()
                 
                 # Plan action (with LLM throttling)
                 planning_start = time.time()
@@ -2778,6 +2919,121 @@ REASONING: <explanation>"""
             print(f"[CLOUD-LLM] Error: {e}")
             return None
     
+    async def _dialectical_reasoning(
+        self,
+        situation: str,
+        perspectives: Dict[str, str],
+        context: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, str]:
+        """
+        Perform dialectical synthesis using Huihui MoE.
+        
+        Uses thesis-antithesis-synthesis to resolve contradictions and
+        find higher-order understanding.
+        
+        Args:
+            situation: Current situation description
+            perspectives: Dict of perspective_name -> perspective_content
+            context: Optional additional context
+            
+        Returns:
+            Dict with 'synthesis', 'reasoning', 'coherence_gain'
+        """
+        if not self.huihui_llm:
+            return {
+                'synthesis': list(perspectives.values())[0] if perspectives else "",
+                'reasoning': "No dialectical LLM available",
+                'coherence_gain': 0.0
+            }
+        
+        # Build dialectical prompt
+        perspectives_text = "\n\n".join([
+            f"**{name.upper()}:**\n{content}"
+            for name, content in perspectives.items()
+        ])
+        
+        dialectical_prompt = f"""DIALECTICAL SYNTHESIS
+
+Situation: {situation}
+
+Multiple perspectives on this situation:
+
+{perspectives_text}
+
+Your task is to perform Hegelian dialectical synthesis:
+
+1. THESIS: Identify the primary perspective and its core claim
+2. ANTITHESIS: Identify contradictions or tensions with other perspectives
+3. SYNTHESIS: Find higher-order unity that transcends the contradiction
+
+The synthesis should:
+- Preserve partial truths from each perspective
+- Resolve apparent contradictions
+- Achieve greater coherence than any single view
+- Provide actionable insight
+
+Format your response as:
+THESIS: <primary claim>
+ANTITHESIS: <contradicting view>
+SYNTHESIS: <unified understanding>
+COHERENCE GAIN: <estimate 0.0-1.0 how much this increases understanding>
+"""
+
+        try:
+            print("[DIALECTICAL] Performing thesis-antithesis-synthesis with Huihui...")
+            result = await asyncio.wait_for(
+                self.huihui_llm.generate(
+                    prompt=dialectical_prompt,
+                    max_tokens=512
+                ),
+                timeout=60.0
+            )
+            
+            response = result.get('content', '') if isinstance(result, dict) else str(result)
+            print(f"[DIALECTICAL] Synthesis complete ({len(response)} chars)")
+            
+            # Parse response
+            synthesis = ""
+            reasoning = response
+            coherence_gain = 0.0
+            
+            # Extract synthesis section
+            if "SYNTHESIS:" in response:
+                synthesis_start = response.find("SYNTHESIS:") + len("SYNTHESIS:")
+                synthesis_end = response.find("COHERENCE GAIN:", synthesis_start)
+                if synthesis_end == -1:
+                    synthesis_end = len(response)
+                synthesis = response[synthesis_start:synthesis_end].strip()
+            
+            # Extract coherence gain
+            if "COHERENCE GAIN:" in response:
+                try:
+                    gain_text = response.split("COHERENCE GAIN:")[1].strip().split()[0]
+                    coherence_gain = float(gain_text)
+                except:
+                    coherence_gain = 0.05  # Default modest gain
+            
+            return {
+                'synthesis': synthesis if synthesis else response,
+                'reasoning': reasoning,
+                'coherence_gain': coherence_gain
+            }
+            
+        except asyncio.TimeoutError:
+            print("[DIALECTICAL] Timed out after 60s")
+            return {
+                'synthesis': list(perspectives.values())[0] if perspectives else "",
+                'reasoning': "Dialectical synthesis timed out",
+                'coherence_gain': 0.0
+            }
+        except Exception as e:
+            print(f"[DIALECTICAL] Error: {e}")
+            return {
+                'synthesis': list(perspectives.values())[0] if perspectives else "",
+                'reasoning': f"Error: {e}",
+                'coherence_gain': 0.0
+            }
+    
     async def _plan_action(
         self,
         perception: Dict[str, Any],
@@ -3429,9 +3685,12 @@ QUICK DECISION - Choose ONE action from available list:"""
             
             # Use dedicated LLM interface directly for faster response
             if self.action_planning_llm:
-                result = await self.action_planning_llm.generate(
-                    prompt=context,
-                    max_tokens=300  # Enough for reasoning + action selection
+                result = await asyncio.wait_for(
+                    self.action_planning_llm.generate(
+                        prompt=context,
+                        max_tokens=300  # Enough for reasoning + action selection
+                    ),
+                    timeout=60.0  # 60 second timeout for local LLM
                 )
                 # Debug: Check what we got back
                 print(f"[MISTRAL-ACTION] DEBUG - Result type: {type(result)}")
@@ -3445,6 +3704,9 @@ QUICK DECISION - Choose ONE action from available list:"""
                 response = result.get('consciousness_response', {}).get('response', '')
             
             print(f"[MISTRAL-ACTION] Response ({len(response)} chars): {response[:200] if len(response) > 200 else response}")
+        except asyncio.TimeoutError:
+            print(f"[MISTRAL-ACTION] Timed out after 60s - using fallback heuristic")
+            return None
         except Exception as e:
             print(f"[MISTRAL-ACTION] ERROR during LLM action planning: {e}")
             import traceback
