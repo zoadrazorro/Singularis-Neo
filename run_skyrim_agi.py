@@ -53,12 +53,9 @@ async def main():
         save_interval=300,
         surprise_threshold=0.3,
         exploration_weight=0.5,
-        qwen3_model_1="qwen/qwen3-4b-thinking-2507",
-        qwen3_model_2="qwen/qwen3-4b-thinking-2507:2",
-        qwen3_model_3="qwen/qwen3-4b-thinking-2507:3",
-        qwen3_model_4="qwen/qwen3-4b-thinking-2507:4",
-        qwen3_vl_model="qwen/qwen3-vl-8b",
-        phi4_mini_state_model="microsoft/phi-4-mini-reasoning",
+        phi4_action_model="microsoft/phi-4",
+        huihui_cognition_model="huihui-moe-60b-a3b-abliterated-i1",
+        qwen3_vl_perception_model="qwen/qwen3-vl-30b",
     )
     
     # Create AGI

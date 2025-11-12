@@ -81,17 +81,10 @@ class SkyrimConfig:
     max_concurrent_llm_calls: int = 4  # With 4 models (2 mistral + 2 big), can handle 4 concurrent
     reasoning_throttle: float = 0.5  # Min seconds between reasoning cycles
 
-    # Model names for qwen3-4b-thinking instances (4 instances for tactical reasoning)
-    qwen3_model_1: str = "qwen/qwen3-4b-thinking-2507"
-    qwen3_model_2: str = "qwen/qwen3-4b-thinking-2507:2"
-    qwen3_model_3: str = "qwen/qwen3-4b-thinking-2507:3"
-    qwen3_model_4: str = "qwen/qwen3-4b-thinking-2507:4"
-    
-    # Visual model for scene interpretation
-    qwen3_vl_model: str = "qwen/qwen3-vl-8b"
-    
-    # Quick state analysis model
-    phi4_mini_state_model: str = "microsoft/phi-4-mini-reasoning"
+    # Core models
+    phi4_action_model: str = "microsoft/phi-4"  # Action planning
+    huihui_cognition_model: str = "huihui-moe-60b-a3b-abliterated-i1"  # Main cognition, reasoning, strategy
+    qwen3_vl_perception_model: str = "qwen/qwen3-vl-30b"  # Perception and spatial awareness
 
     # Learning
     surprise_threshold: float = 0.3  # Threshold for learning from surprise
@@ -225,11 +218,10 @@ class SkyrimAGI:
         self.rl_reasoning_neuron = RLReasoningNeuron()
         # Will connect LLM interface when initialized
         
-        # Initialize qwen3-4b-thinking pool tracking
-        self.qwen3_pool = []
-        self.qwen3_index = 0
-        self.visual_llm = None  # Will be initialized with LLM
-        self.state_analysis_llm = None  # Will be initialized with LLM
+        # Initialize LLM references
+        self.huihui_llm = None  # Main cognition
+        self.perception_llm = None  # Visual perception
+        self.action_planning_llm = None  # Action planning
         
         # 11. Meta-Strategist (coordinates tactical & strategic thinking)
         print("  [11/12] Meta-strategist coordinator...")
@@ -307,241 +299,182 @@ class SkyrimAGI:
         print("Skyrim AGI initialization complete.")
         print("[OK] Skyrim AGI initialized with CONSCIOUSNESS INTEGRATION\n")
 
-    def get_next_qwen3(self):
-        """Get next qwen3-4b-thinking LLM from pool (round-robin)."""
-        if not self.qwen3_pool:
-            return None
-        llm = self.qwen3_pool[self.qwen3_index]
-        self.qwen3_index = (self.qwen3_index + 1) % len(self.qwen3_pool)
-        return llm
 
     async def initialize_llm(self):
         """
-        Initialize hybrid LLM architecture: 4 qwen3-4b-thinking + 1 qwen3-vl + 1 phi-4-mini + 2 big models.
+        Initialize streamlined LLM architecture: phi-4 + huihui + qwen3-vl.
         
         Architecture:
-        - 4x qwen3-4b-thinking (4B params): Fast tactical reasoning with chain-of-thought
-          * Instance 1: Main consciousness engine
-          * Instance 2: Action planning
-          * Instance 3: RL reasoning neuron
-          * Instance 4: Meta-strategist
+        - 1x phi-4 (14B params): Action planning
+          * Fast, decisive action selection
+          * Tactical decision-making
         
-        - 1x qwen3-vl-8b (8B params): Visual scene interpretation
-          * Analyzes screenshots for detailed environment understanding
+        - 1x huihui-moe-60b-a3b-abliterated-i1 (60B MoE): Main cognition
+          * Consciousness engine
+          * Strategic reasoning
+          * RL reasoning neuron
+          * Meta-strategist
+          * World understanding
         
-        - 1x phi-4-mini-reasoning (4B params): Quick state analysis
-          * Fast, concise analysis of current game state and immediate threats
+        - 1x qwen3-vl-30b (30B params): Perception and spatial awareness
+          * Visual scene interpretation
+          * Object detection and spatial relationships
+          * Environment understanding
         
-        - 2x Big models (14B params): Deep strategic thinking
-          * phi-4 (14B): Long-term strategic planning, reasoning chains
-          * eva-qwen2.5-14b (14B): World understanding, narrative, NPCs
-        
-        This hybrid approach uses fast thinking models for tactics + vision + quick analysis.
-        Total: 8 LLM instances running in parallel with async execution.
+        This streamlined approach uses specialized models for their strengths.
+        Total: 3 powerful LLM instances with clear roles.
         """
         print("=" * 70)
         print("INITIALIZING HYBRID LLM ARCHITECTURE")
         print("=" * 70)
-        print("4x qwen3-4b-thinking (tactical) + 1x qwen3-vl (vision) + 1x phi-4-mini (state) + 2x big models (strategic)")
+        print("phi-4 (action) + huihui-60b (cognition) + qwen3-vl-30b (perception)")
         print("=" * 70)
         print()
         
-        # ===== QWEN3-4B-THINKING INSTANCES (4x) - TACTICAL REASONING =====
+        # ===== HUIHUI-MOE-60B - MAIN COGNITION =====
         
-        # 1. Main consciousness LLM (qwen3-4b-thinking)
-        print("[QWEN3-MAIN] Initializing primary consciousness engine...")
-        await self.agi.initialize_llm()
+        print("[HUIHUI] Initializing main cognition engine...")
+        print("[HUIHUI] Model: huihui-moe-60b-a3b-abliterated-i1 (60B MoE)")
+        print("[HUIHUI] Role: Consciousness, reasoning, strategy, world understanding")
+        print()
         
-        # Connect consciousness_llm to bridge
-        if hasattr(self.agi, 'consciousness_llm') and self.agi.consciousness_llm:
-            self.consciousness_bridge.consciousness_llm = self.agi.consciousness_llm
-            print("[QWEN3-MAIN] ✓ Consciousness LLM connected to bridge")
-            print(f"[QWEN3-MAIN] Model: {self.config.qwen3_model_1} (consciousness)")
-        else:
-            print("[QWEN3-MAIN] ⚠️ No consciousness LLM available, bridge uses heuristics only")
-        
-        # 2. Initialize all 4 qwen3-4b-thinking instances
-        # Store all instances in a pool for load balancing
-        self.qwen3_pool = []
-        self.qwen3_index = 0  # For round-robin selection
-        
-        for i, model_name in enumerate([
-            self.config.qwen3_model_1,
-            self.config.qwen3_model_2,
-            self.config.qwen3_model_3,
-            self.config.qwen3_model_4
-        ], 1):
-            try:
-                print(f"\n[QWEN3-{i}] Initializing {model_name}...")
-                config = LMStudioConfig(
-                    base_url=self.config.base_config.lm_studio_url,
-                    model_name=model_name,
-                    temperature=0.7,
-                    max_tokens=512
-                )
-                client = LMStudioClient(config)
-                interface = ExpertLLMInterface(client)
-                self.qwen3_pool.append(interface)
-                print(f"[QWEN3-{i}] ✓ Connected: {model_name}")
-            except Exception as e:
-                print(f"[QWEN3-{i}] ⚠️ Failed to initialize {model_name}: {e}")
-        
-        print(f"\n[QWEN3-POOL] ✓ {len(self.qwen3_pool)}/4 qwen3-4b-thinking instances ready")
-        print(f"[QWEN3-POOL] Load balancing: Round-robin across all instances")
-        
-        # Connect instances to different roles
-        if len(self.qwen3_pool) >= 2:
-            self.action_planning_llm = self.qwen3_pool[1]
-            print("[QWEN3-ACTION] ✓ Action planner connected to qwen3-4b-thinking:2")
-        
-        if len(self.qwen3_pool) >= 3:
-            self.rl_reasoning_neuron.llm_interface = self.qwen3_pool[2]
-            print("[QWEN3-RL] ✓ RL reasoning neuron connected to qwen3-4b-thinking:3")
-        else:
-            print("[QWEN3-RL] ⚠️ Not enough qwen3 instances for RL neuron")
-            # Fallback: use main LLM if available
+        try:
+            # Initialize huihui as the main LLM for base Singularis AGI
+            huihui_config = LMStudioConfig(
+                base_url=self.config.base_config.lm_studio_url,
+                model_name=self.config.huihui_cognition_model,
+                temperature=0.7,
+                max_tokens=2048
+            )
+            huihui_client = LMStudioClient(huihui_config)
+            self.huihui_llm = ExpertLLMInterface(huihui_client)
+            print("[HUIHUI] ✓ Main cognition LLM initialized")
+            
+            # Initialize base Singularis AGI with huihui
+            print("[HUIHUI] Initializing base Singularis AGI consciousness engine...")
+            # Set the LLM client in base AGI config
+            self.agi.config.lm_studio_url = self.config.base_config.lm_studio_url
+            self.agi.config.model_name = self.config.huihui_cognition_model
+            await self.agi.initialize_llm()
+            print("[HUIHUI] ✓ Base Singularis AGI initialized with huihui")
+            
+            # Connect huihui to all Skyrim-specific cognitive roles
+            self.rl_reasoning_neuron.llm_interface = self.huihui_llm
+            print("[HUIHUI] ✓ Connected to RL reasoning neuron")
+            
+            self.meta_strategist.llm_interface = self.huihui_llm
+            print("[HUIHUI] ✓ Connected to meta-strategist")
+            
+            # Connect to consciousness bridge (for game quality + philosophical coherence)
             if hasattr(self.agi, 'consciousness_llm') and self.agi.consciousness_llm:
-                if hasattr(self.agi.consciousness_llm, 'llm_interface'):
-                    self.rl_reasoning_neuron.llm_interface = self.agi.consciousness_llm.llm_interface
-                    print("[QWEN3-RL] ✓ Using main consciousness LLM as fallback")
-        
-        # Connect fourth instance to meta-strategist
-        if len(self.qwen3_pool) >= 4:
-            self.meta_strategist.llm_interface = self.qwen3_pool[3]
-            print("[QWEN3-META] ✓ Meta-strategist connected to qwen3-4b-thinking:4")
+                self.consciousness_bridge.consciousness_llm = self.agi.consciousness_llm
+                print("[HUIHUI] ✓ Base AGI consciousness LLM connected to bridge")
+            else:
+                # Fallback: use huihui directly
+                self.consciousness_bridge.consciousness_llm = self.huihui_llm
+                print("[HUIHUI] ✓ Huihui connected to consciousness bridge (direct)")
+            
+            # Connect to strategic planner
+            if self.strategic_planner:
+                self.strategic_planner.llm_interface = self.huihui_llm
+                print("[HUIHUI] ✓ Connected to strategic planner")
+            
+            # Connect to world model for deep reasoning
+            if hasattr(self.skyrim_world, 'set_llm_interface'):
+                self.skyrim_world.set_llm_interface(self.huihui_llm)
+                print("[HUIHUI] ✓ Connected to Skyrim world model")
+            
+        except Exception as e:
+            print(f"[HUIHUI] ⚠️ Failed to initialize: {e}")
+            import traceback
+            traceback.print_exc()
+            self.huihui_llm = None
         
         print("\n" + "=" * 70)
-        print("QWEN3-4B-THINKING LAYER COMPLETE (4 instances)")
+        print("HUIHUI COGNITION LAYER COMPLETE")
         print("=" * 70)
         
-        # ===== QWEN3-VL INSTANCE - VISUAL INTERPRETATION =====
+        # ===== QWEN3-VL-30B - PERCEPTION & SPATIAL AWARENESS =====
         
         print("\n" + "=" * 70)
-        print("INITIALIZING VISUAL MODEL")
+        print("INITIALIZING PERCEPTION MODEL")
         print("=" * 70)
         print()
         
         try:
-            print(f"[QWEN3-VL] Initializing {self.config.qwen3_vl_model} for visual interpretation...")
+            print(f"[QWEN3-VL] Initializing {self.config.qwen3_vl_perception_model}...")
+            print("[QWEN3-VL] Model: qwen/qwen3-vl-30b (30B params)")
+            print("[QWEN3-VL] Role: Visual perception, spatial awareness, environment understanding")
             vl_config = LMStudioConfig(
                 base_url=self.config.base_config.lm_studio_url,
-                model_name=self.config.qwen3_vl_model,
+                model_name=self.config.qwen3_vl_perception_model,
                 temperature=0.5,
-                max_tokens=1024
+                max_tokens=1536
             )
             vl_client = LMStudioClient(vl_config)
-            self.visual_llm = ExpertLLMInterface(vl_client)
-            print("[QWEN3-VL] ✓ Visual interpretation LLM initialized")
-            print("[QWEN3-VL] Model: qwen/qwen3-vl-8b (8B params)")
-            print("[QWEN3-VL] Role: Scene analysis, object detection, spatial understanding")
+            self.perception_llm = ExpertLLMInterface(vl_client)
+            print("[QWEN3-VL] ✓ Perception LLM initialized")
+            
+            # Connect to perception system for enhanced visual understanding
+            if hasattr(self.perception, 'set_visual_llm'):
+                self.perception.set_visual_llm(self.perception_llm)
+                print("[QWEN3-VL] ✓ Connected to perception system")
+            
+            # Connect to world model for spatial reasoning
+            if hasattr(self.skyrim_world, 'set_perception_llm'):
+                self.skyrim_world.set_perception_llm(self.perception_llm)
+                print("[QWEN3-VL] ✓ Connected to world model for spatial reasoning")
+            
         except Exception as e:
-            print(f"[QWEN3-VL] ⚠️ Failed to initialize visual model: {e}")
-            self.visual_llm = None
+            print(f"[QWEN3-VL] ⚠️ Failed to initialize: {e}")
+            import traceback
+            traceback.print_exc()
+            self.perception_llm = None
         
         print("\n" + "=" * 70)
-        print("VISUAL MODEL LAYER COMPLETE")
+        print("PERCEPTION LAYER COMPLETE")
         print("=" * 70)
         
-        # ===== PHI-4-MINI INSTANCE - QUICK STATE ANALYSIS =====
+        # ===== PHI-4 - ACTION PLANNING =====
         
         print("\n" + "=" * 70)
-        print("INITIALIZING STATE ANALYSIS MODEL")
+        print("INITIALIZING ACTION PLANNING MODEL")
         print("=" * 70)
         print()
         
         try:
-            print(f"[PHI4-MINI] Initializing {self.config.phi4_mini_state_model} for quick state analysis...")
-            state_config = LMStudioConfig(
+            print(f"[PHI4-ACTION] Initializing {self.config.phi4_action_model}...")
+            print("[PHI4-ACTION] Model: microsoft/phi-4 (14B params)")
+            print("[PHI4-ACTION] Role: Fast, decisive action selection")
+            action_config = LMStudioConfig(
                 base_url=self.config.base_config.lm_studio_url,
-                model_name=self.config.phi4_mini_state_model,
-                temperature=0.3,
-                max_tokens=256
+                model_name=self.config.phi4_action_model,
+                temperature=0.6,
+                max_tokens=512
             )
-            state_client = LMStudioClient(state_config)
-            self.state_analysis_llm = ExpertLLMInterface(state_client)
-            print("[PHI4-MINI] ✓ State analysis LLM initialized")
-            print("[PHI4-MINI] Model: microsoft/phi-4-mini-reasoning (4B params)")
-            print("[PHI4-MINI] Role: Quick state analysis, threat detection, immediate context")
-            print("[PHI4-MINI] Max tokens: 256 (short but sweet)")
+            action_client = LMStudioClient(action_config)
+            self.action_planning_llm = ExpertLLMInterface(action_client)
+            print("[PHI4-ACTION] ✓ Action planning LLM initialized")
+            
+            # Connect to action affordance system
+            if hasattr(self.action_affordances, 'set_planning_llm'):
+                self.action_affordances.set_planning_llm(self.action_planning_llm)
+                print("[PHI4-ACTION] ✓ Connected to action affordance system")
+            
         except Exception as e:
-            print(f"[PHI4-MINI] ⚠️ Failed to initialize state analysis model: {e}")
-            self.state_analysis_llm = None
+            print(f"[PHI4-ACTION] ⚠️ Failed to initialize: {e}")
+            import traceback
+            traceback.print_exc()
+            self.action_planning_llm = None
         
         print("\n" + "=" * 70)
-        print("STATE ANALYSIS MODEL LAYER COMPLETE")
+        print("STREAMLINED LLM ARCHITECTURE READY")
         print("=" * 70)
-        
-        # ===== BIG MODEL INSTANCES (2x) - DEEP STRATEGY =====
-        
-        print("\n" + "=" * 70)
-        print("INITIALIZING BIG MODEL LAYER (2 instances)")
-        print("=" * 70)
-        print()
-        
-        # 5. Strategic Planning LLM (Big Model - phi-4)
-        # Long-term planning, quest strategy, reasoning chains
-        try:
-            print("[STRATEGY-BIG] Initializing phi-4 (full) for strategic planning...")
-            strategy_config = LMStudioConfig(
-                base_url=self.config.base_config.lm_studio_url,
-                model_name='microsoft/phi-4',  # Full phi-4 (14B params)
-                temperature=0.8,  # Higher temp for creative strategic thinking
-                max_tokens=4096   # Long responses for detailed strategy
-            )
-            strategy_client = LMStudioClient(strategy_config)
-            self.strategic_planning_llm = ExpertLLMInterface(strategy_client)
-            print("[STRATEGY-BIG] ✓ Strategic planning LLM initialized")
-            print(f"[STRATEGY-BIG] Model: {strategy_config.model_name} (14B params)")
-            print(f"[STRATEGY-BIG] Role: Long-term goals, quest planning, reasoning chains")
-            print(f"[STRATEGY-BIG] Max tokens: {strategy_config.max_tokens} (verbose strategy)")
-        except Exception as e:
-            print(f"[STRATEGY-BIG] ⚠️ phi-4 initialization failed: {e}")
-            print("[STRATEGY-BIG] Will use phi-4-mini fallback for strategy")
-            self.strategic_planning_llm = None
-        
-        # 6. World Understanding LLM (Big Model - eva-qwen2.5-14b)
-        # Deep environment analysis, NPC relationships, complex scenarios, narrative understanding
-        try:
-            print("\n[WORLD-BIG] Initializing eva-qwen2.5-14b for world understanding...")
-            world_config = LMStudioConfig(
-                base_url=self.config.base_config.lm_studio_url,
-                model_name='eva-qwen2.5-14b-v0.2',  # Eva-Qwen 14B
-                temperature=0.7,  # Lower temp for analytical understanding
-                max_tokens=3072   # Medium-long for detailed analysis
-            )
-            world_client = LMStudioClient(world_config)
-            self.world_understanding_llm = ExpertLLMInterface(world_client)
-            print("[WORLD-BIG] ✓ World understanding LLM initialized")
-            print(f"[WORLD-BIG] Model: {world_config.model_name} (14B params)")
-            print(f"[WORLD-BIG] Role: Deep environment, NPCs, scenarios, narrative")
-            print(f"[WORLD-BIG] Max tokens: {world_config.max_tokens} (detailed analysis)")
-        except Exception as e:
-            print(f"[WORLD-BIG] ⚠️ eva-qwen2.5-14b initialization failed: {e}")
-            print("[WORLD-BIG] Will use phi-4-mini fallback for world understanding")
-            self.world_understanding_llm = None
-        
-        # Connect big model LLMs to consciousness bridge for parallel consciousness computation
-        print("\n[BRIDGE] Connecting big model LLMs to consciousness bridge...")
-        self.consciousness_bridge.world_understanding_llm = self.world_understanding_llm
-        self.consciousness_bridge.strategic_planning_llm = self.strategic_planning_llm
-        if self.world_understanding_llm and self.strategic_planning_llm:
-            print("[BRIDGE] ✓ Both big models connected - parallel consciousness computation enabled")
-        elif self.world_understanding_llm or self.strategic_planning_llm:
-            print("[BRIDGE] ⚠️ Only one big model available - partial consciousness enhancement")
-        else:
-            print("[BRIDGE] ⚠️ No big models available - using heuristic consciousness only")
-        
-        print()
-        print("=" * 70)
-        print("HYBRID LLM ARCHITECTURE READY")
-        print("=" * 70)
-        print("✓ 4x phi-4-mini (4B, fast consciousness/tactical): <1s response")
-        print("✓ 1x phi-4 (14B, strategic planning): 2-4s response")
-        print("✓ 1x eva-qwen2.5-14b (14B, world understanding): 2-4s response")
-        print("✓ Fast layer handles moment-to-moment decisions")
-        print("✓ Strategic layer handles long-term planning & deep analysis")
-        print("✓ Async execution allows all 6 models to run in parallel")
-        print("✓ Consciousness bridge uses 2 big models in parallel (not 4 experts)")
+        print("phi-4 (14B): Fast action planning")
+        print("huihui-moe-60b (60B MoE): Main cognition, reasoning, strategy")
+        print("qwen3-vl-30b (30B): Perception and spatial awareness")
+        print("3 specialized models with clear roles")
+        print("Async execution for parallel processing")
         print("=" * 70)
         print()
 
@@ -1423,12 +1356,7 @@ class SkyrimAGI:
                 # Get meta-strategic context
                 meta_context = self.meta_strategist.get_active_instruction_context()
                 
-                # Get next qwen3-4b-thinking from pool for load balancing
-                qwen3_llm = self.get_next_qwen3()
-                if qwen3_llm:
-                    # Temporarily assign to RL reasoning neuron for this call
-                    original_llm = self.rl_reasoning_neuron.llm_interface
-                    self.rl_reasoning_neuron.llm_interface = qwen3_llm
+                # RL reasoning neuron already connected to huihui
                 
                 # Use RL reasoning neuron to think about Q-values (with meta-strategic guidance)
                 rl_reasoning = await self.rl_reasoning_neuron.reason_about_q_values(
@@ -1444,10 +1372,6 @@ class SkyrimAGI:
                         'meta_strategy': meta_context  # Add strategic guidance
                     }
                 )
-                
-                # Restore original LLM
-                if qwen3_llm:
-                    self.rl_reasoning_neuron.llm_interface = original_llm
                 
                 action = rl_reasoning.recommended_action
                 print(f"[RL-NEURON] Action: {action} (tactical score: {rl_reasoning.tactical_score:.2f})")
@@ -1724,7 +1648,7 @@ TERRAIN STRATEGY:
 QUICK DECISION - Choose ONE action from available list:"""
 
         try:
-            print("[QWEN3-ACTION] Fast action planning with qwen3-4b-thinking...")
+            print("[PHI4-ACTION] Fast action planning with phi-4...")
             
             # Use dedicated LLM interface directly for faster response
             if self.action_planning_llm:
@@ -1733,8 +1657,8 @@ QUICK DECISION - Choose ONE action from available list:"""
                     max_tokens=300  # Enough for reasoning + action selection
                 )
                 # Debug: Check what we got back
-                print(f"[QWEN3-ACTION] DEBUG - Result type: {type(result)}")
-                print(f"[QWEN3-ACTION] DEBUG - Result keys: {result.keys() if isinstance(result, dict) else 'N/A'}")
+                print(f"[PHI4-ACTION] DEBUG - Result type: {type(result)}")
+                print(f"[PHI4-ACTION] DEBUG - Result keys: {result.keys() if isinstance(result, dict) else 'N/A'}")
                 
                 # LMStudioClient.generate() returns a dict with 'content' key (not 'response')
                 response = result.get('content', result.get('response', '')) if isinstance(result, dict) else str(result)
@@ -1743,9 +1667,9 @@ QUICK DECISION - Choose ONE action from available list:"""
                 result = await self.agi.process(context)
                 response = result.get('consciousness_response', {}).get('response', '')
             
-            print(f"[QWEN3-ACTION] Response ({len(response)} chars): {response[:200] if len(response) > 200 else response}")
+            print(f"[PHI4-ACTION] Response ({len(response)} chars): {response[:200] if len(response) > 200 else response}")
         except Exception as e:
-            print(f"[QWEN3-ACTION] ERROR during LLM action planning: {e}")
+            print(f"[PHI4-ACTION] ERROR during LLM action planning: {e}")
             import traceback
             traceback.print_exc()
             return None
