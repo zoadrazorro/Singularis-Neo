@@ -100,6 +100,7 @@ class RLReasoningNeuron:
             # Query LLM (ExpertLLMInterface has generate() method directly)
             print(f"[RL-NEURON] DEBUG - Prompt length: {len(prompt)} chars")
             print(f"[RL-NEURON] DEBUG - System prompt length: {len(self._get_system_prompt())} chars")
+            print(f"[RL-NEURON] DEBUG - Prompt preview: {prompt[:150]}...")
             
             response = await self.llm_interface.generate(
                 prompt=prompt,
@@ -109,6 +110,7 @@ class RLReasoningNeuron:
             )
             
             print(f"[RL-NEURON] DEBUG - Response received: {type(response)}")
+            print(f"[RL-NEURON] DEBUG - Response keys: {response.keys() if isinstance(response, dict) else 'N/A'}")
             
             # Parse LLM response
             reasoning_result = self._parse_llm_response(
