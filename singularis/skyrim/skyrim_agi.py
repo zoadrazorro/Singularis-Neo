@@ -612,22 +612,22 @@ class SkyrimAGI:
                     await asyncio.sleep(1.5)  # Shorter wait when queue is full
                     continue
                 
-                # Adaptive throttling based on queue fullness - optimized for speed
+                # Adaptive throttling based on queue fullness - aggressive for speed
                 if queue_size >= max_queue_size * 0.8:
                     # Queue is almost full - slow down
-                    throttle_delay = 2.0
+                    throttle_delay = 1.0
                     if cycle_count % 5 == 0:
-                        print(f"[PERCEPTION] Queue {queue_size}/{max_queue_size} - heavy throttling (2s delay)")
+                        print(f"[PERCEPTION] Queue {queue_size}/{max_queue_size} - heavy throttling (1s delay)")
                 elif queue_size >= max_queue_size * 0.6:
                     # Queue is getting full - moderate slowdown
-                    throttle_delay = 1.0
+                    throttle_delay = 0.5
                     if cycle_count % 10 == 0:
-                        print(f"[PERCEPTION] Queue {queue_size}/{max_queue_size} - moderate throttling (1s delay)")
+                        print(f"[PERCEPTION] Queue {queue_size}/{max_queue_size} - moderate throttling (0.5s delay)")
                 elif queue_size >= max_queue_size * 0.4:
                     # Queue is filling - light slowdown
-                    throttle_delay = 0.5
+                    throttle_delay = 0.3
                 else:
-                    # Queue has space - normal speed
+                    # Queue has space - full speed
                     throttle_delay = self.config.perception_interval
                 
                 # Only perceive if queue has space
