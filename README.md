@@ -39,9 +39,15 @@ Singularis is a **complete AGI framework** combining consciousness measurement w
 - ✅ **Active Inference** - Free energy minimization (Friston's framework)
 
 ### Hybrid LLM Architecture (Latest) 🔥
-- ✅ **Local LM Studio Models** - 3 specialized models (Mistral-Nemo, Huihui-60B, Qwen3-VL)
-- ✅ **Claude 4.5 Haiku** - Auxiliary meta-reasoning (augments Huihui)
-- ✅ **Gemini 2.5 Pro** - Vision augmentation (supplements Qwen3-VL/CLIP)
+
+**Parallel Mode: MoE + Hybrid Simultaneously (MAXIMUM INTELLIGENCE)**
+- ✅ **Mixture of Experts (MoE)** - 6 Gemini + 3 Claude experts with rate limiting
+- ✅ **Hybrid System** - Gemini 2.0 Flash (vision) + Claude Sonnet 4 (reasoning)
+- ✅ **Parallel Consensus** - MoE 60% + Hybrid 40% weighted combination
+- ✅ **Local Fallback** - Huihui-60B, Qwen3-VL, Phi-4 for resilience
+- ✅ **Cloud-Enhanced RL** - Reward shaping, MoE evaluation, RAG context
+- ✅ **System Consciousness Monitor** - Tracks coherence across 26 nodes
+- ✅ **Multi-Tier Stuck Detection** - Gemini vision + failsafe algorithms
 - ✅ **Async parallel execution** - 5 concurrent loops for real-time gameplay
 - ✅ **Skyrim Integration** - Autonomous consciousness-guided gameplay (see [SKYRIM_AGI.md](SKYRIM_AGI.md))
 

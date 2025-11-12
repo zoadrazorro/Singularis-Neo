@@ -406,13 +406,20 @@ class SkyrimAGI:
         self.consciousness_monitor = SystemConsciousnessMonitor(history_size=1000)
         self._register_consciousness_nodes()
         
-        # Stuck detection and recovery
+        # Stuck detection and recovery (multi-tier failsafe)
         self.stuck_detection_window = 5  # Check last N actions
         self.action_history = []  # Track recent actions
         self.coherence_history = []  # Track recent coherence values
         self.stuck_threshold = 0.02  # Coherence change threshold
         self.consecutive_same_action = 0  # Count same action repeats
         self.last_executed_action = None
+        
+        # Advanced stuck detection
+        self.position_history = []  # Track player positions (if available)
+        self.visual_embedding_history = []  # Track visual embeddings
+        self.stuck_recovery_attempts = 0  # Count recovery attempts
+        self.last_stuck_detection_time = 0  # Prevent spam
+        self.stuck_detection_cooldown = 10.0  # Seconds between detections
         
         print("Skyrim AGI initialization complete.")
         print("[OK] Skyrim AGI initialized with CONSCIOUSNESS INTEGRATION\n")
@@ -1826,7 +1833,8 @@ Based on this visual and contextual data, provide:
                     # Update stuck detection tracking
                     if self.current_consciousness:
                         coherence = self.current_consciousness.coherence
-                        self._update_stuck_tracking(action, coherence)
+                        visual_embedding = self.current_perception.get('visual_embedding') if self.current_perception else None
+                        self._update_stuck_tracking(action, coherence, visual_embedding)
                 except Exception as e:
                     execution_duration = time.time() - execution_start
                     self.stats['execution_times'].append(execution_duration)
@@ -2461,6 +2469,166 @@ Based on this visual and contextual data, provide:
             print(f"{'=' * 60}")
             self._print_final_stats()
 
+    def _detect_stuck_failsafe(
+        self,
+        perception: Dict[str, Any],
+        game_state
+    ) -> Tuple[bool, str, str]:
+        """
+        Multi-tier failsafe stuck detection (works without cloud LLMs).
+        
+        Returns:
+            (is_stuck, reason, recovery_action)
+        """
+        current_time = time.time()
+        
+        # Cooldown check
+        if current_time - self.last_stuck_detection_time < self.stuck_detection_cooldown:
+            return (False, "", "")
+        
+        stuck_indicators = []
+        recovery_action = ""
+        
+        # 1. Action repetition detection
+        if len(self.action_history) >= 8:
+            recent_8 = self.action_history[-8:]
+            unique_actions = len(set(recent_8))
+            
+            if unique_actions <= 2:
+                stuck_indicators.append(f"Only {unique_actions} unique actions in last 8")
+                recovery_action = "jump"  # Break pattern
+        
+        # 2. Same action spam detection
+        if self.consecutive_same_action >= 5:
+            stuck_indicators.append(f"Same action '{self.last_executed_action}' repeated {self.consecutive_same_action}x")
+            recovery_action = "sneak" if self.last_executed_action != "sneak" else "jump"
+        
+        # 3. Visual embedding similarity (stuck in same visual scene)
+        if len(self.visual_embedding_history) >= 5:
+            recent_embeddings = self.visual_embedding_history[-5:]
+            
+            # Calculate average similarity between consecutive embeddings
+            similarities = []
+            for i in range(len(recent_embeddings) - 1):
+                sim = np.dot(recent_embeddings[i], recent_embeddings[i+1])
+                similarities.append(sim)
+            
+            avg_similarity = np.mean(similarities) if similarities else 0
+            
+            if avg_similarity > 0.95:  # Very similar visual scenes
+                stuck_indicators.append(f"Visual scene unchanged (similarity={avg_similarity:.2f})")
+                recovery_action = "jump"
+        
+        # 4. Coherence stagnation detection
+        if len(self.coherence_history) >= 10:
+            recent_coherence = self.coherence_history[-10:]
+            coherence_variance = np.var(recent_coherence)
+            
+            if coherence_variance < 0.001:  # No coherence change
+                stuck_indicators.append(f"Coherence stagnant (var={coherence_variance:.4f})")
+                recovery_action = "activate"  # Try interacting
+        
+        # 5. Menu stuck detection
+        if game_state.in_menu and len(self.action_history) >= 5:
+            recent_5 = self.action_history[-5:]
+            if all(a in ['activate', 'navigate_inventory', 'exit_menu'] for a in recent_5):
+                stuck_indicators.append("Stuck in menu navigation")
+                recovery_action = "exit_menu"
+        
+        # 6. Combat stuck detection
+        if game_state.in_combat and len(self.action_history) >= 6:
+            recent_6 = self.action_history[-6:]
+            if recent_6.count('attack') >= 5:
+                stuck_indicators.append("Spamming attack without progress")
+                recovery_action = "dodge"
+        
+        # Determine if stuck
+        is_stuck = len(stuck_indicators) >= 2  # At least 2 indicators
+        
+        if is_stuck:
+            reason = "; ".join(stuck_indicators)
+            self.last_stuck_detection_time = current_time
+            self.stuck_recovery_attempts += 1
+            
+            print(f"[FAILSAFE-STUCK] Detected stuck state!")
+            print(f"[FAILSAFE-STUCK] Indicators: {reason}")
+            print(f"[FAILSAFE-STUCK] Recovery attempt #{self.stuck_recovery_attempts}")
+            
+            # Escalate recovery based on attempts
+            if self.stuck_recovery_attempts >= 3:
+                recovery_action = "look_around"  # Drastic measure
+                print(f"[FAILSAFE-STUCK] Escalating to drastic recovery: {recovery_action}")
+            
+            return (True, reason, recovery_action)
+        
+        # Reset recovery attempts if not stuck
+        if self.stuck_recovery_attempts > 0 and not is_stuck:
+            self.stuck_recovery_attempts = 0
+        
+        return (False, "", "")
+    
+    async def _detect_stuck_with_gemini(
+        self,
+        perception: Dict[str, Any],
+        recent_actions: List[str]
+    ) -> Tuple[bool, str]:
+        """
+        Use Gemini vision to detect if player is stuck (Tier 1).
+        
+        Returns:
+            (is_stuck, recovery_action)
+        """
+        if not self.hybrid_llm or not perception.get('screenshot'):
+            return (False, "")
+        
+        try:
+            # Build stuck detection prompt
+            prompt = f"""Analyze this Skyrim gameplay screenshot and recent actions to detect if the player is stuck.
+
+Recent actions (last 5): {', '.join(recent_actions[-5:])}
+
+Check for these stuck indicators:
+1. Player facing a wall/obstacle repeatedly
+2. Same visual scene for multiple actions
+3. Character not making progress (same location)
+4. Stuck in geometry/terrain
+5. Menu stuck open
+6. Dialogue loop
+
+Is the player stuck? Answer with:
+STUCK: yes/no
+REASON: <brief explanation>
+RECOVERY: <suggested action to unstuck>"""
+
+            response = await self.hybrid_llm.analyze_image(
+                prompt=prompt,
+                image=perception['screenshot']
+            )
+            
+            # Parse response
+            is_stuck = "STUCK: yes" in response.lower()
+            
+            if is_stuck:
+                # Extract reason
+                reason_line = [l for l in response.split('\n') if 'REASON:' in l]
+                reason = reason_line[0].split('REASON:')[1].strip() if reason_line else "Unknown"
+                
+                # Extract recovery action
+                recovery_line = [l for l in response.split('\n') if 'RECOVERY:' in l]
+                recovery = recovery_line[0].split('RECOVERY:')[1].strip() if recovery_line else ""
+                
+                print(f"[GEMINI-STUCK] Detected stuck state!")
+                print(f"[GEMINI-STUCK] Reason: {reason}")
+                print(f"[GEMINI-STUCK] Recovery: {recovery}")
+                
+                return (True, recovery)
+            
+            return (False, "")
+            
+        except Exception as e:
+            print(f"[GEMINI-STUCK] Detection failed: {e}")
+            return (False, "")
+    
     async def _get_cloud_llm_action_recommendation(
         self,
         perception: Dict[str, Any],
@@ -2647,6 +2815,57 @@ REASONING: <explanation>"""
                 
                 # Get meta-strategic context
                 meta_context = self.meta_strategist.get_active_instruction_context()
+                
+                # === MULTI-TIER STUCK DETECTION ===
+                
+                # Tier 1: Failsafe stuck detection (always runs, no cloud needed)
+                failsafe_stuck, failsafe_reason, failsafe_recovery = self._detect_stuck_failsafe(
+                    perception=perception,
+                    game_state=game_state
+                )
+                
+                if failsafe_stuck:
+                    # Measure consciousness impact
+                    stuck_state = await self.measure_system_consciousness()
+                    print(f"[FAILSAFE-STUCK] System coherence during stuck: {stuck_state.global_coherence:.3f}")
+                    
+                    # Use failsafe recovery action
+                    if failsafe_recovery in available_actions:
+                        print(f"[FAILSAFE-STUCK] Using recovery: {failsafe_recovery}")
+                        self.stats['failsafe_stuck_detections'] = self.stats.get('failsafe_stuck_detections', 0) + 1
+                        return failsafe_recovery
+                
+                # Tier 2: Gemini vision stuck detection (every 10 cycles, cloud-based)
+                if self.cycle_count % 10 == 0 and self.hybrid_llm:
+                    is_stuck, recovery_action = await self._detect_stuck_with_gemini(
+                        perception=perception,
+                        recent_actions=self.action_history[-10:]
+                    )
+                    
+                    if is_stuck and recovery_action:
+                        # Measure consciousness impact of stuck state
+                        stuck_state = await self.measure_system_consciousness()
+                        print(f"[GEMINI-STUCK] System coherence during stuck: {stuck_state.global_coherence:.3f}")
+                        
+                        # Parse recovery action
+                        recovery_lower = recovery_action.lower()
+                        
+                        # Try to extract action from recovery suggestion
+                        for action in available_actions:
+                            if action in recovery_lower:
+                                print(f"[GEMINI-STUCK] Using recovery action: {action}")
+                                self.stats['gemini_stuck_detections'] = self.stats.get('gemini_stuck_detections', 0) + 1
+                                return action
+                        
+                        # Fallback recovery actions
+                        if 'jump' in available_actions:
+                            print(f"[GEMINI-STUCK] Using fallback recovery: jump")
+                            self.stats['gemini_stuck_detections'] = self.stats.get('gemini_stuck_detections', 0) + 1
+                            return 'jump'
+                        elif 'sneak' in available_actions:
+                            print(f"[GEMINI-STUCK] Using fallback recovery: sneak")
+                            self.stats['gemini_stuck_detections'] = self.stats.get('gemini_stuck_detections', 0) + 1
+                            return 'sneak'
                 
                 # Try cloud LLM system (but not every cycle to avoid rate limits)
                 # Use cloud LLMs every 5th cycle or in critical situations
@@ -3375,12 +3594,18 @@ QUICK DECISION - Choose ONE action from available list:"""
         
         return False
     
-    def _update_stuck_tracking(self, action: str, coherence: float):
+    def _update_stuck_tracking(self, action: str, coherence: float, visual_embedding=None):
         """Update stuck detection tracking."""
         # Track action history
         self.action_history.append(action)
-        if len(self.action_history) > self.stuck_detection_window * 2:
+        if len(self.action_history) > 20:  # Keep last 20 actions
             self.action_history.pop(0)
+        
+        # Track visual embeddings for similarity detection
+        if visual_embedding is not None:
+            self.visual_embedding_history.append(visual_embedding)
+            if len(self.visual_embedding_history) > 10:  # Keep last 10 embeddings
+                self.visual_embedding_history.pop(0)
         
         # Track coherence history
         self.coherence_history.append(coherence)

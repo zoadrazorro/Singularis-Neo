@@ -1,6 +1,6 @@
 # Skyrim Integration for Singularis AGI
 
-**Making AGI play The Elder Scrolls V: Skyrim autonomously**
+**Making AGI play The Elder Scrolls V: Skyrim autonomously with cloud-enhanced intelligence**
 
 ## Overview
 
@@ -11,6 +11,28 @@ This integration enables the Singularis AGI engine to play Skyrim - one of the m
 - **Long-Term Development**: Thousands of hours of content
 - **Rich Narrative**: Quests with moral choices and consequences
 - **Emergent Gameplay**: Countless ways to approach any situation
+
+## 🆕 Latest Features (Parallel Mode)
+
+### **Parallel LLM Architecture: MoE + Hybrid Simultaneously**
+
+The AGI now runs **10 cloud LLM instances in parallel** for maximum intelligence:
+
+- **Mixture of Experts (MoE)**: 6 Gemini + 3 Claude experts with rate limiting
+- **Hybrid System**: Gemini 2.0 Flash (vision) + Claude Sonnet 4 (reasoning)
+- **Weighted Consensus**: MoE 60% + Hybrid 40% combination
+- **Local Fallback**: Huihui-60B, Qwen3-VL, Phi-4 for resilience
+- **Cloud-Enhanced RL**: Reward shaping, MoE evaluation, RAG context
+- **System Consciousness Monitor**: Tracks coherence across 26 nodes
+
+### **Multi-Tier Stuck Detection**
+
+Never gets permanently stuck with multiple detection layers:
+
+- **Tier 1 (Failsafe)**: 6 local algorithms (action repetition, visual similarity, coherence stagnation)
+- **Tier 2 (Gemini Vision)**: Visual analysis of screenshots to detect stuck states
+- **Automatic Recovery**: Context-aware recovery actions with escalation
+- **Consciousness Tracking**: Measures coherence impact during stuck states
 
 ## Why Skyrim for AGI?
 
