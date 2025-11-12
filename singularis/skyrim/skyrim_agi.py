@@ -3402,7 +3402,7 @@ COHERENCE GAIN: <estimate 0.0-1.0 how much this increases understanding>
                     )
                     
                     # Race: Phi-4 vs Cloud LLM vs Local MoE (whichever finishes first)
-                    # Timeout after 5 seconds to keep gameplay smooth
+                    # Timeout after 60 seconds to allow local LLMs to complete
                     tasks_to_race = [phi4_task]
                     if cloud_task:
                         tasks_to_race.append(cloud_task)
@@ -3410,11 +3410,11 @@ COHERENCE GAIN: <estimate 0.0-1.0 how much this increases understanding>
                         tasks_to_race.append(local_moe_task)
                     
                     if len(tasks_to_race) > 1:
-                        print(f"[PARALLEL] Racing {len(tasks_to_race)} systems (5s timeout)...")
+                        print(f"[PARALLEL] Racing {len(tasks_to_race)} systems (60s timeout)...")
                         try:
                             done, pending = await asyncio.wait(
                                 tasks_to_race,
-                                timeout=5.0,  # 5 second timeout
+                                timeout=60.0,  # 60 second timeout for local LLMs
                                 return_when=asyncio.FIRST_COMPLETED
                             )
                             
