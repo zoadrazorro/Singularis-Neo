@@ -1679,7 +1679,7 @@ QUICK DECISION - Choose ONE action from available list:"""
         
         # Try to extract action using multiple strategies
         
-        # Strategy 1: Check for layer transition actions first (highest priority)
+        # Strategy 1: Check for layer transition actions ONLY if they're in available_actions
         layer_transitions = {
             'switch_to_combat': ['switch_to_combat', 'switch to combat', 'combat layer'],
             'switch_to_menu': ['switch_to_menu', 'switch to menu', 'menu layer', 'open inventory'],
@@ -1688,7 +1688,8 @@ QUICK DECISION - Choose ONE action from available list:"""
         }
         
         for action, patterns in layer_transitions.items():
-            if any(pattern in response_lower for pattern in patterns):
+            # Only extract layer transitions if they're actually available
+            if action in available_actions and any(pattern in response_lower for pattern in patterns):
                 return action
         
         # Strategy 2: Look for exact matches with available actions
@@ -1912,6 +1913,17 @@ QUICK DECISION - Choose ONE action from available list:"""
         elif action == 'exit':
             # Exit menu/dialogue
             await self.actions.execute(Action(ActionType.BACK, duration=0.2))
+        elif action in ('navigate_inventory', 'equip_item', 'consume_item', 'drop_item', 'favorite_item',
+                        'navigate_map', 'navigate_magic', 'navigate_skills', 'use_item'):
+            # Menu actions - navigate using D-pad or activate
+            print(f"[ACTION] Menu action: {action}")
+            await self.actions.execute(Action(ActionType.ACTIVATE, duration=0.2))
+            await asyncio.sleep(0.3)
+        elif action in ('open_inventory', 'open_map', 'open_magic', 'open_skills'):
+            # Open specific menu
+            print(f"[ACTION] Opening menu: {action}")
+            await self.actions.execute(Action(ActionType.INVENTORY, duration=0.2))
+            await asyncio.sleep(0.5)
         elif action == 'look_around':
             # Human-like looking behavior
             await self.actions.look_around()
@@ -1935,8 +1947,10 @@ QUICK DECISION - Choose ONE action from available list:"""
                 await self.actions.execute(Action(ActionType.ATTACK, duration=0.3))
             elif target_layer == 'Menu':
                 self.bindings.switch_to_menu()
-                # Open menu (would be handled by controller bindings)
-                print("[LAYER] Switched to Menu layer - ready for inventory management")
+                # Actually open the inventory
+                print("[LAYER] Switching to Menu layer and opening inventory")
+                await self.actions.execute(Action(ActionType.INVENTORY, duration=0.2))
+                await asyncio.sleep(0.5)
             elif target_layer == 'Stealth':
                 self.bindings.switch_to_stealth()
                 # Enter sneak mode
