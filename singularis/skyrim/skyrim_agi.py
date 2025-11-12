@@ -1367,7 +1367,7 @@ class SkyrimAGI:
                 )
                 
                 # Restore original LLM
-                if phi4_llm:
+                if mistral_llm:
                     self.rl_reasoning_neuron.llm_interface = original_llm
                 
                 action = rl_reasoning.recommended_action
