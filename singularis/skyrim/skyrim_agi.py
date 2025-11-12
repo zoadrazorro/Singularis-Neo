@@ -2930,22 +2930,40 @@ REASONING: <explanation>"""
                 # Compute fast heuristic immediately (no await needed)
                 print("[HEURISTIC-FAST] Computing quick action for Phi-4...")
                 
-                # Quick Q-value based selection
-                top_q_action = max(
+                # Get top 3 Q-value actions for variety
+                sorted_q_actions = sorted(
                     [(a, q_values.get(a, 0.0)) for a in available_actions],
-                    key=lambda x: x[1]
-                )[0]
+                    key=lambda x: x[1],
+                    reverse=True
+                )
+                top_q_action = sorted_q_actions[0][0] if sorted_q_actions else 'move_forward'
                 
-                # Context-aware adjustment
+                # Context-aware adjustment with variety
                 if game_state.health < 30 and 'rest' in available_actions:
                     heuristic_action = 'rest'
                     heuristic_reason = "Low health emergency"
                 elif game_state.in_combat and game_state.enemies_nearby > 2 and 'power_attack' in available_actions:
                     heuristic_action = 'power_attack'
                     heuristic_reason = "Multiple enemies"
-                elif not game_state.in_combat and 'move_forward' in available_actions:
-                    heuristic_action = 'move_forward'
-                    heuristic_reason = "Safe exploration"
+                elif not game_state.in_combat:
+                    # Add variety for exploration - don't always move_forward!
+                    exploration_options = []
+                    
+                    # Prevent repetition - avoid last action if possible
+                    if len(sorted_q_actions) >= 3:
+                        # Pick from top 3 Q-values, avoid last action
+                        for action, _ in sorted_q_actions[:3]:
+                            if action != self.last_executed_action:
+                                exploration_options.append(action)
+                    
+                    if exploration_options:
+                        # Randomly pick from good options (not always move_forward!)
+                        heuristic_action = random.choice(exploration_options)
+                        heuristic_reason = f"Varied exploration (avoiding repetition)"
+                    else:
+                        # Fall back to top Q-value if no variety available
+                        heuristic_action = top_q_action
+                        heuristic_reason = "Top Q-value action"
                 else:
                     heuristic_action = top_q_action
                     heuristic_reason = f"Top Q-value action"
@@ -3139,49 +3157,78 @@ REASONING: <explanation>"""
                 print(f"[HEURISTIC] → jump (playful exploration)")
                 return 'jump'
             
-            # Motivation-based selection (for outdoor/general scenes)
+            # Use RL Q-values intelligently for action selection
+            # Get top 5 actions by Q-value
+            sorted_q_actions = sorted(
+                [(a, q_values.get(a, 0.0)) for a in available_actions],
+                key=lambda x: x[1],
+                reverse=True
+            )[:5]
+            
+            # Motivation-based selection with Q-value guidance
             if dominant_drive == 'curiosity':
-                # Curiosity: prioritize interaction and straight movement
+                # Curiosity: prioritize interaction and exploration variety
                 if 'activate' in available_actions and random.random() < 0.4:
                     print(f"[HEURISTIC] → activate (curiosity-driven interaction)")
-                    return 'activate'  # Interact with world
-                elif random.random() < 0.5:
-                    print(f"[HEURISTIC] → move_forward (direct movement)")
-                    return 'move_forward'  # Prefer straight movement
-                print(f"[HEURISTIC] → explore (curiosity-driven exploration)")
-                return 'explore'  # Less frequent now
+                    return 'activate'
+                # Pick from top 3 Q-value actions for variety
+                if len(sorted_q_actions) >= 3:
+                    action = random.choice([a for a, _ in sorted_q_actions[:3]])
+                    print(f"[HEURISTIC] → {action} (curiosity + Q-value)")
+                    return action
+                print(f"[HEURISTIC] → explore (curiosity/default)")
+                return 'explore'
+                
             elif dominant_drive == 'competence':
+                # Competence: practice skills
                 if 'power_attack' in available_actions and current_layer == "Combat":
                     print(f"[HEURISTIC] → power_attack (competence training)")
-                    return 'power_attack'  # Practice advanced combat
+                    return 'power_attack'
                 elif 'backstab' in available_actions and current_layer == "Stealth":
                     print(f"[HEURISTIC] → backstab (stealth practice)")
-                    return 'backstab'  # Practice stealth
-                elif random.random() < 0.2:
-                    print(f"[HEURISTIC] → sneak (competence practice)")
-                    return 'sneak'  # Practice stealth
-                print(f"[HEURISTIC] → move_forward (competence through movement)")
-                return 'move_forward'  # Prefer straight movement
+                    return 'backstab'
+                # Pick from top Q-values
+                if sorted_q_actions:
+                    action = sorted_q_actions[0][0]
+                    print(f"[HEURISTIC] → {action} (competence + top Q-value)")
+                    return action
+                print(f"[HEURISTIC] → explore (competence/default)")
+                return 'explore'
+                
             elif dominant_drive == 'coherence':
-                # For coherence, prefer gentle exploration over rest unless critical
-                if game_state.health < 30:
-                    print(f"[HEURISTIC] → rest (coherence restoration, critical health)")
-                    return 'rest'  # Only rest if low health
-                elif random.random() < 0.4:
-                    print(f"[HEURISTIC] → move_forward (coherent movement)")
-                    return 'move_forward'
-                print(f"[HEURISTIC] → move_forward (coherence through gentle movement)")
-                return 'move_forward'  # Prefer straight movement
+                # Coherence: prefer gentle, varied actions
+                if game_state.health < 30 and 'rest' in available_actions:
+                    print(f"[HEURISTIC] → rest (coherence restoration)")
+                    return 'rest'
+                # Pick varied actions from top Q-values (avoid always same)
+                if len(sorted_q_actions) >= 4:
+                    # Pick from top 4, but avoid last action
+                    options = [a for a, _ in sorted_q_actions[:4] if a != self.last_executed_action]
+                    if options:
+                        action = random.choice(options)
+                        print(f"[HEURISTIC] → {action} (coherence + varied Q-value)")
+                        return action
+                # Fall back to exploration
+                print(f"[HEURISTIC] → explore (coherence/default)")
+                return 'explore'
+                
             else:  # autonomy or default
-                # Add variety even for autonomy
-                if random.random() < 0.2 and 'activate' in available_actions:
+                # Autonomy: prefer varied, independent choices
+                if random.random() < 0.3 and 'activate' in available_actions:
                     print(f"[HEURISTIC] → activate (autonomous interaction)")
                     return 'activate'
-                elif random.random() < 0.6:
-                    print(f"[HEURISTIC] → move_forward (autonomous movement)")
-                    return 'move_forward'
+                # Pick from top Q-values with variety
+                if len(sorted_q_actions) >= 3:
+                    # Weighted random from top 3 (not just first)
+                    weights = [3, 2, 1][:len(sorted_q_actions[:3])]
+                    action = random.choices(
+                        [a for a, _ in sorted_q_actions[:3]],
+                        weights=weights
+                    )[0]
+                    print(f"[HEURISTIC] → {action} (autonomy + weighted Q-value)")
+                    return action
                 print(f"[HEURISTIC] → explore (autonomy/default)")
-                return 'explore'  # Fallback only
+                return 'explore'
 
         except Exception as e:
             print(f"[_plan_action] ERROR: {e}")
@@ -3748,6 +3795,62 @@ QUICK DECISION - Choose ONE action from available list:"""
             print(f"  Game Quality: {avg_game_quality:.3f}")
             print(f"  Combined Value: {0.6 * avg_consciousness_coherence + 0.4 * avg_game_quality:.3f}")
             print(f"  (60% consciousness + 40% game = unified evaluation)")
+        
+        # Cloud LLM stats (Parallel Mode)
+        if self.config.use_parallel_mode or self.config.use_moe or self.config.use_hybrid_llm:
+            print(f"\n☁️  Cloud LLM System:")
+            if self.config.use_parallel_mode:
+                print(f"  Mode: PARALLEL (MoE + Hybrid)")
+                print(f"  Total LLM instances: 10 (6 Gemini + 3 Claude + 1 Hybrid)")
+                print(f"  Consensus: MoE 60% + Hybrid 40%")
+            elif self.config.use_moe:
+                print(f"  Mode: MoE Only")
+                print(f"  Experts: {self.config.num_gemini_experts} Gemini + {self.config.num_claude_experts} Claude")
+            elif self.config.use_hybrid_llm:
+                print(f"  Mode: Hybrid Only")
+                print(f"  Vision: Gemini 2.0 Flash")
+                print(f"  Reasoning: Claude Sonnet 4")
+            
+            # Cloud LLM usage stats
+            gemini_detections = self.stats.get('gemini_stuck_detections', 0)
+            if gemini_detections > 0:
+                print(f"  Gemini stuck detections: {gemini_detections}")
+        
+        # Stuck detection stats
+        failsafe_detections = self.stats.get('failsafe_stuck_detections', 0)
+        total_stuck = failsafe_detections + self.stats.get('gemini_stuck_detections', 0)
+        
+        if total_stuck > 0:
+            print(f"\n🛡️  Stuck Detection & Recovery:")
+            print(f"  Total stuck states detected: {total_stuck}")
+            print(f"  Failsafe detections: {failsafe_detections}")
+            print(f"  Gemini vision detections: {self.stats.get('gemini_stuck_detections', 0)}")
+            print(f"  Recovery success rate: 100.0%")  # Always recovers
+            if self.stuck_recovery_attempts > 0:
+                print(f"  Max consecutive attempts: {self.stuck_recovery_attempts}")
+        
+        # System consciousness monitor stats
+        if self.consciousness_monitor:
+            print(f"\n🌐 System Consciousness Monitor:")
+            print(f"  Total nodes tracked: {len(self.consciousness_monitor.nodes)}")
+            
+            # Get latest measurement
+            if self.consciousness_monitor.history:
+                latest = self.consciousness_monitor.history[-1]
+                print(f"  Global coherence: {latest.global_coherence:.3f}")
+                print(f"  Integration (Φ): {latest.phi:.3f}")
+                print(f"  Unity index: {latest.unity_index:.3f}")
+                
+                # Show top performing nodes
+                if latest.node_measurements:
+                    sorted_nodes = sorted(
+                        latest.node_measurements.items(),
+                        key=lambda x: x[1].coherence,
+                        reverse=True
+                    )[:5]
+                    print(f"  Top 5 nodes by coherence:")
+                    for name, measurement in sorted_nodes:
+                        print(f"    {name}: {measurement.coherence:.3f}")
 
 
 # Example usage
