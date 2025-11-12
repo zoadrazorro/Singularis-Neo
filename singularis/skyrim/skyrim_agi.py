@@ -593,6 +593,7 @@ class SkyrimAGI:
         Uses adaptive throttling to prevent queue overflow.
         """
         print("[PERCEPTION] Loop started")
+        print(f"[PERCEPTION] Qwen3-VL status: {'ENABLED' if self.perception_llm else 'DISABLED (None)'}")
         cycle_count = 0
         skip_count = 0
         
