@@ -561,25 +561,36 @@ class SkyrimAGI:
             try:
                 cycle_count += 1
                 
-                # Adaptive throttling: slow down if queue is filling up
+                # Check queue status BEFORE perceiving to avoid wasted work
                 queue_size = self.perception_queue.qsize()
                 max_queue_size = self.perception_queue.maxsize
                 
-                # If queue is more than 60% full, add extra delay
-                if queue_size >= max_queue_size * 0.6:
-                    throttle_delay = 2.0  # 2 second delay when queue is filling
-                    if skip_count % 10 == 0:  # Only log occasionally
-                        print(f"[PERCEPTION] Queue {queue_size}/{max_queue_size} - throttling")
-                elif queue_size >= max_queue_size * 0.4:
-                    throttle_delay = 1.0  # 1 second delay when queue is getting full
-                else:
-                    throttle_delay = self.config.perception_interval  # Normal speed
+                # If queue is full, skip perception entirely and wait
+                if queue_size >= max_queue_size:
+                    skip_count += 1
+                    if skip_count % 20 == 0:  # Only log every 20 skips
+                        print(f"[PERCEPTION] Queue full, skipped {skip_count} cycles")
+                    await asyncio.sleep(3.0)  # Long wait when queue is full
+                    continue
                 
-                # Perceive current state
+                # Adaptive throttling based on queue fullness
+                if queue_size >= max_queue_size * 0.6:
+                    # Queue is getting full - slow down significantly
+                    throttle_delay = 3.0
+                    if skip_count % 10 == 0:
+                        print(f"[PERCEPTION] Queue {queue_size}/{max_queue_size} - heavy throttling")
+                elif queue_size >= max_queue_size * 0.4:
+                    # Queue is moderately full - moderate slowdown
+                    throttle_delay = 2.0
+                else:
+                    # Queue has space - normal speed
+                    throttle_delay = self.config.perception_interval
+                
+                # Only perceive if queue has space
                 perception = await self.perception.perceive()
                 self.current_perception = perception
                 
-                # Queue perception for reasoning (non-blocking)
+                # Queue perception for reasoning (should succeed since we checked above)
                 try:
                     self.perception_queue.put_nowait({
                         'perception': perception,
@@ -587,10 +598,8 @@ class SkyrimAGI:
                         'timestamp': time.time()
                     })
                 except asyncio.QueueFull:
-                    # Skip if queue is full (reasoning is behind)
+                    # This shouldn't happen often since we check above
                     skip_count += 1
-                    if skip_count % 20 == 0:  # Only log every 20 skips
-                        print(f"[PERCEPTION] Queue full, skipped {skip_count} cycles")
                 
                 # Wait before next perception (adaptive)
                 await asyncio.sleep(throttle_delay)
