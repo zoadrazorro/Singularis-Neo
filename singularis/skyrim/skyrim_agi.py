@@ -80,6 +80,12 @@ class SkyrimConfig:
     max_concurrent_llm_calls: int = 3  # With 6 models (4 phi-4-mini + 2 big), can handle 3 concurrent
     reasoning_throttle: float = 0.5  # Min seconds between reasoning cycles (reduced for phi-4-mini)
 
+    # Model names for each phi-4-mini instance (can be endpoints like 'microsoft/phi-4-mini-reasoning:2')
+    phi4_main_model: str = "microsoft/phi-4-mini-reasoning"
+    phi4_rl_model: str = "microsoft/phi-4-mini-reasoning"
+    phi4_meta_model: str = "microsoft/phi-4-mini-reasoning"
+    phi4_action_model: str = "microsoft/phi-4-mini-reasoning"
+
     # Learning
     surprise_threshold: float = 0.3  # Threshold for learning from surprise
     exploration_weight: float = 0.5  # How much to favor exploration
@@ -317,7 +323,7 @@ class SkyrimAGI:
             print("\n[PHI4-RL] Initializing phi-4-mini for RL tactical reasoning...")
             rl_config = LMStudioConfig(
                 base_url=self.config.base_config.lm_studio_url,
-                model_name='microsoft/phi-4-mini-reasoning',
+                model_name=self.config.phi4_rl_model,
                 temperature=0.6,  # Lower temp for tactical decisions
                 max_tokens=1024   # Shorter responses for fast tactical reasoning
             )
@@ -343,7 +349,7 @@ class SkyrimAGI:
             print("\n[PHI4-META] Initializing phi-4-mini for meta-strategy coordination...")
             meta_config = LMStudioConfig(
                 base_url=self.config.base_config.lm_studio_url,
-                model_name='microsoft/phi-4-mini-reasoning',
+                model_name=self.config.phi4_meta_model,
                 temperature=0.7,  # Balanced for coordination
                 max_tokens=1536   # Medium length for coordination
             )
@@ -364,7 +370,7 @@ class SkyrimAGI:
             print("\n[PHI4-ACTION] Initializing phi-4-mini for immediate action planning...")
             action_config = LMStudioConfig(
                 base_url=self.config.base_config.lm_studio_url,
-                model_name='microsoft/phi-4-mini-reasoning',
+                model_name=self.config.phi4_action_model,
                 temperature=0.65,  # Balanced for exploration vs exploitation
                 max_tokens=512    # Very short for immediate decisions
             )
