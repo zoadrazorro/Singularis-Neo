@@ -2912,9 +2912,9 @@ REASONING: <explanation>"""
                             return 'sneak'
                 
                 # Try cloud LLM system (but not every cycle to avoid rate limits)
-                # Use cloud LLMs every 5th cycle or in critical situations
+                # Use cloud LLMs every 2nd cycle or in critical situations
                 use_cloud_llm = (
-                    self.cycle_count % 5 == 0 or  # Every 5th cycle
+                    self.cycle_count % 2 == 0 or  # Every 2nd cycle
                     game_state.health < 50 or  # Low health
                     game_state.enemies_nearby > 2 or  # Multiple enemies
                     game_state.in_combat  # In combat
@@ -2942,7 +2942,7 @@ REASONING: <explanation>"""
                         )
                     )
                 else:
-                    print(f"[RATE-LIMIT] Skipping cloud LLM (cycle {self.cycle_count % 5}/5)")
+                    print(f"[RATE-LIMIT] Skipping cloud LLM (cycle {self.cycle_count % 2}/2)")
                 
                 # Fallback: Start Local MoE in background (4x Qwen3-VL + Phi-4)
                 local_moe_task = None
