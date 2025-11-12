@@ -920,6 +920,7 @@ class SkyrimAGI:
         # Connect to strategic planner for reasoning
         if self.strategic_planner and hasattr(self.strategic_planner, 'set_moe'):
             self.strategic_planner.set_moe(self.moe)
+            self.strategic_planner.set_parallel_agi(self)
             print("[MoE] ✓ Connected to strategic planner")
         
         # Connect to meta-strategist
@@ -968,6 +969,7 @@ class SkyrimAGI:
         # Connect to strategic planner for reasoning
         if self.strategic_planner and hasattr(self.strategic_planner, 'set_hybrid_llm'):
             self.strategic_planner.set_hybrid_llm(self.hybrid_llm)
+            self.strategic_planner.set_parallel_agi(self)
             print("[HYBRID] ✓ Connected to strategic planner")
         
         # Connect to meta-strategist
@@ -2457,6 +2459,89 @@ Based on this visual and contextual data, provide:
             print(f"{'=' * 60}")
             self._print_final_stats()
 
+    async def _get_cloud_llm_action_recommendation(
+        self,
+        perception: Dict[str, Any],
+        state_dict: Dict[str, Any],
+        q_values: Dict[str, float],
+        available_actions: List[str],
+        motivation
+    ) -> Optional[Tuple[str, str]]:
+        """
+        Get action recommendation from parallel cloud LLM system.
+        
+        Returns:
+            (action, reasoning) or None if cloud LLMs unavailable
+        """
+        if not self.config.use_parallel_mode and not self.moe and not self.hybrid_llm:
+            return None
+        
+        try:
+            # Build prompts
+            vision_prompt = f"""Analyze this Skyrim gameplay situation:
+Scene: {perception.get('scene_type', 'unknown')}
+Health: {state_dict.get('health', 100)}%
+Stamina: {state_dict.get('stamina', 100)}%
+Magicka: {state_dict.get('magicka', 100)}%
+In Combat: {state_dict.get('in_combat', False)}
+Enemies Nearby: {state_dict.get('enemies_nearby', 0)}
+
+What do you see and what threats/opportunities are present?"""
+
+            reasoning_prompt = f"""Based on the current situation, recommend the best action:
+
+Available actions: {', '.join(available_actions)}
+
+Top Q-values (learned preferences):
+{chr(10).join(f'- {k}: {v:.2f}' for k, v in sorted(q_values.items(), key=lambda x: x[1], reverse=True)[:5])}
+
+Current motivation: {motivation.dominant_drive().value}
+
+Recommend ONE action from the available list and explain why.
+Format: ACTION: <action_name>
+REASONING: <explanation>"""
+
+            # Query parallel system
+            if self.config.use_parallel_mode:
+                response = await self.query_parallel_llm(
+                    vision_prompt=vision_prompt,
+                    reasoning_prompt=reasoning_prompt,
+                    image=perception.get('screenshot'),
+                    context=state_dict
+                )
+                reasoning_text = response['reasoning']
+            elif self.moe:
+                _, reasoning_resp = await self.moe.query_all_experts(
+                    vision_prompt=vision_prompt,
+                    reasoning_prompt=reasoning_prompt,
+                    image=perception.get('screenshot'),
+                    context=state_dict
+                )
+                reasoning_text = reasoning_resp.consensus
+            elif self.hybrid_llm:
+                reasoning_text = await self.hybrid_llm.generate_reasoning(
+                    prompt=reasoning_prompt,
+                    system_prompt="You are an expert Skyrim player providing tactical advice."
+                )
+            else:
+                return None
+            
+            # Parse action from response
+            if "ACTION:" in reasoning_text:
+                action_line = [l for l in reasoning_text.split('\n') if 'ACTION:' in l][0]
+                action = action_line.split('ACTION:')[1].strip().lower()
+                
+                # Validate action is in available list
+                if action in available_actions:
+                    print(f"[CLOUD-LLM] Recommended: {action}")
+                    return (action, reasoning_text)
+            
+            return None
+            
+        except Exception as e:
+            print(f"[CLOUD-LLM] Error: {e}")
+            return None
+    
     async def _plan_action(
         self,
         perception: Dict[str, Any],
@@ -2532,10 +2617,23 @@ Based on this visual and contextual data, provide:
                 # Get meta-strategic context
                 meta_context = self.meta_strategist.get_active_instruction_context()
                 
-                # RL reasoning neuron already connected to huihui
+                # Try cloud LLM system first (parallel MoE + Hybrid)
+                cloud_recommendation = await self._get_cloud_llm_action_recommendation(
+                    perception=perception,
+                    state_dict=state_dict,
+                    q_values=q_values,
+                    available_actions=available_actions,
+                    motivation=motivation
+                )
                 
-                # Start Huihui in background (don't wait)
-                print("[PARALLEL] Starting Huihui in background, using fast heuristic for immediate action")
+                if cloud_recommendation:
+                    action, reasoning = cloud_recommendation
+                    print(f"[CLOUD-LLM] Using cloud recommendation: {action}")
+                    print(f"[CLOUD-LLM] Reasoning: {reasoning[:200]}...")
+                    return action
+                
+                # Fallback: Start Huihui in background (don't wait)
+                print("[FALLBACK] Cloud LLM unavailable, using local heuristics")
                 
                 # Get visual analysis from Qwen3-VL if available
                 visual_analysis = perception.get('visual_analysis', '')

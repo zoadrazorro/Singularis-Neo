@@ -226,13 +226,17 @@ async def main():
     
     # Initialize LLM if requested
     if use_llm:
-        print("Initializing LLM...")
+        print("\n" + "=" * 70)
+        print("INITIALIZING CLOUD LLM SYSTEMS")
+        print("=" * 70)
         try:
             await agi.initialize_llm()
-            print("✓ LLM initialized")
+            print("\n✓ LLM initialization complete")
         except Exception as e:
-            print(f"⚠️  LLM initialization failed: {e}")
-            print("Continuing without LLM (will use heuristics)")
+            print(f"\n⚠️  LLM initialization failed: {e}")
+            import traceback
+            traceback.print_exc()
+            print("\nContinuing without LLM (will use heuristics)")
     
     print()
     

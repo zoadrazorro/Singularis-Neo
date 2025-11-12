@@ -76,6 +76,11 @@ class StrategicPlannerNeuron:
         # Success tracking
         self.plan_successes: int = 0
         self.plan_failures: int = 0
+        
+        # Cloud LLM integration
+        self.hybrid_llm = None
+        self.moe = None
+        self.parallel_agi = None  # Reference to main AGI for parallel queries
 
         print("[PLANNER] Strategic Planner Neuron initialized")
 
@@ -88,6 +93,21 @@ class StrategicPlannerNeuron:
         """
         self.rl_learner = rl_learner
         print("[PLANNER] Integrated with RL learner")
+    
+    def set_hybrid_llm(self, hybrid_llm):
+        """Set hybrid LLM for cloud-based planning."""
+        self.hybrid_llm = hybrid_llm
+        print("[PLANNER] ✓ Hybrid LLM connected")
+    
+    def set_moe(self, moe):
+        """Set MoE for expert consensus planning."""
+        self.moe = moe
+        print("[PLANNER] ✓ MoE connected")
+    
+    def set_parallel_agi(self, agi):
+        """Set reference to main AGI for parallel queries."""
+        self.parallel_agi = agi
+        print("[PLANNER] ✓ Parallel AGI reference connected")
     
     def record_experience(
         self,
