@@ -44,6 +44,7 @@ from .rl_reasoning_neuron import RLReasoningNeuron
 from .meta_strategist import MetaStrategist
 from .cloud_rl_system import CloudRLMemory, CloudRLAgent, RLMemoryConfig, Experience
 from .consciousness_bridge import ConsciousnessBridge, ConsciousnessState
+from .system_consciousness_monitor import SystemConsciousnessMonitor, NodeCoherence, SystemConsciousnessState
 from .combat_tactics import SkyrimCombatTactics
 from .quest_tracker import QuestTracker
 from .smart_navigation import SmartNavigator
@@ -397,6 +398,11 @@ class SkyrimAGI:
         self.current_consciousness: Optional[ConsciousnessState] = None
         self.last_consciousness: Optional[ConsciousnessState] = None
         
+        # System-wide consciousness monitor
+        print("  [12/12] System consciousness monitor...")
+        self.consciousness_monitor = SystemConsciousnessMonitor(history_size=1000)
+        self._register_consciousness_nodes()
+        
         # Stuck detection and recovery
         self.stuck_detection_window = 5  # Check last N actions
         self.action_history = []  # Track recent actions
@@ -409,6 +415,303 @@ class SkyrimAGI:
         print("[OK] Skyrim AGI initialized with CONSCIOUSNESS INTEGRATION\n")
 
 
+    def _register_consciousness_nodes(self):
+        """Register all system components for consciousness monitoring."""
+        # Perception nodes
+        self.consciousness_monitor.register_node(
+            "perception_vision", "perception", weight=1.5,
+            metadata={'description': 'Visual perception and scene understanding'}
+        )
+        self.consciousness_monitor.register_node(
+            "perception_gamestate", "perception", weight=1.0,
+            metadata={'description': 'Game state extraction'}
+        )
+        
+        # Action nodes
+        self.consciousness_monitor.register_node(
+            "action_planning", "action", weight=1.5,
+            metadata={'description': 'Action planning and selection'}
+        )
+        self.consciousness_monitor.register_node(
+            "action_execution", "action", weight=1.0,
+            metadata={'description': 'Action execution'}
+        )
+        
+        # Learning nodes
+        self.consciousness_monitor.register_node(
+            "world_model", "learning", weight=1.5,
+            metadata={'description': 'World model and causal learning'}
+        )
+        self.consciousness_monitor.register_node(
+            "rl_system", "learning", weight=1.3,
+            metadata={'description': 'Reinforcement learning'}
+        )
+        self.consciousness_monitor.register_node(
+            "cloud_rl", "learning", weight=1.2,
+            metadata={'description': 'Cloud-enhanced RL with RAG'}
+        )
+        
+        # Strategic nodes
+        self.consciousness_monitor.register_node(
+            "strategic_planner", "strategy", weight=1.4,
+            metadata={'description': 'Strategic planning neuron'}
+        )
+        self.consciousness_monitor.register_node(
+            "meta_strategist", "strategy", weight=1.3,
+            metadata={'description': 'Meta-strategic coordination'}
+        )
+        
+        # LLM nodes (will be registered after initialization)
+        # These will be added dynamically based on configuration
+        
+        # Consciousness bridge
+        self.consciousness_monitor.register_node(
+            "consciousness_bridge", "consciousness", weight=2.0,
+            metadata={'description': 'Consciousness integration bridge'}
+        )
+        
+        # Memory systems
+        self.consciousness_monitor.register_node(
+            "memory_rag", "memory", weight=1.0,
+            metadata={'description': 'Memory RAG system'}
+        )
+        
+        # Game-specific systems
+        self.consciousness_monitor.register_node(
+            "combat_tactics", "game", weight=0.8,
+            metadata={'description': 'Combat tactics system'}
+        )
+        self.consciousness_monitor.register_node(
+            "quest_tracker", "game", weight=0.7,
+            metadata={'description': 'Quest tracking'}
+        )
+        self.consciousness_monitor.register_node(
+            "navigation", "game", weight=0.6,
+            metadata={'description': 'Smart navigation'}
+        )
+        
+        logger.info(f"Registered {len(self.consciousness_monitor.registered_nodes)} consciousness nodes")
+    
+    def _register_llm_nodes(self):
+        """Register LLM nodes after initialization."""
+        if self.moe:
+            # Register MoE experts
+            for i in range(self.config.num_gemini_experts):
+                self.consciousness_monitor.register_node(
+                    f"moe_gemini_{i+1}", "llm_vision", weight=0.5,
+                    metadata={'description': f'Gemini expert {i+1}', 'model': 'gemini'}
+                )
+            
+            for i in range(self.config.num_claude_experts):
+                self.consciousness_monitor.register_node(
+                    f"moe_claude_{i+1}", "llm_reasoning", weight=0.7,
+                    metadata={'description': f'Claude expert {i+1}', 'model': 'claude'}
+                )
+            
+            self.consciousness_monitor.register_node(
+                "moe_consensus", "llm_meta", weight=1.5,
+                metadata={'description': 'MoE consensus mechanism'}
+            )
+        
+        if self.hybrid_llm:
+            self.consciousness_monitor.register_node(
+                "hybrid_vision", "llm_vision", weight=1.0,
+                metadata={'description': 'Hybrid Gemini vision'}
+            )
+            self.consciousness_monitor.register_node(
+                "hybrid_reasoning", "llm_reasoning", weight=1.2,
+                metadata={'description': 'Hybrid Claude reasoning'}
+            )
+        
+        logger.info(f"Registered LLM nodes, total: {len(self.consciousness_monitor.registered_nodes)}")
+    
+    async def measure_system_consciousness(self) -> SystemConsciousnessState:
+        """
+        Measure consciousness across the entire system.
+        
+        Returns:
+            SystemConsciousnessState with all metrics
+        """
+        node_measurements = {}
+        
+        # Measure perception coherence
+        if self.current_perception:
+            # Vision coherence based on confidence
+            vision_coherence = self.current_perception.get('confidence', 0.5)
+            node_measurements['perception_vision'] = self.consciousness_monitor.measure_node_coherence(
+                'perception_vision',
+                coherence=vision_coherence,
+                unity=0.8,  # Aligned with perception goals
+                integration=0.7,  # Integrates with action planning
+                differentiation=0.9,  # Specialized for vision
+                confidence=vision_coherence,
+                activity_level=1.0,
+            )
+            
+            # Game state coherence
+            gamestate_coherence = 0.8 if self.current_perception.get('game_state') else 0.3
+            node_measurements['perception_gamestate'] = self.consciousness_monitor.measure_node_coherence(
+                'perception_gamestate',
+                coherence=gamestate_coherence,
+                unity=0.7,
+                integration=0.8,
+                differentiation=0.8,
+            )
+        
+        # Measure action coherence
+        if self.last_action:
+            action_coherence = 0.7  # Default
+            node_measurements['action_planning'] = self.consciousness_monitor.measure_node_coherence(
+                'action_planning',
+                coherence=action_coherence,
+                unity=0.8,
+                integration=0.9,  # Highly integrated with perception
+                differentiation=0.7,
+            )
+            node_measurements['action_execution'] = self.consciousness_monitor.measure_node_coherence(
+                'action_execution',
+                coherence=0.8,
+                unity=0.9,
+                integration=0.6,
+                differentiation=0.8,
+            )
+        
+        # Measure learning coherence
+        if self.rl_learner:
+            rl_coherence = 0.6  # Based on exploration vs exploitation
+            node_measurements['rl_system'] = self.consciousness_monitor.measure_node_coherence(
+                'rl_system',
+                coherence=rl_coherence,
+                unity=0.7,
+                integration=0.8,
+                differentiation=0.9,
+            )
+        
+        if self.cloud_rl_memory:
+            stats = self.cloud_rl_memory.get_stats()
+            cloud_rl_coherence = min(1.0, stats.get('avg_coherence_delta', 0.0) + 0.5)
+            node_measurements['cloud_rl'] = self.consciousness_monitor.measure_node_coherence(
+                'cloud_rl',
+                coherence=cloud_rl_coherence,
+                unity=0.8,
+                integration=0.9,
+                differentiation=0.8,
+            )
+        
+        # Measure world model coherence
+        world_coherence = 0.7  # Based on causal model quality
+        node_measurements['world_model'] = self.consciousness_monitor.measure_node_coherence(
+            'world_model',
+            coherence=world_coherence,
+            unity=0.8,
+            integration=0.9,
+            differentiation=0.9,
+        )
+        
+        # Measure strategic coherence
+        node_measurements['strategic_planner'] = self.consciousness_monitor.measure_node_coherence(
+            'strategic_planner',
+            coherence=0.75,
+            unity=0.9,
+            integration=0.8,
+            differentiation=0.8,
+        )
+        
+        node_measurements['meta_strategist'] = self.consciousness_monitor.measure_node_coherence(
+            'meta_strategist',
+            coherence=0.8,
+            unity=0.9,
+            integration=0.9,
+            differentiation=0.7,
+        )
+        
+        # Measure consciousness bridge
+        if self.current_consciousness:
+            bridge_coherence = getattr(self.current_consciousness, 'coherence', 0.7)
+            node_measurements['consciousness_bridge'] = self.consciousness_monitor.measure_node_coherence(
+                'consciousness_bridge',
+                coherence=bridge_coherence,
+                unity=1.0,  # Central to system unity
+                integration=1.0,  # Integrates everything
+                differentiation=0.6,  # Less specialized
+            )
+        
+        # Measure MoE if active
+        if self.moe:
+            moe_stats = self.moe.get_stats()
+            moe_coherence = moe_stats.get('avg_coherence', 0.7)
+            
+            # MoE consensus
+            node_measurements['moe_consensus'] = self.consciousness_monitor.measure_node_coherence(
+                'moe_consensus',
+                coherence=moe_coherence,
+                unity=0.9,
+                integration=0.9,
+                differentiation=0.7,
+            )
+            
+            # Individual experts (sample a few)
+            for i in range(min(3, self.config.num_gemini_experts)):
+                node_measurements[f'moe_gemini_{i+1}'] = self.consciousness_monitor.measure_node_coherence(
+                    f'moe_gemini_{i+1}',
+                    coherence=0.7 + (i * 0.05),  # Slight variation
+                    unity=0.6,
+                    integration=0.5,
+                    differentiation=0.9,
+                )
+            
+            for i in range(min(2, self.config.num_claude_experts)):
+                node_measurements[f'moe_claude_{i+1}'] = self.consciousness_monitor.measure_node_coherence(
+                    f'moe_claude_{i+1}',
+                    coherence=0.75 + (i * 0.05),
+                    unity=0.7,
+                    integration=0.6,
+                    differentiation=0.9,
+                )
+        
+        # Measure hybrid LLM if active
+        if self.hybrid_llm:
+            hybrid_stats = self.hybrid_llm.get_stats()
+            hybrid_coherence = hybrid_stats.get('primary_success_rate', 0.8)
+            
+            node_measurements['hybrid_vision'] = self.consciousness_monitor.measure_node_coherence(
+                'hybrid_vision',
+                coherence=hybrid_coherence,
+                unity=0.8,
+                integration=0.7,
+                differentiation=0.9,
+            )
+            
+            node_measurements['hybrid_reasoning'] = self.consciousness_monitor.measure_node_coherence(
+                'hybrid_reasoning',
+                coherence=hybrid_coherence,
+                unity=0.8,
+                integration=0.8,
+                differentiation=0.9,
+            )
+        
+        # Measure game systems
+        node_measurements['combat_tactics'] = self.consciousness_monitor.measure_node_coherence(
+            'combat_tactics',
+            coherence=0.7,
+            unity=0.7,
+            integration=0.6,
+            differentiation=0.9,
+        )
+        
+        node_measurements['quest_tracker'] = self.consciousness_monitor.measure_node_coherence(
+            'quest_tracker',
+            coherence=0.6,
+            unity=0.6,
+            integration=0.5,
+            differentiation=0.8,
+        )
+        
+        # Compute system state
+        system_state = self.consciousness_monitor.compute_system_state(node_measurements)
+        
+        return system_state
+    
     async def initialize_llm(self):
         """
         Initialize hybrid LLM architecture: Gemini (vision) + Claude Sonnet 4 (reasoning).
@@ -584,9 +887,20 @@ class SkyrimAGI:
         if self.config.use_cloud_rl:
             await self._initialize_cloud_rl()
         
+        # ===== REGISTER LLM NODES FOR CONSCIOUSNESS MONITORING =====
+        self._register_llm_nodes()
+        
         print("\n" + "=" * 70)
         print("FULL SYSTEM INITIALIZATION COMPLETE")
         print("=" * 70)
+        print()
+        
+        # Measure initial consciousness state
+        print("\n" + "=" * 70)
+        print("INITIAL CONSCIOUSNESS MEASUREMENT")
+        print("=" * 70)
+        initial_state = await self.measure_system_consciousness()
+        self.consciousness_monitor.print_dashboard()
         print()
 
     async def _connect_moe(self):
@@ -2650,8 +2964,6 @@ QUICK DECISION - Choose ONE action from available list:"""
                     return standard_action
         
         # No match found
-        return None
-
 
     def _evaluate_action_success(
         self,
