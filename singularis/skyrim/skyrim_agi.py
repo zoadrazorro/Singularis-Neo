@@ -1600,7 +1600,7 @@ class SkyrimAGI:
                 # Skip if in menu or dialogue
                 if game_state:
                     scene_type = perception.get('scene_type', SceneType.UNKNOWN)
-                    if scene_type in [SceneType.MENU, SceneType.DIALOGUE, SceneType.INVENTORY]:
+                    if scene_type in [SceneType.DIALOGUE, SceneType.INVENTORY, SceneType.MAP]:
                         await asyncio.sleep(1.0)
                         continue
                     
