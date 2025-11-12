@@ -22,7 +22,7 @@ async def main():
     # Configuration
     dry_run = input("Run in DRY RUN mode (safe, no control)? [Y/n]: ").strip().lower()
     dry_run = dry_run != 'n'
-    
+    u
     if not dry_run:
         print()
         print("⚠️  WARNING: AGI will control your keyboard and mouse!")
