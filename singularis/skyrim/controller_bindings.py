@@ -68,33 +68,33 @@ class SkyrimControllerBindings:
         layer = self.controller.create_action_layer("Exploration", priority=0)
         
         # Movement actions
-        async def move_forward(ctrl):
-            await ctrl.move(0, 1.0, duration=1.0)
+        async def move_forward(ctrl, duration=1.0):
+            await ctrl.move(0, 1.0, duration=duration)
         
-        async def move_backward(ctrl):
-            await ctrl.move(0, -1.0, duration=1.0)
+        async def move_backward(ctrl, duration=1.0):
+            await ctrl.move(0, -1.0, duration=duration)
         
-        async def move_left(ctrl):
-            await ctrl.move(-1.0, 0, duration=1.0)
+        async def move_left(ctrl, duration=1.0):
+            await ctrl.move(-1.0, 0, duration=duration)
         
-        async def move_right(ctrl):
-            await ctrl.move(1.0, 0, duration=1.0)
+        async def move_right(ctrl, duration=1.0):
+            await ctrl.move(1.0, 0, duration=duration)
         
         async def sprint(ctrl):
             await ctrl.tap_button(XboxButton.LS)  # Click left stick to sprint
         
         # Camera actions
         async def look_up(ctrl):
-            await ctrl.look(0, 1.0, duration=0.3)
+            await ctrl.look(0, 1.0, duration=1.0)
         
         async def look_down(ctrl):
-            await ctrl.look(0, -1.0, duration=0.3)
+            await ctrl.look(0, -1.0, duration=1.0)
         
         async def look_left(ctrl):
-            await ctrl.look(-1.0, 0, duration=0.3)
+            await ctrl.look(-1.0, 0, duration=1.0)
         
         async def look_right(ctrl):
-            await ctrl.look(1.0, 0, duration=0.3)
+            await ctrl.look(1.0, 0, duration=1.0)
         
         # Basic actions
         async def jump(ctrl):

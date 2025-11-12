@@ -1848,33 +1848,33 @@ QUICK DECISION - Choose ONE action from available list:"""
         elif action in ('interact', 'activate'):
             # Look at target briefly before activating
             print(f"[ACTION] Interacting with object/NPC")
-            await self.actions.execute(Action(ActionType.ACTIVATE))
+            await self.actions.execute(Action(ActionType.ACTIVATE, duration=0.3))
             await asyncio.sleep(0.5)  # Brief pause after activation
         elif action == 'navigate':
             await self.actions.move_forward(duration=2.0)
         elif action == 'rest':
-            await self.actions.execute(Action(ActionType.WAIT))
+            await self.actions.execute(Action(ActionType.WAIT, duration=1.0))
         elif action == 'practice':
-            await self.actions.execute(Action(ActionType.ATTACK))
+            await self.actions.execute(Action(ActionType.ATTACK, duration=0.3))
         elif action == 'quest_objective':
             await self.actions.move_forward(duration=2.0)
         elif action == 'move_forward':
             await self.actions.move_forward(duration=1.5)
         elif action == 'jump':
-            await self.actions.execute(Action(ActionType.JUMP))
+            await self.actions.execute(Action(ActionType.JUMP, duration=0.2))
         elif action == 'sneak':
-            await self.actions.execute(Action(ActionType.SNEAK))
+            await self.actions.execute(Action(ActionType.SNEAK, duration=0.5))
         elif action == 'attack':
-            await self.actions.execute(Action(ActionType.ATTACK))
+            await self.actions.execute(Action(ActionType.ATTACK, duration=0.3))
         elif action in ('power_attack', 'quick_attack'):
-            # Combat actions - use attack for now
-            await self.actions.execute(Action(ActionType.ATTACK))
+            # Combat actions - hold attack longer for power attack
+            await self.actions.execute(Action(ActionType.ATTACK, duration=0.8))
         elif action == 'block':
-            # Block action
-            await self.actions.execute(Action(ActionType.BLOCK))
+            # Block action - hold to block
+            await self.actions.execute(Action(ActionType.BLOCK, duration=1.0))
         elif action in ('bash', 'shout'):
             # Special combat actions - use attack as fallback
-            await self.actions.execute(Action(ActionType.ATTACK))
+            await self.actions.execute(Action(ActionType.ATTACK, duration=0.4))
         elif action == 'dodge':
             # Dodge by moving backward briefly
             await self.actions.move_backward(duration=0.5)
@@ -1884,11 +1884,11 @@ QUICK DECISION - Choose ONE action from available list:"""
         elif action == 'heal':
             # Open inventory to heal (simplified)
             print("[ACTION] Attempting to heal (opening inventory)")
-            await self.actions.execute(Action(ActionType.INVENTORY))
+            await self.actions.execute(Action(ActionType.INVENTORY, duration=0.2))
             await asyncio.sleep(0.5)
         elif action == 'exit':
             # Exit menu/dialogue
-            await self.actions.execute(Action(ActionType.BACK))
+            await self.actions.execute(Action(ActionType.BACK, duration=0.2))
         elif action == 'look_around':
             # Human-like looking behavior
             await self.actions.look_around()
@@ -1909,7 +1909,7 @@ QUICK DECISION - Choose ONE action from available list:"""
             if target_layer == 'Combat':
                 self.bindings.switch_to_combat()
                 # Perform a combat-ready action
-                await self.actions.execute(Action(ActionType.ATTACK))
+                await self.actions.execute(Action(ActionType.ATTACK, duration=0.3))
             elif target_layer == 'Menu':
                 self.bindings.switch_to_menu()
                 # Open menu (would be handled by controller bindings)
@@ -1917,7 +1917,7 @@ QUICK DECISION - Choose ONE action from available list:"""
             elif target_layer == 'Stealth':
                 self.bindings.switch_to_stealth()
                 # Enter sneak mode
-                await self.actions.execute(Action(ActionType.SNEAK))
+                await self.actions.execute(Action(ActionType.SNEAK, duration=0.5))
             elif target_layer == 'Exploration':
                 self.bindings.switch_to_exploration()
                 # Continue exploration

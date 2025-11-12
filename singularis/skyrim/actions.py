@@ -223,9 +223,8 @@ class SkyrimActions:
                 ctrl_action_name = self._controller_action_map.get(action.action_type)
                 print(f"[DEBUG] Controller mapping: {ctrl_action_name}")
                 if ctrl_action_name is not None:
-                    result = await self.controller.execute_action(ctrl_action_name)
-                    if action.duration > 0:
-                        await asyncio.sleep(action.duration)
+                    result = await self.controller.execute_action(ctrl_action_name, duration=action.duration)
+                    # No additional sleep needed - duration is handled by controller
                     duration = time.time() - start_time
                     self.stats['actions_executed'] += 1
                     self.stats['total_duration'] += duration
@@ -608,11 +607,11 @@ class SkyrimActions:
         """Look around (move camera randomly)."""
         import random
         if self.controller is not None:
-            # Random right stick movement
-            h = random.uniform(-0.7, 0.7)
-            v = random.uniform(-0.4, 0.4)
-            await self.controller.look(h, v, duration=0.5)
-            await self.controller.look(0, 0, duration=0.05)
+            # Random right stick movement - more pronounced
+            h = random.uniform(-1.0, 1.0)
+            v = random.uniform(-0.6, 0.6)
+            await self.controller.look(h, v, duration=1.5)
+            await self.controller.look(0, 0, duration=0.1)
             return
         if not PYAUTOGUI_AVAILABLE:
             print("[DUMMY] Looking around")

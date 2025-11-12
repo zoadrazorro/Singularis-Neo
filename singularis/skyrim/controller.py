@@ -506,12 +506,13 @@ class VirtualXboxController:
         if layer_name in self.action_layers:
             self.action_layers[layer_name].bindings[action_name] = binding
     
-    async def execute_action(self, action_name: str) -> bool:
+    async def execute_action(self, action_name: str, duration: float = 0.0) -> bool:
         """
         Execute a named action from the active layer.
         
         Args:
             action_name: Name of the action to execute
+            duration: Duration for movement/hold actions (ignored for taps)
         
         Returns:
             Success status
@@ -532,7 +533,8 @@ class VirtualXboxController:
                     await self.tap_button(binding)
                     return True
                 elif callable(binding):
-                    await binding(self)
+                    # Pass duration to callable (for movement actions)
+                    await binding(self, duration if duration > 0 else 1.0)
                     return True
         
         return False
