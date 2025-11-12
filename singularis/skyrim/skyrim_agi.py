@@ -619,6 +619,8 @@ class SkyrimAGI:
                 
             except Exception as e:
                 print(f"[PERCEPTION] Error: {e}")
+                import traceback
+                traceback.print_exc()
                 await asyncio.sleep(1.0)
         
         print(f"[PERCEPTION] Loop ended (skipped {skip_count} cycles)")
@@ -807,6 +809,8 @@ class SkyrimAGI:
                 await asyncio.sleep(0.5)
             except Exception as e:
                 print(f"[ACTION] Error: {e}")
+                import traceback
+                traceback.print_exc()
                 await asyncio.sleep(1.0)
         
         print("[ACTION] Loop ended")
@@ -1376,13 +1380,15 @@ class SkyrimAGI:
             # Meta-strategic reasoning: Should we switch layers?
             optimal_layer = None
             
+            print(f"[META-STRATEGY] Evaluating layer switches (current: {current_layer})")
+            
             # Combat situations - prioritize Combat layer if effective
             if game_state.in_combat or scene_type == SceneType.COMBAT:
                 if current_layer != "Combat":
                     combat_effectiveness = strategic_analysis['layer_effectiveness'].get('Combat', 0.5)
                     if combat_effectiveness > 0.6:
                         optimal_layer = "Combat"
-                        print(f"[META-STRATEGY] Switching to Combat layer (effectiveness: {combat_effectiveness:.2f})")
+                        print(f"[META-STRATEGY] ✓ Switching to Combat layer (effectiveness: {combat_effectiveness:.2f}, {game_state.enemies_nearby} enemies)")
                 
                 # Choose combat action based on context
                 if game_state.enemies_nearby > 2:
@@ -1398,11 +1404,13 @@ class SkyrimAGI:
                     menu_effectiveness = strategic_analysis['layer_effectiveness'].get('Menu', 0.5)
                     if menu_effectiveness > 0.5:
                         optimal_layer = "Menu"
-                        print(f"[META-STRATEGY] Switching to Menu layer for healing (effectiveness: {menu_effectiveness:.2f})")
+                        print(f"[META-STRATEGY] ✓ Switching to Menu layer for healing (health: {game_state.health:.0f})")
             
                 if 'consume_item' in available_actions:
+                    print(f"[META-STRATEGY] → Action: consume_item (critical health: {game_state.health:.0f})")
                     return 'consume_item'
                 else:
+                    print(f"[META-STRATEGY] → Action: rest (health recovery needed)")
                     return 'rest'
 
             # Stealth opportunities
@@ -1412,12 +1420,15 @@ class SkyrimAGI:
                 stealth_effectiveness = strategic_analysis['layer_effectiveness'].get('Stealth', 0.5)
                 if stealth_effectiveness > 0.6 and current_layer != "Stealth":
                     optimal_layer = "Stealth"
-                    print(f"[META-STRATEGY] Switching to Stealth layer (effectiveness: {stealth_effectiveness:.2f})")
+                    print(f"[META-STRATEGY] ✓ Switching to Stealth layer (effectiveness: {stealth_effectiveness:.2f}, {len(game_state.nearby_npcs)} NPCs nearby)")
 
             # If we determined an optimal layer, suggest layer transition
             if optimal_layer and optimal_layer != current_layer:
                 # Return a meta-action that will trigger layer switch
+                print(f"[META-STRATEGY] → Action: switch_to_{optimal_layer.lower()}")
                 return f'switch_to_{optimal_layer.lower()}'
+            elif optimal_layer:
+                print(f"[META-STRATEGY] Already in optimal layer: {current_layer}")
 
             # Try LLM-based planning if available, otherwise use heuristics
             has_attr = hasattr(self.agi, 'consciousness_llm')
@@ -1450,40 +1461,56 @@ class SkyrimAGI:
             # More intelligent heuristics with scene awareness
             dominant_drive = motivation.dominant_drive().value
             
+            print(f"[HEURISTIC] Fallback planning (drive: {dominant_drive}, scene: {scene_type.value}, health: {game_state.health:.0f})")
+            
             # Consider scene type for better context-aware decisions
             if scene_type == SceneType.COMBAT or game_state.in_combat:
                 # In combat, prioritize survival
                 if game_state.health < 40:
+                    print(f"[HEURISTIC] → block (defensive, low health)")
                     return 'block'  # Defensive when low health
                 elif game_state.enemies_nearby > 2:
-                    return 'power_attack' if 'power_attack' in available_actions else 'combat'
+                    action = 'power_attack' if 'power_attack' in available_actions else 'combat'
+                    print(f"[HEURISTIC] → {action} (multiple enemies: {game_state.enemies_nearby})")
+                    return action
                 else:
+                    print(f"[HEURISTIC] → combat (standard engagement)")
                     return 'combat'
             
             # Scene-specific actions
             if scene_type in [SceneType.INDOOR_BUILDING, SceneType.INDOOR_DUNGEON]:
                 # Indoor: prioritize interaction and careful exploration
                 if 'activate' in available_actions and dominant_drive == 'curiosity':
+                    print(f"[HEURISTIC] → activate (indoor curiosity)")
                     return 'activate'
+                print(f"[HEURISTIC] → navigate (careful indoor movement)")
                 return 'navigate'  # Careful indoor movement
             
             # Motivation-based selection (for outdoor/general scenes)
             if dominant_drive == 'curiosity':
                 if 'activate' in available_actions:
+                    print(f"[HEURISTIC] → activate (curiosity-driven interaction)")
                     return 'activate'  # Interact with world
+                print(f"[HEURISTIC] → explore (curiosity-driven exploration)")
                 return 'explore'  # Forward-biased exploration
             elif dominant_drive == 'competence':
                 if 'power_attack' in available_actions and current_layer == "Combat":
+                    print(f"[HEURISTIC] → power_attack (competence training)")
                     return 'power_attack'  # Practice advanced combat
                 elif 'backstab' in available_actions and current_layer == "Stealth":
+                    print(f"[HEURISTIC] → backstab (stealth practice)")
                     return 'backstab'  # Practice stealth
+                print(f"[HEURISTIC] → explore (competence through exploration)")
                 return 'explore'  # Practice by exploring (forward-biased)
             elif dominant_drive == 'coherence':
                 # For coherence, prefer gentle exploration over rest unless critical
                 if game_state.health < 30:
+                    print(f"[HEURISTIC] → rest (coherence restoration, critical health)")
                     return 'rest'  # Only rest if low health
+                print(f"[HEURISTIC] → explore (coherence through gentle exploration)")
                 return 'explore'  # Gentle forward exploration
             else:  # autonomy or default
+                print(f"[HEURISTIC] → explore (autonomy/default)")
                 return 'explore'  # Exercise autonomy through forward exploration
 
         except Exception as e:
