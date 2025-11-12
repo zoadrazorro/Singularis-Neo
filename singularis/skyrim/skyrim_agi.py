@@ -82,8 +82,8 @@ class SkyrimConfig:
     reasoning_throttle: float = 0.5  # Min seconds between reasoning cycles
 
     # Model names for mistral-7b instances (using base and :2 endpoints)
-    phi4_main_model: str = "mistralai/mistral-7b-instruct-v0.3"
-    phi4_action_model: str = "mistralai/mistral-7b-instruct-v0.3:2"
+    phi4_main_model: str = "mistralai/Mistral-7B-Instruct-v0.3"
+    phi4_action_model: str = "mistralai/Mistral-7B-Instruct-v0.3:2"
 
     # Learning
     surprise_threshold: float = 0.3  # Threshold for learning from surprise
@@ -331,13 +331,13 @@ class SkyrimAGI:
         # ===== MISTRAL-7B INSTANCES (2x) - TACTICAL REASONING =====
         
         # 1. Main consciousness LLM (mistral-7b)
-        print("[PHI4-MAIN] Initializing primary consciousness engine...")
+        print("[MISTRAL-MAIN] Initializing primary consciousness engine...")
         await self.agi.initialize_llm()
         
         # Connect consciousness_llm to bridge
         if hasattr(self.agi, 'consciousness_llm') and self.agi.consciousness_llm:
             self.consciousness_bridge.consciousness_llm = self.agi.consciousness_llm
-            print("[PHI4-MAIN] ✓ Consciousness LLM connected to bridge")
+            print("[MISTRAL-MAIN] ✓ Consciousness LLM connected to bridge")
             print(f"[MISTRAL-MAIN] Model: {self.config.phi4_main_model} (consciousness + action planning)")
         else:
             print("[MISTRAL-MAIN] ⚠️ No consciousness LLM available, bridge uses heuristics only")

@@ -53,8 +53,8 @@ async def main():
         save_interval=300,
         surprise_threshold=0.3,
         exploration_weight=0.5,
-        phi4_main_model="mistralai/mistral-7b-instruct-v0.3",
-        phi4_action_model="mistralai/mistral-7b-instruct-v0.3:2",
+        phi4_main_model="mistralai/Mistral-7B-Instruct-v0.3",
+        phi4_action_model="mistralai/Mistral-7B-Instruct-v0.3:2",
     )
     
     # Create AGI
