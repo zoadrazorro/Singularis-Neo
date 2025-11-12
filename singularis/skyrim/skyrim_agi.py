@@ -270,6 +270,14 @@ class SkyrimAGI:
             'quests_completed': 0,
             'total_playtime': 0.0,
             'game_state_quality_history': [],  # Replaces coherence_history
+            # Performance metrics
+            'action_success_count': 0,
+            'action_failure_count': 0,
+            'llm_action_count': 0,
+            'heuristic_action_count': 0,
+            'rl_action_count': 0,
+            'planning_times': [],  # Track planning duration
+            'execution_times': [],  # Track execution duration
         }
 
         # Set up controller reference in perception for layer awareness
@@ -611,6 +619,8 @@ class SkyrimAGI:
                 
             except Exception as e:
                 print(f"[PERCEPTION] Error: {e}")
+                import traceback
+                traceback.print_exc()
                 await asyncio.sleep(1.0)
         
         print(f"[PERCEPTION] Loop ended (skipped {skip_count} cycles)")
@@ -700,16 +710,23 @@ class SkyrimAGI:
                     print(f"[REASONING] New goal: {self.current_goal}")
                 
                 # Plan action (with LLM throttling)
-                print("[REASONING] About to plan action...")
+                planning_start = time.time()
                 async with self.llm_semaphore:
                     action = await self._plan_action(
                         perception=perception,
                         motivation=mot_state,
                         goal=self.current_goal
                     )
-                print(f"[REASONING] Planned action: {action}")
+                planning_duration = time.time() - planning_start
+                self.stats['planning_times'].append(planning_duration)
+                
+                # Handle None action with fallback
                 if action is None:
-                    print("[REASONING] WARNING: No action returned by _plan_action!")
+                    print("[REASONING] WARNING: No action returned by _plan_action, using fallback")
+                    action = 'explore'  # Safe default fallback
+                    self.stats['heuristic_action_count'] += 1
+                
+                print(f"[REASONING] Planned action: {action} ({planning_duration:.3f}s)")
                 
                 # Queue action for execution (non-blocking)
                 try:
@@ -755,12 +772,19 @@ class SkyrimAGI:
                 
                 print(f"\n[ACTION] Executing: {action}")
                 
-                # Execute action
+                # Execute action with timing
+                execution_start = time.time()
                 try:
                     await self._execute_action(action, scene_type)
+                    execution_duration = time.time() - execution_start
+                    self.stats['execution_times'].append(execution_duration)
                     self.stats['actions_taken'] += 1
-                    print(f"[ACTION] Successfully executed: {action}")
+                    self.stats['action_success_count'] += 1
+                    print(f"[ACTION] Successfully executed: {action} ({execution_duration:.3f}s)")
                 except Exception as e:
+                    execution_duration = time.time() - execution_start
+                    self.stats['execution_times'].append(execution_duration)
+                    self.stats['action_failure_count'] += 1
                     print(f"[ACTION] Execution failed: {e}")
                     try:
                         await self.actions.look_around()
@@ -785,6 +809,8 @@ class SkyrimAGI:
                 await asyncio.sleep(0.5)
             except Exception as e:
                 print(f"[ACTION] Error: {e}")
+                import traceback
+                traceback.print_exc()
                 await asyncio.sleep(1.0)
         
         print("[ACTION] Loop ended")
@@ -1244,7 +1270,6 @@ class SkyrimAGI:
         motivation,
         goal: Optional[str] = None
     ) -> Optional[str]:
-        print("[_plan_action] Called with perception, motivation, goal:", perception, motivation, goal)
         try:
             """
             Plan next action based on perception, motivation, and goal.
@@ -1282,6 +1307,9 @@ class SkyrimAGI:
             if self.rl_learner is not None:
                 print("[PLANNING] Using RL-based action selection with LLM reasoning...")
                 print(f"[PLANNING] RL reasoning neuron LLM status: {'Connected' if self.rl_reasoning_neuron.llm_interface else 'Using heuristics'}")
+                
+                # Track RL usage
+                self.stats['rl_action_count'] += 1
                 
                 # Check if meta-strategist should generate new instruction
                 if await self.meta_strategist.should_generate_instruction():
@@ -1352,13 +1380,15 @@ class SkyrimAGI:
             # Meta-strategic reasoning: Should we switch layers?
             optimal_layer = None
             
+            print(f"[META-STRATEGY] Evaluating layer switches (current: {current_layer})")
+            
             # Combat situations - prioritize Combat layer if effective
             if game_state.in_combat or scene_type == SceneType.COMBAT:
                 if current_layer != "Combat":
                     combat_effectiveness = strategic_analysis['layer_effectiveness'].get('Combat', 0.5)
                     if combat_effectiveness > 0.6:
                         optimal_layer = "Combat"
-                        print(f"[META-STRATEGY] Switching to Combat layer (effectiveness: {combat_effectiveness:.2f})")
+                        print(f"[META-STRATEGY] ✓ Switching to Combat layer (effectiveness: {combat_effectiveness:.2f}, {game_state.enemies_nearby} enemies)")
                 
                 # Choose combat action based on context
                 if game_state.enemies_nearby > 2:
@@ -1374,11 +1404,13 @@ class SkyrimAGI:
                     menu_effectiveness = strategic_analysis['layer_effectiveness'].get('Menu', 0.5)
                     if menu_effectiveness > 0.5:
                         optimal_layer = "Menu"
-                        print(f"[META-STRATEGY] Switching to Menu layer for healing (effectiveness: {menu_effectiveness:.2f})")
+                        print(f"[META-STRATEGY] ✓ Switching to Menu layer for healing (health: {game_state.health:.0f})")
             
                 if 'consume_item' in available_actions:
+                    print(f"[META-STRATEGY] → Action: consume_item (critical health: {game_state.health:.0f})")
                     return 'consume_item'
                 else:
+                    print(f"[META-STRATEGY] → Action: rest (health recovery needed)")
                     return 'rest'
 
             # Stealth opportunities
@@ -1388,18 +1420,19 @@ class SkyrimAGI:
                 stealth_effectiveness = strategic_analysis['layer_effectiveness'].get('Stealth', 0.5)
                 if stealth_effectiveness > 0.6 and current_layer != "Stealth":
                     optimal_layer = "Stealth"
-                    print(f"[META-STRATEGY] Switching to Stealth layer (effectiveness: {stealth_effectiveness:.2f})")
+                    print(f"[META-STRATEGY] ✓ Switching to Stealth layer (effectiveness: {stealth_effectiveness:.2f}, {len(game_state.nearby_npcs)} NPCs nearby)")
 
             # If we determined an optimal layer, suggest layer transition
             if optimal_layer and optimal_layer != current_layer:
                 # Return a meta-action that will trigger layer switch
+                print(f"[META-STRATEGY] → Action: switch_to_{optimal_layer.lower()}")
                 return f'switch_to_{optimal_layer.lower()}'
+            elif optimal_layer:
+                print(f"[META-STRATEGY] Already in optimal layer: {current_layer}")
 
             # Try LLM-based planning if available, otherwise use heuristics
             has_attr = hasattr(self.agi, 'consciousness_llm')
             has_llm = has_attr and self.agi.consciousness_llm is not None
-            
-            print(f"[DEBUG] LLM Check: hasattr={has_attr}, consciousness_llm={self.agi.consciousness_llm if has_attr else 'N/A'}")
             
             if has_llm:
                 print("[PLANNING] Using LLM-based strategic planning...")
@@ -1410,6 +1443,7 @@ class SkyrimAGI:
                     )
                     if llm_action:
                         print(f"[LLM] Selected action: {llm_action}")
+                        self.stats['llm_action_count'] += 1
                         return llm_action
                     else:
                         print("[LLM] LLM returned None, falling back to heuristics")
@@ -1419,27 +1453,64 @@ class SkyrimAGI:
                     traceback.print_exc()
             else:
                 print("[PLANNING] LLM not available, using heuristic planning...")
-                if has_attr:
-                    print(f"[PLANNING] consciousness_llm value: {self.agi.consciousness_llm}")
+            
+            # Track heuristic usage
+            self.stats['heuristic_action_count'] += 1
 
             # Fallback: Action selection within current layer based on motivation
-            # Default to exploration with forward bias for most motivations
-            if motivation.dominant_drive().value == 'curiosity':
+            # More intelligent heuristics with scene awareness
+            dominant_drive = motivation.dominant_drive().value
+            
+            print(f"[HEURISTIC] Fallback planning (drive: {dominant_drive}, scene: {scene_type.value}, health: {game_state.health:.0f})")
+            
+            # Consider scene type for better context-aware decisions
+            if scene_type == SceneType.COMBAT or game_state.in_combat:
+                # In combat, prioritize survival
+                if game_state.health < 40:
+                    print(f"[HEURISTIC] → block (defensive, low health)")
+                    return 'block'  # Defensive when low health
+                elif game_state.enemies_nearby > 2:
+                    action = 'power_attack' if 'power_attack' in available_actions else 'combat'
+                    print(f"[HEURISTIC] → {action} (multiple enemies: {game_state.enemies_nearby})")
+                    return action
+                else:
+                    print(f"[HEURISTIC] → combat (standard engagement)")
+                    return 'combat'
+            
+            # Scene-specific actions
+            if scene_type in [SceneType.INDOOR_BUILDING, SceneType.INDOOR_DUNGEON]:
+                # Indoor: prioritize interaction and careful exploration
+                if 'activate' in available_actions and dominant_drive == 'curiosity':
+                    print(f"[HEURISTIC] → activate (indoor curiosity)")
+                    return 'activate'
+                print(f"[HEURISTIC] → navigate (careful indoor movement)")
+                return 'navigate'  # Careful indoor movement
+            
+            # Motivation-based selection (for outdoor/general scenes)
+            if dominant_drive == 'curiosity':
                 if 'activate' in available_actions:
+                    print(f"[HEURISTIC] → activate (curiosity-driven interaction)")
                     return 'activate'  # Interact with world
+                print(f"[HEURISTIC] → explore (curiosity-driven exploration)")
                 return 'explore'  # Forward-biased exploration
-            elif motivation.dominant_drive().value == 'competence':
+            elif dominant_drive == 'competence':
                 if 'power_attack' in available_actions and current_layer == "Combat":
+                    print(f"[HEURISTIC] → power_attack (competence training)")
                     return 'power_attack'  # Practice advanced combat
                 elif 'backstab' in available_actions and current_layer == "Stealth":
+                    print(f"[HEURISTIC] → backstab (stealth practice)")
                     return 'backstab'  # Practice stealth
+                print(f"[HEURISTIC] → explore (competence through exploration)")
                 return 'explore'  # Practice by exploring (forward-biased)
-            elif motivation.dominant_drive().value == 'coherence':
-                # Even for coherence, prefer gentle exploration over rest
+            elif dominant_drive == 'coherence':
+                # For coherence, prefer gentle exploration over rest unless critical
                 if game_state.health < 30:
+                    print(f"[HEURISTIC] → rest (coherence restoration, critical health)")
                     return 'rest'  # Only rest if low health
+                print(f"[HEURISTIC] → explore (coherence through gentle exploration)")
                 return 'explore'  # Gentle forward exploration
             else:  # autonomy or default
+                print(f"[HEURISTIC] → explore (autonomy/default)")
                 return 'explore'  # Exercise autonomy through forward exploration
 
         except Exception as e:
@@ -1472,10 +1543,8 @@ class SkyrimAGI:
         )
         
         if not llm_interface:
-            print("[PHI4-ACTION] No action planning LLM available")
             return None
         
-        print("[_plan_action_with_llm] Using LLM interface:", llm_interface)
         # Build compact context for fast phi-4-mini reasoning
         context = f"""SKYRIM AGENT - QUICK ACTION DECISION
 
@@ -1515,38 +1584,64 @@ QUICK DECISION - Choose ONE action from available list:"""
             traceback.print_exc()
             return None
 
-        print("[_plan_action_with_llm] Parsing LLM response:", response)
-        response_lower = response.lower()
+        # Parse LLM response for action with improved extraction
+        response_lower = response.lower().strip()
         
-        # Check for layer transition actions first
-        if 'switch_to_combat' in response_lower:
-            return 'switch_to_combat'
-        elif 'switch_to_menu' in response_lower:
-            return 'switch_to_menu'
-        elif 'switch_to_stealth' in response_lower:
-            return 'switch_to_stealth'
-        elif 'switch_to_exploration' in response_lower:
-            return 'switch_to_exploration'
+        # Try to extract action using multiple strategies
         
-        # Check for specific actions in available actions
+        # Strategy 1: Check for layer transition actions first (highest priority)
+        layer_transitions = {
+            'switch_to_combat': ['switch_to_combat', 'switch to combat', 'combat layer'],
+            'switch_to_menu': ['switch_to_menu', 'switch to menu', 'menu layer', 'open inventory'],
+            'switch_to_stealth': ['switch_to_stealth', 'switch to stealth', 'stealth layer', 'sneak mode'],
+            'switch_to_exploration': ['switch_to_exploration', 'switch to exploration', 'exploration layer']
+        }
+        
+        for action, patterns in layer_transitions.items():
+            if any(pattern in response_lower for pattern in patterns):
+                return action
+        
+        # Strategy 2: Look for exact matches with available actions
+        for action in available_actions:
+            # Check for exact word match (word boundaries)
+            action_lower = action.lower()
+            if f' {action_lower} ' in f' {response_lower} ' or response_lower.startswith(action_lower) or response_lower.endswith(action_lower):
+                return action
+        
+        # Strategy 3: Check for partial matches with available actions
         for action in available_actions:
             if action.lower() in response_lower:
                 return action
         
-        # Check for general action categories
-        if 'combat' in response_lower or 'attack' in response_lower:
-            return 'combat'
-        elif 'explore' in response_lower:
-            return 'explore'
-        elif 'interact' in response_lower:
-            return 'interact'
-        elif 'stealth' in response_lower or 'sneak' in response_lower:
-            return 'stealth'
-        elif 'rest' in response_lower or 'heal' in response_lower:
-            return 'rest'
-        elif 'navigate' in response_lower or 'move' in response_lower:
-            return 'move'
-        print("[_plan_action_with_llm] No matching action found in LLM response, returning None.")
+        # Strategy 4: Map common LLM responses to standard actions
+        action_mappings = {
+            'combat': ['fight', 'attack', 'battle', 'engage enemy', 'power attack', 'strike'],
+            'explore': ['wander', 'search', 'look around', 'investigate', 'move forward', 'go ahead'],
+            'interact': ['use', 'activate', 'open', 'talk', 'speak', 'examine'],
+            'stealth': ['sneak', 'hide', 'crouch', 'stay quiet'],
+            'rest': ['wait', 'sleep', 'heal', 'recover', 'take a break'],
+            'navigate': ['walk', 'move', 'go', 'travel', 'head to']
+        }
+        
+        for standard_action, synonyms in action_mappings.items():
+            if any(synonym in response_lower for synonym in synonyms):
+                # Only return if it makes sense in context
+                if standard_action in available_actions or standard_action in ['combat', 'explore', 'interact', 'rest', 'navigate']:
+                    return standard_action
+        
+        # Strategy 5: Extract quoted action if present
+        import re
+        quoted_match = re.search(r'["\']([^"\']+)["\']', response)
+        if quoted_match:
+            quoted_action = quoted_match.group(1).lower()
+            if quoted_action in available_actions:
+                return quoted_action
+            # Check if quoted action is a standard action
+            for standard_action in ['combat', 'explore', 'interact', 'stealth', 'rest', 'navigate']:
+                if standard_action in quoted_action:
+                    return standard_action
+        
+        # No match found
         return None
 
 
@@ -1610,49 +1705,7 @@ QUICK DECISION - Choose ONE action from available list:"""
             print(f"[CONTROLLER] ⚠️ Controller test failed: {e}")
             print("[CONTROLLER] Continuing anyway...")
 
-    def _print_final_stats(self):
-        """Print final gameplay statistics."""
-        print(f"\n{'=' * 60}")
-        print("FINAL STATISTICS")
-        print(f"{'=' * 60}")
-        
-        # Determine skill level
-        if self.stats['cycles_completed'] < 10:
-            skill_level = 'novice'
-        elif self.stats['cycles_completed'] < 50:
-            skill_level = 'apprentice'
-        elif self.stats['cycles_completed'] < 100:
-            skill_level = 'adept'
-        elif self.stats['cycles_completed'] < 200:
-            skill_level = 'expert'
-        else:
-            skill_level = 'master'
-        
-        print(f"\nGameplay:")
-        print(f"  Cycles: {self.stats['cycles_completed']}")
-        print(f"  Actions: {self.stats['actions_taken']}")
-        print(f"  Skill Level: {skill_level.title()}")
-        
-        # Check if this is practice mode
-        if self.stats['cycles_completed'] < 20:
-            if self.stats['actions_taken'] > 0:
-                return 'practice'
-        print(f"  Playtime: {self.stats['total_playtime'] / 60:.1f} minutes")
 
-        if self.stats['game_state_quality_history']:
-            avg_quality = sum(self.stats['game_state_quality_history']) / len(self.stats['game_state_quality_history'])
-            print(f"  Avg Game State Quality: {avg_quality:.3f}")
-
-        skyrim_stats = self.skyrim_world.get_stats()
-        print(f"\nWorld Model:")
-        print(f"  Causal edges learned: {skyrim_stats['causal_edges']}")
-        print(f"  NPCs met: {skyrim_stats['npc_relationships']}")
-        print(f"  Locations: {skyrim_stats['locations_discovered']}")
-
-        action_stats = self.actions.get_stats()
-        print(f"\nActions:")
-        print(f"  Total executed: {action_stats['actions_executed']}")
-        print(f"  Errors: {action_stats['errors']}")
 
     async def _execute_action(self, action: str, scene_type: SceneType):
         """
@@ -1662,7 +1715,10 @@ QUICK DECISION - Choose ONE action from available list:"""
             action: Action to execute
             scene_type: Current scene type
         """
-        print(f"[DEBUG] Executing action: {action} | Scene: {scene_type} | Active layer: {self.controller.active_layer}")
+        # Validate action
+        if not action or not isinstance(action, str):
+            print(f"[ACTION] Invalid action: {action}, using fallback")
+            action = 'explore'
         
         # Handle menu interactions with learning
         if scene_type in [SceneType.INVENTORY, SceneType.MAP]:
@@ -1693,7 +1749,6 @@ QUICK DECISION - Choose ONE action from available list:"""
         elif action == 'rest':
             self.bindings.switch_to_exploration()
         # Extend with menu/dialogue/stealth as needed
-        print(f"[DEBUG] After layer switch: {self.controller.active_layer}")
 
         if action == 'explore':
             # Use waypoint-based exploration instead of random movement
@@ -1732,7 +1787,8 @@ QUICK DECISION - Choose ONE action from available list:"""
                 # Continue exploration
                 await self.actions.explore_with_waypoints(duration=2.0)
         else:
-            # Fallback to waypoint exploration
+            # Fallback for unknown actions
+            print(f"[ACTION] Unknown action '{action}', falling back to exploration")
             await self.actions.explore_with_waypoints(duration=2.0)
 
     def _print_final_stats(self):
@@ -1753,6 +1809,33 @@ QUICK DECISION - Choose ONE action from available list:"""
         print(f"\nActions:")
         print(f"  Total executed: {action_stats['actions_executed']}")
         print(f"  Errors: {action_stats['errors']}")
+        
+        # Performance metrics
+        success_rate = 0.0
+        if self.stats['actions_taken'] > 0:
+            success_rate = self.stats['action_success_count'] / self.stats['actions_taken']
+        
+        print(f"\n📊 Performance Metrics:")
+        print(f"  Action success rate: {success_rate:.1%}")
+        print(f"  Successful actions: {self.stats['action_success_count']}")
+        print(f"  Failed actions: {self.stats['action_failure_count']}")
+        
+        # Planning method breakdown
+        total_planning = self.stats['rl_action_count'] + self.stats['llm_action_count'] + self.stats['heuristic_action_count']
+        if total_planning > 0:
+            print(f"\n🧠 Planning Methods:")
+            print(f"  RL-based: {self.stats['rl_action_count']} ({100*self.stats['rl_action_count']/total_planning:.1f}%)")
+            print(f"  LLM-based: {self.stats['llm_action_count']} ({100*self.stats['llm_action_count']/total_planning:.1f}%)")
+            print(f"  Heuristic: {self.stats['heuristic_action_count']} ({100*self.stats['heuristic_action_count']/total_planning:.1f}%)")
+        
+        # Timing metrics
+        if self.stats['planning_times']:
+            avg_planning = sum(self.stats['planning_times']) / len(self.stats['planning_times'])
+            print(f"\n⏱️  Timing:")
+            print(f"  Avg planning time: {avg_planning:.3f}s")
+        if self.stats['execution_times']:
+            avg_execution = sum(self.stats['execution_times']) / len(self.stats['execution_times'])
+            print(f"  Avg execution time: {avg_execution:.3f}s")
         
         # Strategic planner stats
         planner_stats = self.strategic_planner.get_stats()
