@@ -617,25 +617,54 @@ class SkyrimAGI:
                 # Enhance perception with Qwen3-VL if available
                 if self.perception_llm and cycle_count % 3 == 0:  # Every 3rd cycle for performance
                     try:
-                        # Get visual analysis from Qwen3-VL
-                        visual_prompt = f"""Analyze this Skyrim scene:
+                        # Get the actual screenshot image
+                        screenshot = perception.get('screenshot')
+                        if screenshot:
+                            # Save screenshot temporarily for VL model
+                            import tempfile
+                            import os
+                            with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp:
+                                screenshot.save(tmp.name, 'PNG')
+                                screenshot_path = tmp.name
+                            
+                            try:
+                                # Get visual analysis from Qwen3-VL with image
+                                visual_prompt = f"""You are analyzing a Skyrim gameplay screenshot.
+
+Context:
 - Scene type: {perception.get('scene_type', 'unknown')}
 - Location: {perception.get('game_state', {}).get('location_name', 'unknown')}
 - Health: {perception.get('game_state', {}).get('health', 100):.0f}/100
 - In combat: {perception.get('game_state', {}).get('in_combat', False)}
 
-Provide: 1) What you see, 2) Spatial layout, 3) Threats/opportunities, 4) Recommended focus"""
-                        
-                        visual_analysis = await self.perception_llm.generate(
-                            prompt=visual_prompt,
-                            max_tokens=256
-                        )
-                        perception['visual_analysis'] = visual_analysis.get('content', '')
-                        if cycle_count % 9 == 0:  # Log occasionally
-                            print(f"[QWEN3-VL] Visual analysis: {visual_analysis.get('content', '')[:100]}...")
+Analyze the image and provide:
+1. What objects/NPCs/enemies you see
+2. Spatial layout (indoor/outdoor, terrain, obstacles)
+3. Threats or opportunities visible
+4. Recommended focus area or action"""
+                                
+                                # Pass image to Qwen3-VL for actual vision analysis
+                                visual_analysis = await self.perception_llm.generate(
+                                    prompt=visual_prompt,
+                                    max_tokens=384,
+                                    image_path=screenshot_path  # Pass screenshot to vision model
+                                )
+                                perception['visual_analysis'] = visual_analysis.get('content', '')
+                                if cycle_count % 9 == 0:  # Log occasionally
+                                    print(f"[QWEN3-VL] Visual analysis: {visual_analysis.get('content', '')[:150]}...")
+                            finally:
+                                # Clean up temp file
+                                try:
+                                    os.unlink(screenshot_path)
+                                except:
+                                    pass
+                        else:
+                            print(f"[QWEN3-VL] No screenshot available in perception")
                     except Exception as e:
                         if cycle_count % 30 == 0:  # Log errors occasionally
                             print(f"[QWEN3-VL] Visual analysis failed: {e}")
+                            import traceback
+                            traceback.print_exc()
                 
                 self.current_perception = perception
                 
@@ -1385,6 +1414,11 @@ Provide: 1) What you see, 2) Spatial layout, 3) Threats/opportunities, 4) Recomm
                 # Start Huihui in background (don't wait)
                 print("[PARALLEL] Starting Huihui in background, using fast heuristic for immediate action")
                 
+                # Get visual analysis from Qwen3-VL if available
+                visual_analysis = perception.get('visual_analysis', '')
+                if visual_analysis:
+                    print(f"[QWEN3-VL] Passing visual analysis to Huihui: {visual_analysis[:100]}...")
+                
                 # Start Huihui task (runs in background, we don't await it)
                 huihui_task = asyncio.create_task(
                     self.rl_reasoning_neuron.reason_about_q_values(
@@ -1397,7 +1431,8 @@ Provide: 1) What you see, 2) Spatial layout, 3) Threats/opportunities, 4) Recomm
                                 scene_type.value,
                                 game_state.in_combat
                             ),
-                            'meta_strategy': meta_context
+                            'meta_strategy': meta_context,
+                            'visual_analysis': visual_analysis  # Add Qwen3-VL's vision
                         }
                     )
                 )

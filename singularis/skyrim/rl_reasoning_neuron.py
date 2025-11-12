@@ -169,8 +169,17 @@ CONFIDENCE: [0.0-1.0]"""
         # Get meta-strategic guidance if available
         meta_strategy = context.get('meta_strategy', '')
         
+        # Get visual analysis from Qwen3-VL if available
+        visual_analysis = context.get('visual_analysis', '')
+        visual_section = ""
+        if visual_analysis:
+            visual_section = f"""
+
+VISUAL ANALYSIS (from Qwen3-VL):
+{visual_analysis[:300]}"""
+        
         prompt = f"""Skyrim State:
-HP: {state.get('health', 100):.0f}/100 | Combat: {state.get('in_combat', False)} | Terrain: {context.get('terrain_type', 'unknown')}
+HP: {state.get('health', 100):.0f}/100 | Combat: {state.get('in_combat', False)} | Terrain: {context.get('terrain_type', 'unknown')}{visual_section}
 
 Top Q-Values:
 {q_summary}

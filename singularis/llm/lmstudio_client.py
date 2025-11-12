@@ -68,6 +68,7 @@ class LMStudioClient:
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         stop: Optional[List[str]] = None,
+        image_path: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Generate completion from LM Studio.
@@ -78,9 +79,10 @@ class LMStudioClient:
             temperature: Optional temperature override
             max_tokens: Optional max tokens override
             stop: Optional stop sequences
+            image_path: Optional path to image for vision models
             
         Returns:
-            Dict with 'content', 'tokens', 'finish_reason'
+            Dict with 'content', 'tokens', 'finish_reason', etc.
         """
         if not self.session:
             self.session = aiohttp.ClientSession()
@@ -89,7 +91,23 @@ class LMStudioClient:
         messages = []
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
-        messages.append({"role": "user", "content": prompt})
+        
+        # For vision models, add image as base64
+        if image_path:
+            import base64
+            with open(image_path, 'rb') as img_file:
+                img_data = base64.b64encode(img_file.read()).decode('utf-8')
+            
+            # Vision model format (OpenAI-compatible)
+            messages.append({
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": prompt},
+                    {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{img_data}"}}
+                ]
+            })
+        else:
+            messages.append({"role": "user", "content": prompt})
         
         # Build request
         payload = {
