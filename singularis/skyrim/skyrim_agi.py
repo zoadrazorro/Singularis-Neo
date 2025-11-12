@@ -2119,15 +2119,19 @@ Based on this visual and contextual data, provide:
                     if hasattr(self, 'hybrid_llm') and self.hybrid_llm:
                         try:
                             print("[SENSORIMOTOR] Getting Gemini visual analysis...")
-                            gemini_visual = await asyncio.wait_for(
-                                self.hybrid_llm.generate_vision(
-                                    image_data=perception.get('screenshot'),
-                                    prompt="Describe the visual scene focusing on: spatial layout, obstacles, pathways, terrain features, landmarks, and any navigational cues. Be specific about what's visible in each direction.",
-                                    max_tokens=512
-                                ),
-                                timeout=15.0
-                            )
-                            print(f"[SENSORIMOTOR] ✓ Gemini visual: {len(gemini_visual)} chars")
+                            screenshot = perception.get('screenshot')
+                            if screenshot is not None:
+                                gemini_visual = await asyncio.wait_for(
+                                    self.hybrid_llm.analyze_image(
+                                        image=screenshot,
+                                        prompt="Describe the visual scene focusing on: spatial layout, obstacles, pathways, terrain features, landmarks, and any navigational cues. Be specific about what's visible in each direction.",
+                                        max_tokens=512
+                                    ),
+                                    timeout=15.0
+                                )
+                                print(f"[SENSORIMOTOR] ✓ Gemini visual: {len(gemini_visual)} chars")
+                            else:
+                                print("[SENSORIMOTOR] No screenshot available")
                         except Exception as e:
                             print(f"[SENSORIMOTOR] Gemini visual failed: {e}")
                     
