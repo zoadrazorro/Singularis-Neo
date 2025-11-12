@@ -219,8 +219,15 @@ class SkyrimAGI:
         # Will connect LLM interface when initialized
         
         # Initialize phi-4-mini pool tracking
+        self.phi4_mini_pool = []
+        self.phi4_mini_index = 0
         
-        # 11. Skyrim-specific Motivation System
+        # 11. Meta-Strategist (coordinates tactical & strategic thinking)
+        print("  [11/12] Meta-strategist coordinator...")
+        self.meta_strategist = MetaStrategist()
+        # Will connect LLM interface when initialized
+        
+        # 12. Skyrim-specific Motivation System
         print("  [11/11] Skyrim-specific motivation system...")
         self.skyrim_motivation = SkyrimMotivation(
             survival_weight=0.35,  # Prioritize staying alive
@@ -274,6 +281,14 @@ class SkyrimAGI:
         
         print("Skyrim AGI initialization complete.")
         print("[OK] Skyrim AGI initialized with CONSCIOUSNESS INTEGRATION\n")
+
+    def get_next_phi4_mini(self):
+        """Get next phi-4-mini LLM from pool (round-robin)."""
+        if not self.phi4_mini_pool:
+            return None
+        llm = self.phi4_mini_pool[self.phi4_mini_index]
+        self.phi4_mini_index = (self.phi4_mini_index + 1) % len(self.phi4_mini_pool)
+        return llm
 
     async def initialize_llm(self):
         """
