@@ -1492,16 +1492,20 @@ class SkyrimAGI:
             # Consider scene type for better context-aware decisions
             if scene_type == SceneType.COMBAT or game_state.in_combat:
                 # In combat, prioritize survival
-                if game_state.health < 40:
+                if game_state.health < 40 and 'block' in available_actions:
                     print(f"[HEURISTIC] → block (defensive, low health)")
                     return 'block'  # Defensive when low health
                 elif game_state.enemies_nearby > 2:
-                    action = 'power_attack' if 'power_attack' in available_actions else 'combat'
-                    print(f"[HEURISTIC] → {action} (multiple enemies: {game_state.enemies_nearby})")
-                    return action
-                else:
-                    print(f"[HEURISTIC] → combat (standard engagement)")
-                    return 'combat'
+                    if 'power_attack' in available_actions:
+                        print(f"[HEURISTIC] → power_attack (multiple enemies: {game_state.enemies_nearby})")
+                        return 'power_attack'
+                    elif 'attack' in available_actions:
+                        print(f"[HEURISTIC] → attack (multiple enemies: {game_state.enemies_nearby})")
+                        return 'attack'
+                elif 'attack' in available_actions:
+                    print(f"[HEURISTIC] → attack (standard engagement)")
+                    return 'attack'
+                # If no combat actions available, fall through to exploration
             
             # Scene-specific actions
             if scene_type in [SceneType.INDOOR_BUILDING, SceneType.INDOOR_DUNGEON]:

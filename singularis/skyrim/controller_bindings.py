@@ -228,6 +228,19 @@ class SkyrimControllerBindings:
             # Use favorite (assuming healing potion on DPad)
             await ctrl.tap_button(XboxButton.DPAD_DOWN)
         
+        # Movement during combat (reuse from exploration)
+        async def move_forward(ctrl, duration=1.0):
+            await ctrl.move(0, 1.0, duration=duration)
+        
+        async def move_backward(ctrl, duration=1.0):
+            await ctrl.move(0, -1.0, duration=duration)
+        
+        async def move_left(ctrl, duration=1.0):
+            await ctrl.move(-1.0, 0, duration=duration)
+        
+        async def move_right(ctrl, duration=1.0):
+            await ctrl.move(1.0, 0, duration=duration)
+        
         # Bind combat actions
         self.controller.bind_action("Combat", "attack", quick_attack)
         self.controller.bind_action("Combat", "power_attack", power_attack)
@@ -237,6 +250,12 @@ class SkyrimControllerBindings:
         self.controller.bind_action("Combat", "dodge", dodge_roll)
         self.controller.bind_action("Combat", "retreat", retreat)
         self.controller.bind_action("Combat", "heal", quick_heal)
+        
+        # Bind movement actions for combat
+        self.controller.bind_action("Combat", "move_forward", move_forward)
+        self.controller.bind_action("Combat", "move_backward", move_backward)
+        self.controller.bind_action("Combat", "move_left", move_left)
+        self.controller.bind_action("Combat", "move_right", move_right)
     
     def _setup_menu_layer(self):
         """

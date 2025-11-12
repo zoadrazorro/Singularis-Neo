@@ -641,10 +641,10 @@ class SkyrimActions:
     async def combat_sequence(self, enemy: str):
         """Execute combat sequence."""
         sequence = [
-            Action(ActionType.ATTACK),
-            Action(ActionType.MOVE_BACKWARD, 0.5),
-            Action(ActionType.BLOCK, 1.0),
-            Action(ActionType.ATTACK),
+            Action(ActionType.ATTACK, duration=0.3),
+            Action(ActionType.MOVE_BACKWARD, duration=0.5),
+            Action(ActionType.BLOCK, duration=1.0),
+            Action(ActionType.ATTACK, duration=0.3),
         ]
         await self.execute_sequence(sequence, delay=0.2)
 
