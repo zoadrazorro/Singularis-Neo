@@ -151,7 +151,7 @@ SCENE: {scene_type}
 VISUAL: {visual_info[:200]}...
 
 GAME STATE:
-- Health: {game_state.health}/{game_state.max_health}
+- Health: {game_state.health:.0f}%
 - Combat: {game_state.in_combat}
 - Enemies: {game_state.enemies_nearby}
 
