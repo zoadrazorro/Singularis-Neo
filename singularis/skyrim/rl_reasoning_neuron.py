@@ -97,8 +97,8 @@ class RLReasoningNeuron:
         )
         
         try:
-            # Query LLM
-            response = await self.llm_interface.client.generate(
+            # Query LLM (ExpertLLMInterface has generate() method directly)
+            response = await self.llm_interface.generate(
                 prompt=prompt,
                 system_prompt=self._get_system_prompt(),
                 temperature=0.7,
