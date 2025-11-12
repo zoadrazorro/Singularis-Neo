@@ -1321,7 +1321,12 @@ class SkyrimAGI:
             # Check if we should force variety (prevent RL dominance)
             force_variety = self.consecutive_same_action >= 6  # Force variety after 6 same actions
             
-            if force_variety:
+            # ALSO: Randomly force variety 30% of the time to prevent RL monopoly
+            if random.random() < 0.3:
+                force_variety = True
+                print(f"[VARIETY] Random variety injection - using heuristics instead of RL")
+            
+            if force_variety and self.consecutive_same_action >= 6:
                 print(f"[VARIETY] Forcing variety after {self.consecutive_same_action}x '{self.last_executed_action}' - skipping RL")
             
             # Use RL-based action selection if enabled (but not if forcing variety)
