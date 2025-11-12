@@ -65,6 +65,9 @@ from ..llm import (
     ExpertLLMInterface,
     ClaudeClient,
     GeminiClient,
+    HybridLLMClient,
+    HybridConfig,
+    TaskType,
 )
 
 
@@ -120,11 +123,17 @@ class SkyrimConfig:
     rl_epsilon_start: float = 0.3  # Initial exploration rate
     rl_train_freq: int = 5  # Train every N cycles
 
-    # External augmentation
-    enable_claude_meta: bool = True
-    claude_model: str = "claude-4.5-haiku"
-    enable_gemini_vision: bool = True
-    gemini_model: str = "gemini-2.5-pro"
+    # Hybrid LLM Architecture (Primary: Gemini + Claude, Optional Fallback: Local)
+    use_hybrid_llm: bool = True
+    use_gemini_vision: bool = True
+    gemini_model: str = "gemini-2.0-flash-exp"
+    use_claude_reasoning: bool = True
+    claude_model: str = "claude-sonnet-4-20250514"
+    use_local_fallback: bool = False  # Optional local LLMs as fallback
+    
+    # Legacy external augmentation (deprecated in favor of hybrid)
+    enable_claude_meta: bool = False
+    enable_gemini_vision: bool = False
     gemini_max_output_tokens: int = 768
 
     def __post_init__(self):
@@ -249,7 +258,10 @@ class SkyrimAGI:
         self.rl_reasoning_neuron = RLReasoningNeuron()
         # Will connect LLM interface when initialized
         
-        # Initialize LLM references
+        # Hybrid LLM system (Gemini + Claude + optional local fallback)
+        self.hybrid_llm: Optional[HybridLLMClient] = None
+        
+        # Legacy LLM references (for backward compatibility)
         self.huihui_llm = None  # Main cognition
         self.perception_llm = None  # Visual perception
         self.action_planning_llm = None  # Action planning
@@ -366,44 +378,142 @@ class SkyrimAGI:
 
     async def initialize_llm(self):
         """
-        Initialize streamlined LLM architecture: mistral-nemo + huihui + qwen3-vl.
+        Initialize hybrid LLM architecture: Gemini (vision) + Claude Sonnet 4 (reasoning).
         
-        Architecture:
-        - 1x mistral-nemo (12B params): Action planning
-          * Fast, decisive action selection
-          * Tactical decision-making
+        Primary Architecture:
+        - Gemini 2.0 Flash: Vision and visual perception
+          * Fast, efficient image analysis
+          * Scene understanding and spatial awareness
+          * Real-time visual feedback
         
-        - 1x huihui-moe-60b-a3b-abliterated-i1 (60B MoE): Main cognition
-          * Consciousness engine
-          * Strategic reasoning
-          * RL reasoning neuron
-          * Meta-strategist
-          * World understanding
+        - Claude Sonnet 4: Strategic reasoning and planning
+          * High-level strategic thinking
+          * Complex decision making
+          * World understanding and causal reasoning
+          * Action planning and tactical decisions
         
-        - 1x qwen3-vl-30b (30B params): Perception and spatial awareness
-          * Visual scene interpretation
-          * Object detection and spatial relationships
-          * Environment understanding
+        Optional Fallback (if enabled):
+        - Local LLMs via LM Studio
+          * Vision: qwen3-vl-8b
+          * Reasoning: huihui-moe-60b
+          * Action: mistral-nemo
         
-        This streamlined approach uses specialized models for their strengths.
-        Total: 3 powerful LLM instances with clear roles.
+        This hybrid approach leverages cloud AI for primary intelligence with
+        optional local fallback for reliability.
         """
         print("=" * 70)
         print("INITIALIZING HYBRID LLM ARCHITECTURE")
         print("=" * 70)
-        print("mistral-nemo (action) + huihui-60b (cognition) + qwen3-vl-30b (perception)")
+        print("Primary: Gemini 2.0 Flash (vision) + Claude Sonnet 4 (reasoning)")
+        if self.config.use_local_fallback:
+            print("Fallback: Local LLMs (optional)")
+        else:
+            print("Fallback: Disabled")
         print("=" * 70)
         print()
         
-        # ===== HUIHUI-MOE-60B - MAIN COGNITION =====
+        # ===== HYBRID LLM SYSTEM =====
+        if self.config.use_hybrid_llm:
+            try:
+                # Configure hybrid system
+                hybrid_config = HybridConfig(
+                    use_gemini_vision=self.config.use_gemini_vision,
+                    gemini_model=self.config.gemini_model,
+                    use_claude_reasoning=self.config.use_claude_reasoning,
+                    claude_model=self.config.claude_model,
+                    use_local_fallback=self.config.use_local_fallback,
+                    local_base_url=self.config.base_config.lm_studio_url if self.config.use_local_fallback else "http://localhost:1234/v1",
+                    local_vision_model=self.config.qwen3_vl_perception_model if self.config.use_local_fallback else "qwen/qwen3-vl-8b",
+                    local_reasoning_model=self.config.huihui_cognition_model if self.config.use_local_fallback else "huihui-moe-60b-a3b-abliterated-i1",
+                    local_action_model=self.config.phi4_action_model if self.config.use_local_fallback else "mistralai/mistral-nemo-instruct-2407",
+                    timeout=30,
+                    max_concurrent_requests=self.config.max_concurrent_llm_calls,
+                )
+                
+                # Initialize hybrid client
+                self.hybrid_llm = HybridLLMClient(hybrid_config)
+                await self.hybrid_llm.initialize()
+                
+                print("\n[HYBRID] ✓ Hybrid LLM system initialized successfully")
+                
+                # Connect hybrid system to all components
+                await self._connect_hybrid_llm()
+                
+            except Exception as e:
+                print(f"[HYBRID] ⚠️ Failed to initialize hybrid system: {e}")
+                import traceback
+                traceback.print_exc()
+                self.hybrid_llm = None
+        else:
+            print("[HYBRID] Hybrid LLM system disabled, using legacy architecture")
+            # Fall back to legacy initialization if needed
+            await self._initialize_legacy_llms()
         
-        print("[HUIHUI] Initializing main cognition engine...")
-        print("[HUIHUI] Model: huihui-moe-60b-a3b-abliterated-i1 (60B MoE)")
-        print("[HUIHUI] Role: Consciousness, reasoning, strategy, world understanding")
+        print("\n" + "=" * 70)
+        print("LLM ARCHITECTURE READY")
+        print("=" * 70)
+        if self.hybrid_llm:
+            print("✓ Hybrid system active: Gemini (vision) + Claude Sonnet 4 (reasoning)")
+            if self.config.use_local_fallback:
+                print("✓ Local fallback enabled")
+        print("Async execution for parallel processing")
+        print("=" * 70)
         print()
+
+    async def _connect_hybrid_llm(self):
+        """Connect hybrid LLM system to all AGI components."""
+        if not self.hybrid_llm:
+            return
+        
+        print("\n[HYBRID] Connecting to AGI components...")
+        
+        # Connect to perception for vision tasks
+        if hasattr(self.perception, 'set_hybrid_llm'):
+            self.perception.set_hybrid_llm(self.hybrid_llm)
+            print("[HYBRID] ✓ Connected to perception system")
+        
+        # Connect to strategic planner for reasoning
+        if self.strategic_planner and hasattr(self.strategic_planner, 'set_hybrid_llm'):
+            self.strategic_planner.set_hybrid_llm(self.hybrid_llm)
+            print("[HYBRID] ✓ Connected to strategic planner")
+        
+        # Connect to meta-strategist
+        if hasattr(self.meta_strategist, 'set_hybrid_llm'):
+            self.meta_strategist.set_hybrid_llm(self.hybrid_llm)
+            print("[HYBRID] ✓ Connected to meta-strategist")
+        
+        # Connect to RL reasoning neuron
+        if hasattr(self.rl_reasoning_neuron, 'set_hybrid_llm'):
+            self.rl_reasoning_neuron.set_hybrid_llm(self.hybrid_llm)
+            print("[HYBRID] ✓ Connected to RL reasoning neuron")
+        
+        # Connect to world model
+        if hasattr(self.skyrim_world, 'set_hybrid_llm'):
+            self.skyrim_world.set_hybrid_llm(self.hybrid_llm)
+            print("[HYBRID] ✓ Connected to world model")
+        
+        # Connect to consciousness bridge
+        if hasattr(self.consciousness_bridge, 'set_hybrid_llm'):
+            self.consciousness_bridge.set_hybrid_llm(self.hybrid_llm)
+            print("[HYBRID] ✓ Connected to consciousness bridge")
+        
+        # Connect to quest tracker and dialogue
+        if hasattr(self.quest_tracker, 'set_hybrid_llm'):
+            self.quest_tracker.set_hybrid_llm(self.hybrid_llm)
+            print("[HYBRID] ✓ Connected to quest tracker")
+        
+        if hasattr(self.dialogue_intelligence, 'set_hybrid_llm'):
+            self.dialogue_intelligence.set_hybrid_llm(self.hybrid_llm)
+            print("[HYBRID] ✓ Connected to dialogue intelligence")
+        
+        print("[HYBRID] Component connection complete\n")
+    
+    async def _initialize_legacy_llms(self):
+        """Initialize legacy local LLM architecture (fallback if hybrid disabled)."""
+        print("\n[LEGACY] Initializing legacy local LLM architecture...")
         
         try:
-            # Initialize huihui as the main LLM for base Singularis AGI
+            # Initialize huihui as the main LLM
             huihui_config = LMStudioConfig(
                 base_url=self.config.base_config.lm_studio_url,
                 model_name=self.config.huihui_cognition_model,
@@ -412,146 +522,32 @@ class SkyrimAGI:
             )
             huihui_client = LMStudioClient(huihui_config)
             self.huihui_llm = ExpertLLMInterface(huihui_client)
-            print("[HUIHUI] ✓ Main cognition LLM initialized")
+            print("[LEGACY] ✓ Main cognition LLM initialized")
             
-            # Initialize base Singularis AGI with huihui
-            print("[HUIHUI] Initializing base Singularis AGI consciousness engine...")
-            # Set the LLM client in base AGI config
+            # Initialize base Singularis AGI
             self.agi.config.lm_studio_url = self.config.base_config.lm_studio_url
             self.agi.config.model_name = self.config.huihui_cognition_model
             await self.agi.initialize_llm()
-            print("[HUIHUI] ✓ Base Singularis AGI initialized with huihui")
+            print("[LEGACY] ✓ Base Singularis AGI initialized")
             
-            # Connect huihui to all Skyrim-specific cognitive roles
+            # Connect to components
             self.rl_reasoning_neuron.llm_interface = self.huihui_llm
-            print("[HUIHUI] ✓ Connected to RL reasoning neuron")
-            
             self.meta_strategist.llm_interface = self.huihui_llm
-            print("[HUIHUI] ✓ Connected to meta-strategist")
-            
-            # Connect to consciousness bridge (for game quality + philosophical coherence)
-            if hasattr(self.agi, 'consciousness_llm') and self.agi.consciousness_llm:
-                self.consciousness_bridge.consciousness_llm = self.agi.consciousness_llm
-                print("[HUIHUI] ✓ Base AGI consciousness LLM connected to bridge")
-            else:
-                # Fallback: use huihui directly
-                self.consciousness_bridge.consciousness_llm = self.huihui_llm
-                print("[HUIHUI] ✓ Huihui connected to consciousness bridge (direct)")
-            
-            # Connect to strategic planner
-            if self.strategic_planner:
-                self.strategic_planner.llm_interface = self.huihui_llm
-                print("[HUIHUI] ✓ Connected to strategic planner")
-            
-            # Connect to world model for deep reasoning
-            if hasattr(self.skyrim_world, 'set_llm_interface'):
-                self.skyrim_world.set_llm_interface(self.huihui_llm)
-                print("[HUIHUI] ✓ Connected to Skyrim world model")
-
-            # Connect cognition-aware helpers
+            self.strategic_planner.llm_interface = self.huihui_llm
             self.quest_tracker.set_llm_interface(self.huihui_llm)
             self.dialogue_intelligence.set_llm_interface(self.huihui_llm)
-            print("[HUIHUI] ✓ Connected to quest tracker and dialogue intelligence")
+            
+            if hasattr(self.agi, 'consciousness_llm') and self.agi.consciousness_llm:
+                self.consciousness_bridge.consciousness_llm = self.agi.consciousness_llm
+            else:
+                self.consciousness_bridge.consciousness_llm = self.huihui_llm
+            
+            print("[LEGACY] ✓ Legacy LLM system ready")
             
         except Exception as e:
-            print(f"[HUIHUI] ⚠️ Failed to initialize: {e}")
+            print(f"[LEGACY] ⚠️ Failed to initialize: {e}")
             import traceback
             traceback.print_exc()
-            self.huihui_llm = None
-        
-        print("\n" + "=" * 70)
-        print("HUIHUI COGNITION LAYER COMPLETE")
-        print("=" * 70)
-        
-        # ===== QWEN3-VL-30B - PERCEPTION & SPATIAL AWARENESS =====
-        
-        print("\n" + "=" * 70)
-        print("INITIALIZING PERCEPTION MODEL")
-        print("=" * 70)
-        print()
-        
-        try:
-            print(f"[QWEN3-VL] Initializing {self.config.qwen3_vl_perception_model}...")
-            print("[QWEN3-VL] Model: qwen/qwen3-vl-8b (8B params)")
-            print("[QWEN3-VL] Role: Visual perception, spatial awareness, environment understanding")
-            vl_config = LMStudioConfig(
-                base_url=self.config.base_config.lm_studio_url,
-                model_name=self.config.qwen3_vl_perception_model,
-                temperature=0.5,
-                max_tokens=1536
-            )
-            vl_client = LMStudioClient(vl_config)
-            self.perception_llm = ExpertLLMInterface(vl_client)
-            print("[QWEN3-VL] ✓ Perception LLM initialized")
-            
-            # Connect to perception system for enhanced visual understanding
-            if hasattr(self.perception, 'set_visual_llm'):
-                self.perception.set_visual_llm(self.perception_llm)
-                print("[QWEN3-VL] ✓ Connected to perception system")
-            
-            # Connect to world model for spatial reasoning
-            if hasattr(self.skyrim_world, 'set_perception_llm'):
-                self.skyrim_world.set_perception_llm(self.perception_llm)
-                print("[QWEN3-VL] ✓ Connected to world model for spatial reasoning")
-            
-        except Exception as e:
-            print(f"[QWEN3-VL] ⚠️ Failed to initialize: {e}")
-            import traceback
-            traceback.print_exc()
-            self.perception_llm = None
-        
-        print("\n" + "=" * 70)
-        print("PERCEPTION LAYER COMPLETE")
-        print("=" * 70)
-        
-        # ===== PHI-4 - ACTION PLANNING =====
-        
-        print("\n" + "=" * 70)
-        print("INITIALIZING ACTION PLANNING MODEL")
-        print("=" * 70)
-        print()
-        
-        try:
-            print(f"[MISTRAL-ACTION] Initializing {self.config.phi4_action_model}...")
-            print("[MISTRAL-ACTION] Model: mistralai/mistral-nemo-instruct-2407 (12B params)")
-            print("[MISTRAL-ACTION] Role: Fast, decisive action selection")
-            action_config = LMStudioConfig(
-                base_url=self.config.base_config.lm_studio_url,
-                model_name=self.config.phi4_action_model,
-                temperature=0.6,
-                max_tokens=512
-            )
-            action_client = LMStudioClient(action_config)
-            self.action_planning_llm = ExpertLLMInterface(action_client)
-            print("[MISTRAL-ACTION] ✓ Action planning LLM initialized")
-            
-            # Connect to action affordance system
-            if hasattr(self, 'action_affordances') and hasattr(self.action_affordances, 'set_planning_llm'):
-                self.action_affordances.set_planning_llm(self.action_planning_llm)
-                print("[MISTRAL-ACTION] ✓ Connected to action affordance system")
-            
-        except Exception as e:
-            print(f"[MISTRAL-ACTION] ⚠️ Failed to initialize: {e}")
-            import traceback
-            traceback.print_exc()
-            self.action_planning_llm = None
-
-        # ===== CLAUDE META-ORCHESTRATOR (AUXILIARY) =====
-        await self._initialize_claude_meta()
-
-        # ===== GEMINI VISION AUGMENTATION =====
-        await self._initialize_gemini_vision()
-        
-        print("\n" + "=" * 70)
-        print("STREAMLINED LLM ARCHITECTURE READY")
-        print("=" * 70)
-        print("mistral-nemo (12B): Fast action planning")
-        print("huihui-moe-60b (60B MoE): Main cognition, reasoning, strategy")
-        print("qwen3-vl-8b (8B): Perception and spatial awareness")
-        print("3 specialized models with clear roles")
-        print("Async execution for parallel processing")
-        print("=" * 70)
-        print()
 
     async def _initialize_claude_meta(self) -> None:
         """Bring up optional Claude client for auxiliary strategic reasoning."""

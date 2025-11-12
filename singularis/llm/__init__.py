@@ -7,6 +7,7 @@ from .lmstudio_client import (
 )
 from .claude_client import ClaudeClient
 from .gemini_client import GeminiClient
+from .hybrid_client import HybridLLMClient, HybridConfig, TaskType
 
 __all__ = [
     "LMStudioClient",
@@ -14,4 +15,7 @@ __all__ = [
     "ExpertLLMInterface",
     "ClaudeClient",
     "GeminiClient",
+    "HybridLLMClient",
+    "HybridConfig",
+    "TaskType",
 ]
