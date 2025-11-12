@@ -197,7 +197,7 @@ Receives Singularis output and provides:
 ## Timeout Configuration
 
 ### Local LLMs
-- **Local MoE:** 30 seconds
+- **Local MoE:** 120 seconds
 - **Qwen3-VL visual analysis:** 60 seconds
 - **Mistral fast actions:** 60 seconds
 - **Huihui dialectical reasoning:** 60 seconds

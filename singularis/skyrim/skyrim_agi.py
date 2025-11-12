@@ -839,7 +839,7 @@ class SkyrimAGI:
                     expert_model="qwen/qwen3-vl-8b",
                     synthesizer_model="microsoft/phi-4",
                     base_url="http://localhost:1234/v1",
-                    timeout=30,
+                    timeout=120,
                     max_tokens=512
                 )
                 
