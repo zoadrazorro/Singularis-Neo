@@ -16,7 +16,7 @@ from dataclasses import dataclass
 class LMStudioConfig:
     """Configuration for LM Studio connection."""
     base_url: str = "http://localhost:1234/v1"
-    model_name: str = "huihui-moe-60b-a38"
+    model_name: str = "microsoft/phi-4-mini-reasoning"
     temperature: float = 0.7
     max_tokens: int = 2048
     timeout: int = 120

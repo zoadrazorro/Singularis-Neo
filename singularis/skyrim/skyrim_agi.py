@@ -2573,14 +2573,21 @@ Strongest System: {stats['strongest_system']} ({stats['strongest_weight']:.2f})"
                     # Only force change if visuals haven't changed AND repeated too many times
                     if self.repeated_action_count >= self.max_repeated_actions and not visual_changed:
                         print(f"[STUCK-DETECTION] ⚠️ Repeated action '{action}' {self.repeated_action_count} times with no visual progress!")
-                        print(f"[STUCK-DETECTION] Forcing variety - choosing random different action")
-                        # Force a different action
+                        print(f"[STUCK-DETECTION] Likely stuck at door/gate/obstacle - trying 'activate'")
+                        # Force a different action - prioritize 'activate' for doors/gates
                         game_state = perception.get('game_state')
                         available = game_state.available_actions if game_state else ['move_forward', 'jump', 'activate']
-                        different_actions = [a for a in available if a != action]
-                        if different_actions:
-                            action = random.choice(different_actions)
-                            print(f"[STUCK-DETECTION] Switched to: {action}")
+                        
+                        # If stuck while exploring, try activate first (for doors/gates)
+                        if action in ['explore', 'move_forward'] and 'activate' in available:
+                            action = 'activate'
+                            print(f"[STUCK-DETECTION] Trying 'activate' to open door/gate")
+                        else:
+                            # Otherwise choose random different action
+                            different_actions = [a for a in available if a != action]
+                            if different_actions:
+                                action = random.choice(different_actions)
+                                print(f"[STUCK-DETECTION] Switched to: {action}")
                         self.repeated_action_count = 0
                     elif visual_changed:
                         # Visual progress made, allow repeated action (e.g., move_forward exploring)

@@ -159,16 +159,16 @@ class SkyrimPerception:
         # Game API
         self.use_game_api = use_game_api
         self._game_api = None
-        # Scene classification candidates
+        # Scene classification candidates (improved for better accuracy)
         self.scene_candidates = [
-            "outdoor wilderness with mountains and trees",
-            "city or town with buildings and NPCs",
-            "dark dungeon or cave interior",
-            "indoor building like tavern or house",
-            "combat scene with enemies fighting",
-            "dialogue conversation with NPC",
-            "inventory menu screen",
-            "map view showing locations",
+            "outdoor wilderness with mountains, trees, and sky visible in first-person view",
+            "city or town with stone buildings, NPCs walking, and cobblestone streets",
+            "dark dungeon cave with stone walls, torches, and shadows - first person gameplay view",
+            "indoor building interior with wooden furniture, fireplace, and NPCs - tavern or house",
+            "combat scene with weapons drawn, enemies attacking, and health bar flashing",
+            "dialogue conversation showing NPC face close-up with dialogue options at bottom of screen",
+            "inventory menu UI showing item grid, character model on left, and equipment slots with detailed stats",
+            "world map interface showing roads, cities, and location markers with compass rose",
         ]
         # Object detection candidates
         self.object_candidates = [

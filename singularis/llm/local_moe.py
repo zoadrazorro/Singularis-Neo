@@ -19,8 +19,8 @@ from .lmstudio_client import LMStudioClient, LMStudioConfig
 @dataclass
 class LocalMoEConfig:
     """Configuration for local MoE system."""
-    num_experts: int = 4  # Number of Qwen3-VL experts
-    expert_model: str = "qwen/qwen3-vl-8b"
+    num_experts: int = 4  # Number of Qwen3 experts
+    expert_model: str = "qwen/qwen3-4b-thinking-2507"
     synthesizer_model: str = "microsoft/phi-4"
     base_url: str = "http://localhost:1234/v1"
     timeout: int = 10  # Timeout per expert query
@@ -59,10 +59,10 @@ class LocalMoEOrchestrator:
         
         # Model names with instance suffixes (as shown in LM Studio)
         expert_models = [
-            "qwen/qwen3-vl-8b",      # Instance 1
-            "qwen/qwen3-vl-8b:2",    # Instance 2
-            "qwen/qwen3-vl-8b:3",    # Instance 3
-            "qwen/qwen3-vl-8b:4"     # Instance 4
+            "qwen/qwen3-4b-thinking-2507",      # Instance 1
+            "microsoft/phi-4-mini-reasoning",    # Instance 2
+            "microsoft/phi-4-mini-reasoning:2",  # Instance 3
+            "microsoft/phi-4"                    # Instance 4 (synthesizer)
         ]
         
         # Initialize experts with different model instances
