@@ -72,6 +72,13 @@ class SkyrimConfig:
     autonomous_duration: int = 3600  # 1 hour default
     cycle_interval: float = 2.0  # Perception-action cycle time
     save_interval: int = 300  # Auto-save every 5 minutes
+    
+    # Async execution
+    enable_async_reasoning: bool = True  # Run reasoning in parallel with actions
+    action_queue_size: int = 3  # Max queued actions
+    perception_interval: float = 0.5  # How often to perceive (seconds)
+    max_concurrent_llm_calls: int = 2  # With phi-4-mini, can handle 2 concurrent calls safely
+    reasoning_throttle: float = 0.5  # Min seconds between reasoning cycles (reduced for phi-4-mini)
 
     # Learning
     surprise_threshold: float = 0.3  # Threshold for learning from surprise
@@ -227,6 +234,18 @@ class SkyrimAGI:
         self.last_save_time = time.time()
         self.last_state: Optional[Dict[str, Any]] = None  # For RL experience tracking
         self.last_action: Optional[str] = None
+        
+        # Async queues for parallel execution
+        self.perception_queue: asyncio.Queue = asyncio.Queue(maxsize=5)
+        self.action_queue: asyncio.Queue = asyncio.Queue(maxsize=self.config.action_queue_size)
+        self.learning_queue: asyncio.Queue = asyncio.Queue(maxsize=10)
+        
+        # Resource management for async execution
+        self.llm_semaphore: Optional[asyncio.Semaphore] = None  # Limit concurrent LLM calls
+        self.last_reasoning_time: float = 0.0  # Track last reasoning to throttle
+        
+        # Multi-phi4-mini LLM instances (initialized in initialize_llm)
+        self.action_planning_llm: Optional[Any] = None  # Dedicated LLM for action planning
 
         # Statistics
         self.stats = {
@@ -250,54 +269,107 @@ class SkyrimAGI:
         print("[OK] Skyrim AGI initialized with CONSCIOUSNESS INTEGRATION\n")
 
     async def initialize_llm(self):
-        """Initialize LLM and connect consciousness engine."""
-        print("Initializing LLM consciousness engine...")
+        """
+        Initialize multiple phi-4-mini-reasoning LLMs for parallel async processing.
+        
+        Architecture:
+        - Phi-4-mini is lightweight (14B → 4B params), allowing multiple instances
+        - Each specialized LLM runs independently without overloading
+        - Reasoning quality optimized for Microsoft's phi-4-mini-reasoning variant
+        """
+        print("=" * 70)
+        print("INITIALIZING MULTI-PHI4-MINI LLM ARCHITECTURE")
+        print("=" * 70)
+        print()
+        
+        # 1. Main consciousness LLM (phi-4-mini-reasoning)
+        print("[PHI4-MAIN] Initializing primary consciousness engine...")
         await self.agi.initialize_llm()
         
         # Connect consciousness_llm to bridge
         if hasattr(self.agi, 'consciousness_llm') and self.agi.consciousness_llm:
             self.consciousness_bridge.consciousness_llm = self.agi.consciousness_llm
-            print("[BRIDGE] ✓ Consciousness LLM connected to bridge")
-            print("[BRIDGE] Bridge can now use LLM for deeper consciousness analysis")
+            print("[PHI4-MAIN] ✓ Consciousness LLM connected to bridge")
+            print("[PHI4-MAIN] Model: phi-4-mini-reasoning (main consciousness)")
         else:
-            print("[BRIDGE] ⚠️ No consciousness LLM available, bridge uses heuristics only")
+            print("[PHI4-MAIN] ⚠️ No consciousness LLM available, bridge uses heuristics only")
         
-        # Verify LLM is initialized
-        if hasattr(self.agi, 'consciousness_llm') and self.agi.consciousness_llm:
-            print("[LLM] ✓ LLM consciousness engine initialized successfully")
-            print(f"[LLM] Type: {type(self.agi.consciousness_llm)}")
-            
-            # Connect LLM to RL reasoning neuron
-            if hasattr(self.agi.consciousness_llm, 'llm_interface'):
-                self.rl_reasoning_neuron.llm_interface = self.agi.consciousness_llm.llm_interface
-                print("[LLM] ✓ RL reasoning neuron connected to main LLM")
-                print(f"[LLM] LLM interface type: {type(self.rl_reasoning_neuron.llm_interface)}")
-            else:
-                print("[LLM] ⚠️ consciousness_llm has no llm_interface attribute")
-                print(f"[LLM] Available attributes: {dir(self.agi.consciousness_llm)}")
-        else:
-            print("[LLM] ⚠️ LLM consciousness engine is None - RL reasoning will use heuristics")
-        
-        # Initialize Eva-Qwen2.5-14B LLM for meta-strategist (instructor)
-        # This is the "instructor" that provides verbose strategic guidance
+        # 2. RL Reasoning LLM (phi-4-mini-reasoning)
+        # Dedicated instance for tactical action selection
         try:
-            print("\n[INSTRUCTOR-LLM] Initializing Eva-Qwen2.5-14B for strategic instruction generation...")
-            instructor_config = LMStudioConfig(
+            print("\n[PHI4-RL] Initializing phi-4-mini for RL reasoning neuron...")
+            rl_config = LMStudioConfig(
                 base_url=self.config.base_config.lm_studio_url,
-                model_name='eva-qwen2.5-14b-v0.2',
-                temperature=0.8,  # Higher temperature for creative strategic thinking
-                max_tokens=4096   # Increased for verbose, detailed instructions
+                model_name='microsoft/phi-4-mini-reasoning',
+                temperature=0.6,  # Lower temp for tactical decisions
+                max_tokens=1024   # Shorter responses for fast tactical reasoning
             )
-            instructor_client = LMStudioClient(instructor_config)
-            instructor_interface = ExpertLLMInterface(instructor_client)
+            rl_client = LMStudioClient(rl_config)
+            rl_interface = ExpertLLMInterface(rl_client)
             
-            self.meta_strategist.llm_interface = instructor_interface
-            print("[INSTRUCTOR-LLM] ✓ Meta-strategist connected to Eva-Qwen2.5-14B")
-            print(f"[INSTRUCTOR-LLM] Model: {instructor_config.model_name}")
-            print(f"[INSTRUCTOR-LLM] Max tokens: {instructor_config.max_tokens} (verbose instructions enabled)")
+            self.rl_reasoning_neuron.llm_interface = rl_interface
+            print("[PHI4-RL] ✓ RL reasoning neuron connected to phi-4-mini")
+            print(f"[PHI4-RL] Model: {rl_config.model_name}")
+            print(f"[PHI4-RL] Max tokens: {rl_config.max_tokens} (fast tactical reasoning)")
         except Exception as e:
-            print(f"[INSTRUCTOR-LLM] ⚠️ Eva-Qwen2.5-14B initialization failed: {e}")
-            print("[INSTRUCTOR-LLM] Meta-strategist will use heuristic strategies")
+            print(f"[PHI4-RL] ⚠️ phi-4-mini initialization failed: {e}")
+            print("[PHI4-RL] RL reasoning will use heuristics")
+            # Fallback: use main LLM if available
+            if hasattr(self.agi, 'consciousness_llm') and self.agi.consciousness_llm:
+                if hasattr(self.agi.consciousness_llm, 'llm_interface'):
+                    self.rl_reasoning_neuron.llm_interface = self.agi.consciousness_llm.llm_interface
+                    print("[PHI4-RL] ✓ Using main consciousness LLM as fallback")
+        
+        # 3. Meta-Strategist LLM (phi-4-mini-reasoning)
+        # Dedicated instance for strategic instruction generation
+        try:
+            print("\n[PHI4-META] Initializing phi-4-mini for meta-strategist...")
+            meta_config = LMStudioConfig(
+                base_url=self.config.base_config.lm_studio_url,
+                model_name='microsoft/phi-4-mini-reasoning',
+                temperature=0.8,  # Higher temp for creative strategic thinking
+                max_tokens=2048   # Medium length for strategic instructions
+            )
+            meta_client = LMStudioClient(meta_config)
+            meta_interface = ExpertLLMInterface(meta_client)
+            
+            self.meta_strategist.llm_interface = meta_interface
+            print("[PHI4-META] ✓ Meta-strategist connected to phi-4-mini")
+            print(f"[PHI4-META] Model: {meta_config.model_name}")
+            print(f"[PHI4-META] Max tokens: {meta_config.max_tokens} (strategic planning)")
+        except Exception as e:
+            print(f"[PHI4-META] ⚠️ phi-4-mini initialization failed: {e}")
+            print("[PHI4-META] Meta-strategist will use heuristic strategies")
+        
+        # 4. Action Planning LLM (phi-4-mini-reasoning) 
+        # Dedicated instance for terrain-aware action planning
+        try:
+            print("\n[PHI4-ACTION] Initializing phi-4-mini for action planning...")
+            action_config = LMStudioConfig(
+                base_url=self.config.base_config.lm_studio_url,
+                model_name='microsoft/phi-4-mini-reasoning',
+                temperature=0.7,  # Balanced for exploration vs exploitation
+                max_tokens=512    # Short responses for quick action decisions
+            )
+            action_client = LMStudioClient(action_config)
+            self.action_planning_llm = ExpertLLMInterface(action_client)
+            print("[PHI4-ACTION] ✓ Action planning LLM initialized")
+            print(f"[PHI4-ACTION] Model: {action_config.model_name}")
+            print(f"[PHI4-ACTION] Max tokens: {action_config.max_tokens} (fast action planning)")
+        except Exception as e:
+            print(f"[PHI4-ACTION] ⚠️ phi-4-mini initialization failed: {e}")
+            print("[PHI4-ACTION] Will use main consciousness LLM for action planning")
+            self.action_planning_llm = None
+        
+        print()
+        print("=" * 70)
+        print("MULTI-PHI4-MINI ARCHITECTURE READY")
+        print("=" * 70)
+        print("✓ 4 specialized phi-4-mini instances for parallel async processing")
+        print("✓ Lightweight model allows multiple concurrent LLM calls")
+        print("✓ Each LLM optimized for specific reasoning task")
+        print("=" * 70)
+        print()
 
     async def autonomous_play(self, duration_seconds: Optional[int] = None):
         """
@@ -312,6 +384,8 @@ class SkyrimAGI:
         6. Execute action
         7. Learn from outcome
         8. Repeat
+        
+        Now supports async mode where reasoning and actions run in parallel.
 
         Args:
             duration_seconds: How long to play (default: config value)
@@ -323,6 +397,12 @@ class SkyrimAGI:
         print(f"STARTING AUTONOMOUS GAMEPLAY")
         print(f"Starting autonomous gameplay for {duration_seconds}s...")
         print(f"Cycle interval: {self.config.cycle_interval}s")
+        if self.config.enable_async_reasoning:
+            print(f"Async mode: ENABLED (reasoning runs in parallel with actions)")
+            print(f"Max concurrent LLM calls: {self.config.max_concurrent_llm_calls}")
+            print(f"Reasoning throttle: {self.config.reasoning_throttle}s")
+        else:
+            print(f"Async mode: DISABLED (sequential execution)")
         print("=" * 60)
         print()
 
@@ -331,6 +411,357 @@ class SkyrimAGI:
 
         self.running = True
         start_time = time.time()
+        
+        # Initialize LLM semaphore for resource management
+        self.llm_semaphore = asyncio.Semaphore(self.config.max_concurrent_llm_calls)
+
+        try:
+            if self.config.enable_async_reasoning:
+                # Run async mode with parallel reasoning and actions
+                await self._autonomous_play_async(duration_seconds, start_time)
+            else:
+                # Run traditional sequential mode
+                await self._autonomous_play_sequential(duration_seconds, start_time)
+                
+        except KeyboardInterrupt:
+            print("\n\n[WARN] User interrupted - stopping gracefully...")
+        except Exception as e:
+            print(f"\n\n[ERROR] Error during gameplay: {e}")
+            import traceback
+            traceback.print_exc()
+        finally:
+            self.running = False
+            print(f"\n{'=' * 60}")
+            print("AUTONOMOUS GAMEPLAY COMPLETE")
+            print(f"{'=' * 60}")
+            self._print_final_stats()
+
+    async def _autonomous_play_async(self, duration_seconds: int, start_time: float):
+        """
+        Async gameplay mode where reasoning, actions, and perception run in parallel.
+        
+        This prevents blocking during LLM reasoning - the agent continues to act.
+        """
+        print("[ASYNC] Starting parallel execution loops...")
+        
+        # Start all async loops concurrently
+        perception_task = asyncio.create_task(self._perception_loop(duration_seconds, start_time))
+        reasoning_task = asyncio.create_task(self._reasoning_loop(duration_seconds, start_time))
+        action_task = asyncio.create_task(self._action_loop(duration_seconds, start_time))
+        learning_task = asyncio.create_task(self._learning_loop(duration_seconds, start_time))
+        
+        # Wait for all tasks to complete (or any to fail)
+        await asyncio.gather(
+            perception_task,
+            reasoning_task,
+            action_task,
+            learning_task,
+            return_exceptions=True
+        )
+        
+        print("[ASYNC] All parallel loops completed")
+
+    async def _perception_loop(self, duration_seconds: int, start_time: float):
+        """
+        Continuously perceive the game state and queue perceptions for reasoning.
+        """
+        print("[PERCEPTION] Loop started")
+        cycle_count = 0
+        
+        while self.running and (time.time() - start_time) < duration_seconds:
+            try:
+                cycle_count += 1
+                
+                # Perceive current state
+                perception = await self.perception.perceive()
+                self.current_perception = perception
+                
+                # Queue perception for reasoning (non-blocking)
+                try:
+                    self.perception_queue.put_nowait({
+                        'perception': perception,
+                        'cycle': cycle_count,
+                        'timestamp': time.time()
+                    })
+                except asyncio.QueueFull:
+                    # Skip if queue is full (reasoning is behind)
+                    print(f"[PERCEPTION] Queue full, skipping cycle {cycle_count}")
+                
+                # Wait before next perception
+                await asyncio.sleep(self.config.perception_interval)
+                
+            except Exception as e:
+                print(f"[PERCEPTION] Error: {e}")
+                await asyncio.sleep(1.0)
+        
+        print("[PERCEPTION] Loop ended")
+
+    async def _reasoning_loop(self, duration_seconds: int, start_time: float):
+        """
+        Continuously process perceptions, compute consciousness, plan actions.
+        Uses semaphore to limit concurrent LLM calls and prevent system overload.
+        """
+        print("[REASONING] Loop started")
+        
+        while self.running and (time.time() - start_time) < duration_seconds:
+            try:
+                # Get next perception (wait if none available)
+                perception_data = await asyncio.wait_for(
+                    self.perception_queue.get(),
+                    timeout=5.0
+                )
+                
+                # Throttle reasoning to prevent overload
+                time_since_last = time.time() - self.last_reasoning_time
+                if time_since_last < self.config.reasoning_throttle:
+                    await asyncio.sleep(self.config.reasoning_throttle - time_since_last)
+                
+                self.last_reasoning_time = time.time()
+                
+                perception = perception_data['perception']
+                cycle_count = perception_data['cycle']
+                
+                print(f"\n[REASONING] Processing cycle {cycle_count}")
+                
+                game_state = perception['game_state']
+                scene_type = perception['scene_type']
+                
+                # Store perceptual memory
+                self.memory_rag.store_perceptual_memory(
+                    visual_embedding=perception['visual_embedding'],
+                    scene_type=scene_type.value,
+                    location=game_state.location_name,
+                    context={
+                        'health': game_state.health,
+                        'in_combat': game_state.in_combat,
+                        'layer': game_state.current_action_layer
+                    }
+                )
+                
+                # Compute world state and consciousness (with LLM throttling)
+                async with self.llm_semaphore:
+                    world_state = await self.agi.perceive({
+                        'causal': game_state.to_dict(),
+                        'visual': [perception['visual_embedding']],
+                    })
+                    
+                    consciousness_context = {
+                        'motivation': 'unknown',
+                        'cycle': cycle_count,
+                        'scene': scene_type.value
+                    }
+                    current_consciousness = await self.consciousness_bridge.compute_consciousness(
+                        game_state.to_dict(),
+                        consciousness_context
+                    )
+                
+                print(f"[REASONING] Coherence 𝒞 = {current_consciousness.coherence:.3f}")
+                
+                # Store consciousness
+                self.last_consciousness = self.current_consciousness
+                self.current_consciousness = current_consciousness
+                
+                # Assess motivation
+                motivation_context = {
+                    'uncertainty': 0.7 if scene_type == SceneType.UNKNOWN else 0.3,
+                    'predicted_delta_coherence': 0.05,
+                }
+                mot_state = self.agi.motivation.compute_motivation(
+                    state=game_state.to_dict(),
+                    context=motivation_context
+                )
+                
+                # Form/update goals
+                if len(self.agi.goal_system.get_active_goals()) == 0 or cycle_count % 10 == 0:
+                    goal = self.agi.goal_system.generate_goal(
+                        mot_state.dominant_drive().value,
+                        {'scene': scene_type.value, 'location': game_state.location_name}
+                    )
+                    self.current_goal = goal.description
+                    print(f"[REASONING] New goal: {self.current_goal}")
+                
+                # Plan action (with LLM throttling)
+                async with self.llm_semaphore:
+                    action = await self._plan_action(
+                        perception=perception,
+                        motivation=mot_state,
+                        goal=self.current_goal
+                    )
+                
+                print(f"[REASONING] Planned action: {action}")
+                
+                # Queue action for execution (non-blocking)
+                try:
+                    self.action_queue.put_nowait({
+                        'action': action,
+                        'scene_type': scene_type,
+                        'game_state': game_state,
+                        'motivation': mot_state,
+                        'cycle': cycle_count,
+                        'consciousness': current_consciousness
+                    })
+                except asyncio.QueueFull:
+                    print(f"[REASONING] Action queue full, action {action} dropped")
+                
+            except asyncio.TimeoutError:
+                # No perception available, wait a bit
+                await asyncio.sleep(0.5)
+            except Exception as e:
+                print(f"[REASONING] Error: {e}")
+                import traceback
+                traceback.print_exc()
+                await asyncio.sleep(1.0)
+        
+        print("[REASONING] Loop ended")
+
+    async def _action_loop(self, duration_seconds: int, start_time: float):
+        """
+        Continuously execute queued actions.
+        """
+        print("[ACTION] Loop started")
+        
+        while self.running and (time.time() - start_time) < duration_seconds:
+            try:
+                # Get next action (wait if none available)
+                action_data = await asyncio.wait_for(
+                    self.action_queue.get(),
+                    timeout=2.0
+                )
+                
+                action = action_data['action']
+                scene_type = action_data['scene_type']
+                game_state = action_data['game_state']
+                
+                print(f"\n[ACTION] Executing: {action}")
+                
+                # Execute action
+                try:
+                    await self._execute_action(action, scene_type)
+                    self.stats['actions_taken'] += 1
+                    print(f"[ACTION] Successfully executed: {action}")
+                except Exception as e:
+                    print(f"[ACTION] Execution failed: {e}")
+                    try:
+                        await self.actions.look_around()
+                        print("[ACTION] Performed fallback look_around")
+                    except:
+                        print("[ACTION] Even fallback action failed")
+                
+                # Queue for learning
+                try:
+                    self.learning_queue.put_nowait({
+                        'action_data': action_data,
+                        'execution_time': time.time()
+                    })
+                except asyncio.QueueFull:
+                    print(f"[ACTION] Learning queue full")
+                
+                # Brief pause to let action complete
+                await asyncio.sleep(0.5)
+                
+            except asyncio.TimeoutError:
+                # No action available, continue monitoring
+                await asyncio.sleep(0.5)
+            except Exception as e:
+                print(f"[ACTION] Error: {e}")
+                await asyncio.sleep(1.0)
+        
+        print("[ACTION] Loop ended")
+
+    async def _learning_loop(self, duration_seconds: int, start_time: float):
+        """
+        Continuously process completed actions and learn from outcomes.
+        """
+        print("[LEARNING] Loop started")
+        
+        while self.running and (time.time() - start_time) < duration_seconds:
+            try:
+                # Get completed action data
+                learning_data = await asyncio.wait_for(
+                    self.learning_queue.get(),
+                    timeout=5.0
+                )
+                
+                action_data = learning_data['action_data']
+                action = action_data['action']
+                cycle_count = action_data['cycle']
+                
+                print(f"[LEARNING] Processing cycle {cycle_count}")
+                
+                # Perceive outcome
+                after_perception = await self.perception.perceive()
+                after_state = after_perception['game_state'].to_dict()
+                
+                # Compute after consciousness
+                consciousness_context = {
+                    'motivation': 'learning',
+                    'cycle': cycle_count,
+                    'scene': after_perception['scene_type'].value
+                }
+                after_consciousness = await self.consciousness_bridge.compute_consciousness(
+                    after_state,
+                    consciousness_context
+                )
+                
+                # Build before state
+                before_state = action_data['game_state'].to_dict()
+                before_state.update({
+                    'scene': action_data['scene_type'].value,
+                    'curiosity': action_data['motivation'].curiosity,
+                    'competence': action_data['motivation'].competence,
+                    'coherence': action_data['motivation'].coherence,
+                    'autonomy': action_data['motivation'].autonomy
+                })
+                
+                # Learn from experience
+                self.skyrim_world.learn_from_experience(
+                    action=str(action),
+                    before_state=before_state,
+                    after_state=after_state,
+                    surprise_threshold=self.config.surprise_threshold
+                )
+                
+                # Store RL experience (with consciousness)
+                if self.rl_learner is not None:
+                    self.rl_learner.store_experience(
+                        state_before=before_state,
+                        action=str(action),
+                        state_after=after_state,
+                        done=False,
+                        consciousness_before=action_data['consciousness'],
+                        consciousness_after=after_consciousness
+                    )
+                    
+                    # Train periodically
+                    if cycle_count % self.config.rl_train_freq == 0:
+                        print(f"[LEARNING] Training RL at cycle {cycle_count}...")
+                        self.rl_learner.train_step()
+                
+                # Update stats
+                self.stats['cycles_completed'] = cycle_count
+                self.stats['total_playtime'] = time.time() - start_time
+                
+                if after_consciousness:
+                    if 'consciousness_coherence_history' not in self.stats:
+                        self.stats['consciousness_coherence_history'] = []
+                    self.stats['consciousness_coherence_history'].append(after_consciousness.coherence)
+                
+            except asyncio.TimeoutError:
+                # No learning data available
+                await asyncio.sleep(1.0)
+            except Exception as e:
+                print(f"[LEARNING] Error: {e}")
+                import traceback
+                traceback.print_exc()
+                await asyncio.sleep(1.0)
+        
+        print("[LEARNING] Loop ended")
+
+    async def _autonomous_play_sequential(self, duration_seconds: int, start_time: float):
+        """
+        Sequential gameplay mode (original behavior).
+        Kept for backwards compatibility and debugging.
+        """
         cycle_count = 0
 
         try:
@@ -883,86 +1314,57 @@ class SkyrimAGI:
         motivation
     ) -> Optional[str]:
         """
-        Use LLM for terrain-aware, non-narrative action planning.
+        Use dedicated phi-4-mini LLM for fast terrain-aware action planning.
         
         Returns:
             Action string if LLM planning succeeds, None otherwise
         """
-        # Build context for LLM focused on environment and terrain
-        context = f"""
-SKYRIM AGENT - TERRAIN-AWARE PLANNING
-
-PHYSICAL STATE:
-- Health: {game_state.health:.0f}/100 | Magicka: {game_state.magicka:.0f}/100 | Stamina: {game_state.stamina:.0f}/100
-- Scene Type: {scene_type.value} (visual classification of environment)
-- In Combat: {game_state.in_combat}
-
-SPATIAL CONTEXT:
-- Current Location: {game_state.location_name}
-- Action Layer: {current_layer} (determines available movement/interaction options)
-- Available Actions: {', '.join(available_actions)}
-
-TERRAIN KNOWLEDGE:
-You are an autonomous agent exploring a medieval fantasy world. Your goal is to navigate terrain intelligently:
-- INDOOR spaces (inventory/menu scenes): Confined areas, look for exits, interact with objects
-- OUTDOOR spaces (exploration scenes): Open terrain, prioritize forward movement, scan horizon
-- COMBAT spaces: Immediate threats, use terrain for advantage (cover, elevation, retreat paths)
-- VERTICAL terrain: Cliffs, stairs, elevated positions - consider climbing/jumping
-- OBSTACLES: Walls, rocks, water - navigate around or find alternate paths
-
-STRATEGIC ANALYSIS:
-- Layer Effectiveness: {strategic_analysis['layer_effectiveness']}
-- Recommendations: {strategic_analysis.get('recommendations', [])}
-
-BEHAVIORAL DRIVE: {motivation.dominant_drive().value}
-
-AVAILABLE ACTIONS (terrain-focused):
-- explore: Forward-biased waypoint navigation with camera scanning
-- navigate: Direct forward movement to cover distance
-- combat: Engage threats using terrain advantages
-- interact: Activate objects, open doors, loot containers
-- rest: Recover resources when safe
-- switch_to_combat/menu/stealth: Change action layer for different terrain interactions
-
-PLANNING CONSTRAINTS:
-1. Prioritize FORWARD movement in open terrain
-2. Use CAMERA scanning to assess environment
-3. Consider VERTICAL space (look up for paths, down for items)
-4. Adapt to TERRAIN type (indoor vs outdoor vs combat)
-5. NO story/quest assumptions - pure environmental reasoning
-6. Focus on SPATIAL navigation, not narrative goals
-
-Based on the terrain type and physical state, select the most appropriate action for navigating this environment:"""
-
-        # Augment context with RAG memories
-        memory_context = self.memory_rag.augment_context_with_memories(
-            current_visual=perception['visual_embedding'],
-            current_situation={
-                'scene': scene_type.value,
-                'health': game_state.health,
-                'in_combat': game_state.in_combat,
-                'location': game_state.location_name
-            },
-            max_memories=3
+        # Use dedicated action planning LLM if available, otherwise fallback to main
+        llm_interface = self.action_planning_llm if self.action_planning_llm else (
+            self.agi.consciousness_llm.llm_interface if hasattr(self.agi, 'consciousness_llm') 
+            and self.agi.consciousness_llm and hasattr(self.agi.consciousness_llm, 'llm_interface') 
+            else None
         )
         
-        if memory_context:
-            context += "\n" + memory_context
-            print("[RAG] Augmented context with relevant memories")
+        if not llm_interface:
+            print("[PHI4-ACTION] No action planning LLM available")
+            return None
+        
+        # Build compact context for fast phi-4-mini reasoning
+        context = f"""SKYRIM AGENT - QUICK ACTION DECISION
+
+STATE: HP={game_state.health:.0f} MP={game_state.magicka:.0f} ST={game_state.stamina:.0f}
+SCENE: {scene_type.value} | COMBAT: {game_state.in_combat} | LAYER: {current_layer}
+LOCATION: {game_state.location_name}
+DRIVE: {motivation.dominant_drive().value}
+
+ACTIONS: {', '.join(available_actions[:8])}
+
+TERRAIN STRATEGY:
+- Indoor/Menu: interact, navigate exits
+- Outdoor: explore forward, scan horizon  
+- Combat: use terrain, power_attack if strong, block if weak
+- Low HP: rest or switch_to_menu for healing
+
+QUICK DECISION - Choose ONE action from available list:"""
 
         try:
-            print("[LLM] Calling LM Studio for layer-aware action planning...")
-            print(f"[LLM] Context length: {len(context)} characters")
+            print("[PHI4-ACTION] Fast action planning with phi-4-mini...")
             
-            result = await self.agi.process(context)
-            print(f"[LLM] Result type: {type(result)}")
-            print(f"[LLM] Result keys: {result.keys() if isinstance(result, dict) else 'Not a dict'}")
+            # Use dedicated LLM interface directly for faster response
+            if self.action_planning_llm:
+                response = await self.action_planning_llm.generate(
+                    prompt=context,
+                    max_tokens=100  # Very short response needed
+                )
+            else:
+                # Fallback to main LLM through agi.process
+                result = await self.agi.process(context)
+                response = result.get('consciousness_response', {}).get('response', '')
             
-            response = result.get('consciousness_response', {}).get('response', '')
-            print(f"[LLM] Raw response: {response}")
-            print(f"[LLM] Response length: {len(response)} characters")
+            print(f"[PHI4-ACTION] Response: {response[:200]}")
 
-            # Parse LLM response to extract action
+            # Parse response to extract action
             response_lower = response.lower()
             
             # Check for layer transition actions first
@@ -975,20 +1377,13 @@ Based on the terrain type and physical state, select the most appropriate action
             elif 'switch_to_exploration' in response_lower:
                 return 'switch_to_exploration'
             
-            # Check for specific actions
-            elif 'power_attack' in response_lower and 'power_attack' in available_actions:
-                return 'power_attack'
-            elif 'backstab' in response_lower and 'backstab' in available_actions:
-                return 'backstab'
-            elif 'block' in response_lower and 'block' in available_actions:
-                return 'block'
-            elif 'activate' in response_lower and 'activate' in available_actions:
-                return 'activate'
-            elif 'move_forward' in response_lower and 'move_forward' in available_actions:
-                return 'move_forward'
+            # Check for specific actions in available actions
+            for action in available_actions:
+                if action.lower() in response_lower:
+                    return action
             
             # Check for general action categories
-            elif 'combat' in response_lower or 'attack' in response_lower:
+            if 'combat' in response_lower or 'attack' in response_lower:
                 return 'combat'
             elif 'explore' in response_lower:
                 return 'explore'
@@ -1001,12 +1396,13 @@ Based on the terrain type and physical state, select the most appropriate action
             elif 'navigate' in response_lower or 'move' in response_lower:
                 return 'navigate'
             
-            print(f"[LLM] Could not parse action from response, using fallback")
+            print(f"[PHI4-ACTION] Could not parse action from response")
             return None
             
         except Exception as e:
-            print(f"[LLM] Error during planning: {e}")
+            print(f"[PHI4-ACTION] Error during planning: {e}")
             return None
+
 
     def _evaluate_action_success(
         self,

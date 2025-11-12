@@ -158,11 +158,11 @@ class AGIOrchestrator:
         print("[OK] AGI system initialized\n")
 
     async def initialize_llm(self):
-        """Initialize LLM client (async)."""
+        """Initialize LLM client (async) - using phi-4-mini-reasoning for lightweight consciousness."""
         try:
             config = LMStudioConfig(
                 base_url=self.config.lm_studio_url,
-                model_name='microsoft/phi-4'
+                model_name='microsoft/phi-4-mini-reasoning'
             )
             client = LMStudioClient(config)
             llm_interface = ExpertLLMInterface(client)
@@ -173,7 +173,7 @@ class AGIOrchestrator:
                 coherentia_threshold=self.config.coherentia_threshold,
                 ethical_threshold=self.config.ethical_threshold
             )
-            print("[OK] LLM consciousness engine ready")
+            print("[OK] LLM consciousness engine ready (phi-4-mini-reasoning)")
         except Exception as e:
             print(f"[WARNING] LLM initialization failed: {e}")
             print("  Continuing without LLM (template mode)")
