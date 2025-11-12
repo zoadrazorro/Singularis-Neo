@@ -102,7 +102,7 @@ class RLReasoningNeuron:
                 prompt=prompt,
                 system_prompt=self._get_system_prompt(),
                 temperature=0.7,
-                max_tokens=512
+                max_tokens=200
             )
             
             # Parse LLM response
@@ -131,23 +131,12 @@ class RLReasoningNeuron:
     
     def _get_system_prompt(self) -> str:
         """Get system prompt for RL reasoning."""
-        return """You are an RL Reasoning Neuron - a specialized cognitive system that interprets reinforcement learning Q-values for Skyrim gameplay.
+        return """You are a Skyrim AI tactical advisor. Analyze Q-values and recommend the best action.
 
-Your role:
-1. Analyze Q-values to understand what the RL system has learned from playing Skyrim
-2. Provide tactical interpretation of why certain actions have high/low values
-3. Consider game context beyond immediate rewards (terrain, combat situation, resources, long-term objectives)
-4. Recommend actions that balance learned experience with tactical insight
-5. Explain patterns in gameplay behavior through Q-value analysis
-
-Response format:
-ACTION: [recommended action]
-REASONING: [why this action makes tactical sense for Skyrim]
-Q-VALUE INTERPRETATION: [what the Q-values tell us about learned gameplay experience]
-STRATEGIC INSIGHT: [deeper pattern or meta-learning observation about Skyrim mechanics]
-CONFIDENCE: [0.0-1.0]
-
-Be concise, tactical, and grounded in both the learned Q-values and the Skyrim gameplay context."""
+Format:
+ACTION: [action name]
+REASONING: [brief tactical reason]
+CONFIDENCE: [0.0-1.0]"""
     
     def _build_reasoning_prompt(
         self,
@@ -169,28 +158,13 @@ Be concise, tactical, and grounded in both the learned Q-values and the Skyrim g
         # Get meta-strategic guidance if available
         meta_strategy = context.get('meta_strategy', '')
         
-        prompt = f"""RL Q-VALUE ANALYSIS:
+        prompt = f"""Skyrim State:
+HP: {state.get('health', 100):.0f}/100 | Combat: {state.get('in_combat', False)} | Terrain: {context.get('terrain_type', 'unknown')}
 
-Current State:
-- Scene: {state.get('scene', 'unknown')}
-- Health: {state.get('health', 100):.0f}/100
-- In Combat: {state.get('in_combat', False)}
-- Terrain Type: {context.get('terrain_type', 'unknown')}
-- Dominant Drive: {context.get('motivation', 'unknown')}
-
-Learned Q-Values (what the RL system has learned):
+Top Q-Values:
 {q_summary}
-{meta_strategy}
-Your task: Interpret these Q-values and recommend the best action.
 
-Consider:
-1. What do the Q-values tell us about what the agent has learned?
-2. How do the learned values align with the current context?
-3. If there's meta-strategic guidance above, how should it influence the decision?
-4. Are there any surprising patterns in the Q-values?
-5. What strategic insights can we derive from these learned preferences?
-
-Provide your analysis:"""
+Recommend best action:"""
         
         return prompt
     
