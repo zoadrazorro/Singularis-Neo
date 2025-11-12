@@ -1653,14 +1653,18 @@ QUICK DECISION - Choose ONE action from available list:"""
                     prompt=context,
                     max_tokens=300  # Enough for reasoning + action selection
                 )
-                # ExpertLLMInterface.generate() returns a dict with 'response' key
-                response = result.get('response', '') if isinstance(result, dict) else str(result)
+                # Debug: Check what we got back
+                print(f"[PHI4-ACTION] DEBUG - Result type: {type(result)}")
+                print(f"[PHI4-ACTION] DEBUG - Result keys: {result.keys() if isinstance(result, dict) else 'N/A'}")
+                
+                # LMStudioClient.generate() returns a dict with 'content' key (not 'response')
+                response = result.get('content', result.get('response', '')) if isinstance(result, dict) else str(result)
             else:
                 # Fallback to main LLM through agi.process
                 result = await self.agi.process(context)
                 response = result.get('consciousness_response', {}).get('response', '')
             
-            print(f"[PHI4-ACTION] Response: {response[:200] if len(response) > 200 else response}")
+            print(f"[PHI4-ACTION] Response ({len(response)} chars): {response[:200] if len(response) > 200 else response}")
         except Exception as e:
             print(f"[PHI4-ACTION] ERROR during LLM action planning: {e}")
             import traceback
