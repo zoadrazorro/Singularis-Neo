@@ -82,6 +82,13 @@ class GameState:
     in_combat: bool = False
     enemies_nearby: int = 0
     
+    # Dialogue state
+    in_dialogue: bool = False
+    
+    # Menu state
+    in_menu: bool = False
+    menu_type: str = ""
+    
     # Action layer awareness
     current_action_layer: str = "Exploration"
     available_actions: List[str] = None
@@ -110,6 +117,10 @@ class GameState:
             'time': self.time_of_day,
             'in_combat': self.in_combat,
             'enemies_nearby': self.enemies_nearby,
+            'in_dialogue': self.in_dialogue,
+            'in_menu': self.in_menu,
+            'menu_type': self.menu_type,
+            'nearby_npcs': self.nearby_npcs,
             'gold': self.gold,
             'quest_count': len(self.active_quests),
             'current_action_layer': self.current_action_layer,
@@ -385,6 +396,9 @@ class SkyrimPerception:
             gold=game_state_dict.get('gold', 100),
             in_combat=game_state_dict.get('in_combat', False),
             enemies_nearby=game_state_dict.get('enemies_nearby', 0),
+            in_dialogue=game_state_dict.get('in_dialogue', False),
+            in_menu=game_state_dict.get('in_menu', False),
+            menu_type=game_state_dict.get('menu_type', ''),
             nearby_npcs=game_state_dict.get('nearby_npcs', []),
             current_action_layer=current_layer,
             available_actions=[a.name for a in available_actions],
@@ -397,7 +411,10 @@ class SkyrimPerception:
         This would use OCR, color detection, and UI element recognition.
         """
         # Detect if in menu (would check for UI elements)
-        in_menu = self._detect_menu_state()
+        in_menu, menu_type = self._detect_menu_state()
+        
+        # Detect dialogue state
+        in_dialogue = self._detect_dialogue_state()
         
         # Detect combat state (would check for combat UI, red health bars, etc.)
         in_combat = self._detect_combat_state()
@@ -415,17 +432,42 @@ class SkyrimPerception:
             'gold': 100,  # Would read from inventory
             'in_combat': in_combat,
             'enemies_nearby': 0,  # Would detect from enemy health bars
-            'nearby_npcs': self._detect_nearby_npcs(),
+            'in_dialogue': in_dialogue,
             'in_menu': in_menu,
-            'layer_transition_reason': self._determine_layer_transition_reason(in_combat, in_menu)
+            'menu_type': menu_type,
+            'nearby_npcs': self._detect_nearby_npcs(),
+            'layer_transition_reason': self._determine_layer_transition_reason(in_combat, in_menu, in_dialogue)
         }
         
         return state
 
-    def _detect_menu_state(self) -> bool:
-        """Detect if currently in a menu (would analyze UI elements)."""
+    def _detect_menu_state(self) -> Tuple[bool, str]:
+        """
+        Detect if currently in a menu and which menu type.
+        
+        Returns:
+            (in_menu, menu_type) where menu_type is one of: 'inventory', 'map', 'magic', 'skills', ''
+        """
         # TODO: Implement actual menu detection using screen analysis
         # Would look for inventory UI, map UI, skills UI, etc.
+        # For now, infer from recent scene classification if available
+        if len(self.perception_history) > 0:
+            last_scene = self.perception_history[-1].get('scene_type', SceneType.UNKNOWN)
+            if last_scene == SceneType.INVENTORY:
+                return True, 'inventory'
+            elif last_scene == SceneType.MAP:
+                return True, 'map'
+        return False, ''
+    
+    def _detect_dialogue_state(self) -> bool:
+        """Detect if currently in dialogue with an NPC."""
+        # TODO: Implement actual dialogue detection using screen analysis
+        # Would look for dialogue UI, conversation options, NPC portraits
+        # For now, infer from recent scene classification
+        if len(self.perception_history) > 0:
+            last_scene = self.perception_history[-1].get('scene_type', SceneType.UNKNOWN)
+            if last_scene == SceneType.DIALOGUE:
+                return True
         return False
 
     def _detect_combat_state(self) -> bool:
@@ -462,10 +504,12 @@ class SkyrimPerception:
         # Real implementation would detect NPC name tags on screen
         return []
 
-    def _determine_layer_transition_reason(self, in_combat: bool, in_menu: bool) -> str:
+    def _determine_layer_transition_reason(self, in_combat: bool, in_menu: bool, in_dialogue: bool = False) -> str:
         """Determine why a layer transition might be needed."""
         if in_combat:
             return "Combat detected - consider Combat layer"
+        elif in_dialogue:
+            return "Dialogue detected - consider Dialogue layer"
         elif in_menu:
             return "Menu open - consider Menu layer"
         else:
