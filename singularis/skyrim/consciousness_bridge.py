@@ -81,14 +81,18 @@ class ConsciousnessBridge:
     creating a unified evaluation framework.
     """
     
-    def __init__(self, consciousness_llm=None):
+    def __init__(self, consciousness_llm=None, world_understanding_llm=None, strategic_planning_llm=None):
         """
         Initialize consciousness bridge.
         
         Args:
-            consciousness_llm: Optional MetaOrchestratorLLM for consciousness computation
+            consciousness_llm: Optional MetaOrchestratorLLM (DEPRECATED - too slow)
+            world_understanding_llm: Fast world understanding LLM (eva-qwen2.5-14b)
+            strategic_planning_llm: Fast strategic reasoning LLM (phi-4)
         """
-        self.consciousness_llm = consciousness_llm
+        self.consciousness_llm = consciousness_llm  # Kept for compatibility but not used
+        self.world_understanding_llm = world_understanding_llm
+        self.strategic_planning_llm = strategic_planning_llm
         self.history: list[ConsciousnessState] = []
         
         # Weights for computing consciousness from game metrics
@@ -103,7 +107,8 @@ class ConsciousnessBridge:
         }
         
         print("[BRIDGE] Consciousness Bridge initialized")
-        print(f"[BRIDGE] LLM consciousness: {'Connected' if consciousness_llm else 'Using heuristics'}")
+        print(f"[BRIDGE] World Understanding LLM: {'Connected' if world_understanding_llm else 'Not available'}")
+        print(f"[BRIDGE] Strategic Planning LLM: {'Connected' if strategic_planning_llm else 'Not available'}")
     
     async def compute_consciousness(
         self,
@@ -185,13 +190,13 @@ class ConsciousnessBridge:
         # 6. Compute self-awareness (HOT - Higher Order Thought)
         self_awareness = self._compute_self_awareness(game_state, context)
         
-        # 7. If consciousness_llm available, enhance with deeper analysis
-        if self.consciousness_llm:
+        # 7. If big model LLMs available, enhance with parallel analysis
+        if self.world_understanding_llm or self.strategic_planning_llm:
             try:
-                enhanced = await self._enhance_with_llm_consciousness(
+                enhanced = await self._enhance_with_parallel_llms(
                     game_state, coherence, consciousness_level, context
                 )
-                # LLM can adjust measurements based on deeper reasoning
+                # LLMs can adjust measurements based on deeper reasoning
                 if enhanced:
                     coherence = enhanced.get('coherence', coherence)
                     consciousness_level = enhanced.get('consciousness_level', consciousness_level)
@@ -300,7 +305,7 @@ class ConsciousnessBridge:
         
         return (health_awareness + capability_awareness + reflection) / 3.0
     
-    async def _enhance_with_llm_consciousness(
+    async def _enhance_with_parallel_llms(
         self,
         game_state: Dict[str, Any],
         base_coherence: float,
@@ -308,12 +313,10 @@ class ConsciousnessBridge:
         context: Dict[str, Any]
     ) -> Optional[Dict[str, float]]:
         """
-        Use consciousness_llm to enhance measurements.
+        Use big model LLMs in parallel to enhance measurements.
         
-        The LLM can provide deeper phenomenological analysis:
-        - Is the agent truly coherent or just mechanically functional?
-        - Does the situation warrant higher consciousness?
-        - Meta-cognitive insights
+        Calls eva-qwen2.5-14b (world understanding) and phi-4 (strategic reasoning)
+        simultaneously for fast consciousness assessment.
         
         Args:
             game_state: Current game state
@@ -324,45 +327,70 @@ class ConsciousnessBridge:
         Returns:
             Optional dict with enhanced measurements
         """
-        # Build a query for the consciousness engine
-        query = f"""
-Analyze consciousness state:
-- Health: {game_state.get('health', 100)}/100
-- In Combat: {game_state.get('in_combat', False)}
-- Scene: {game_state.get('scene', 'unknown')}
-- Heuristic Coherence: {base_coherence:.3f}
-- Heuristic Consciousness: {base_consciousness:.3f}
-
-Provide phenomenological assessment:
-1. Does this state reflect true coherence or mechanical function?
-2. What is the quality of consciousness in this moment?
-3. Adjustment factor (0.8-1.2) for measurements.
-"""
+        import asyncio
         
-        try:
-            # Query consciousness engine
-            # Note: process() expects (query, selected_experts), not context
-            # We let it use default expert selection based on the query
-            result = await self.consciousness_llm.process(query)
-            
-            # Parse response for adjustment factor
-            response = result.get('response', '')
-            
-            # Simple heuristic extraction (can be improved)
-            adjustment = 1.0  # Default: no change
-            if 'higher' in response.lower() or 'increase' in response.lower():
-                adjustment = 1.1
-            elif 'lower' in response.lower() or 'decrease' in response.lower():
-                adjustment = 0.9
-            
-            return {
-                'coherence': min(base_coherence * adjustment, 1.0),
-                'consciousness_level': min(base_consciousness * adjustment, 1.0),
-                'llm_insight': response[:200]  # First 200 chars
-            }
-        except Exception as e:
-            print(f"[BRIDGE] LLM consciousness query failed: {e}")
+        # Build compact queries for fast LLM responses
+        world_query = f"""Skyrim state: HP={game_state.get('health', 100)}, Combat={game_state.get('in_combat', False)}, Scene={game_state.get('scene', 'unknown')}. Rate world coherence (0-1):"""
+        
+        strategy_query = f"""Skyrim: HP={game_state.get('health', 100)}, Combat={game_state.get('in_combat', False)}. Rate consciousness quality (0-1):"""
+        
+        tasks = []
+        
+        # Call world understanding LLM
+        if self.world_understanding_llm:
+            async def world_call():
+                try:
+                    result = await self.world_understanding_llm.generate(
+                        prompt=world_query,
+                        max_tokens=50
+                    )
+                    return ('world', result.get('content', ''))
+                except Exception as e:
+                    print(f"[BRIDGE] World LLM failed: {e}")
+                    return ('world', None)
+            tasks.append(world_call())
+        
+        # Call strategic planning LLM
+        if self.strategic_planning_llm:
+            async def strategy_call():
+                try:
+                    result = await self.strategic_planning_llm.generate(
+                        prompt=strategy_query,
+                        max_tokens=50
+                    )
+                    return ('strategy', result.get('content', ''))
+                except Exception as e:
+                    print(f"[BRIDGE] Strategy LLM failed: {e}")
+                    return ('strategy', None)
+            tasks.append(strategy_call())
+        
+        if not tasks:
             return None
+        
+        # Run both LLMs in parallel
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        
+        # Parse responses for adjustment
+        adjustment = 1.0
+        for result_type, response in results:
+            if response and isinstance(response, str):
+                # Extract numeric rating if present
+                import re
+                numbers = re.findall(r'0\.[0-9]+|1\.0|[0-9]', response)
+                if numbers:
+                    try:
+                        rating = float(numbers[0])
+                        if rating > base_coherence:
+                            adjustment = max(adjustment, 1.05)
+                        elif rating < base_coherence:
+                            adjustment = min(adjustment, 0.95)
+                    except:
+                        pass
+        
+        return {
+            'coherence': min(base_coherence * adjustment, 1.0),
+            'consciousness_level': min(base_consciousness * adjustment, 1.0)
+        }
     
     def get_coherence_trend(self, window: int = 10) -> str:
         """

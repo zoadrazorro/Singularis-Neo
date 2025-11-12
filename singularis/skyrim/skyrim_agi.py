@@ -437,6 +437,17 @@ class SkyrimAGI:
             print("[WORLD-BIG] Will use phi-4-mini fallback for world understanding")
             self.world_understanding_llm = None
         
+        # Connect big model LLMs to consciousness bridge for parallel consciousness computation
+        print("\n[BRIDGE] Connecting big model LLMs to consciousness bridge...")
+        self.consciousness_bridge.world_understanding_llm = self.world_understanding_llm
+        self.consciousness_bridge.strategic_planning_llm = self.strategic_planning_llm
+        if self.world_understanding_llm and self.strategic_planning_llm:
+            print("[BRIDGE] ✓ Both big models connected - parallel consciousness computation enabled")
+        elif self.world_understanding_llm or self.strategic_planning_llm:
+            print("[BRIDGE] ⚠️ Only one big model available - partial consciousness enhancement")
+        else:
+            print("[BRIDGE] ⚠️ No big models available - using heuristic consciousness only")
+        
         print()
         print("=" * 70)
         print("HYBRID LLM ARCHITECTURE READY")
@@ -447,6 +458,7 @@ class SkyrimAGI:
         print("✓ Fast layer handles moment-to-moment decisions")
         print("✓ Strategic layer handles long-term planning & deep analysis")
         print("✓ Async execution allows all 6 models to run in parallel")
+        print("✓ Consciousness bridge uses 2 big models in parallel (not 4 experts)")
         print("=" * 70)
         print()
 
@@ -660,14 +672,16 @@ class SkyrimAGI:
                     print(f"[REASONING] New goal: {self.current_goal}")
                 
                 # Plan action (with LLM throttling)
+                print("[REASONING] About to plan action...")
                 async with self.llm_semaphore:
                     action = await self._plan_action(
                         perception=perception,
                         motivation=mot_state,
                         goal=self.current_goal
                     )
-                
                 print(f"[REASONING] Planned action: {action}")
+                if action is None:
+                    print("[REASONING] WARNING: No action returned by _plan_action!")
                 
                 # Queue action for execution (non-blocking)
                 try:
@@ -1194,193 +1208,201 @@ class SkyrimAGI:
     async def _plan_action(
         self,
         perception: Dict[str, Any],
-        motivation: Any,
-        goal: str
-    ) -> str:
-        """
-        Plan next action based on perception, motivation, and goal.
-        Now includes RL-based learning and layer-aware strategic reasoning.
+        motivation,
+        goal: Optional[str] = None
+    ) -> Optional[str]:
+        print("[_plan_action] Called with perception, motivation, goal:", perception, motivation, goal)
+        try:
+            """
+            Plan next action based on perception, motivation, and goal.
+            Now includes RL-based learning and layer-aware strategic reasoning.
 
-        Args:
-            perception: Current perception data
-            motivation: Motivation state
-            goal: Current goal
+            Args:
+                perception: Current perception data
+                motivation: Motivation state
+                goal: Current goal
 
-        Returns:
-            Action to take
-        """
-        game_state = perception['game_state']
-        scene_type = perception['scene_type']
-        current_layer = game_state.current_action_layer
-        available_actions = game_state.available_actions
+            Returns:
+                Action to take
+            """
+            game_state = perception['game_state']
+            scene_type = perception['scene_type']
+            current_layer = game_state.current_action_layer
+            available_actions = game_state.available_actions
 
-        print(f"[PLANNING] Current layer: {current_layer}")
-        print(f"[PLANNING] Available actions: {available_actions}")
+            print(f"[PLANNING] Current layer: {current_layer}")
+            print(f"[PLANNING] Available actions: {available_actions}")
 
-        # Prepare state dict for RL
-        state_dict = game_state.to_dict()
-        state_dict.update({
-            'scene': scene_type.value,
-            'curiosity': motivation.curiosity,
-            'competence': motivation.competence,
-            'coherence': motivation.coherence,
-            'autonomy': motivation.autonomy
-        })
+            # Prepare state dict for RL
+            state_dict = game_state.to_dict()
+            state_dict.update({
+                'scene': scene_type.value,
+                'curiosity': motivation.curiosity,
+                'competence': motivation.competence,
+                'coherence': motivation.coherence,
+                'autonomy': motivation.autonomy
+            })
 
-        # Increment meta-strategist cycle before planning
-        self.meta_strategist.tick_cycle()
-        # Use RL-based action selection if enabled
-        if self.rl_learner is not None:
-            print("[PLANNING] Using RL-based action selection with LLM reasoning...")
-            print(f"[PLANNING] RL reasoning neuron LLM status: {'Connected' if self.rl_reasoning_neuron.llm_interface else 'Using heuristics'}")
-            
-            # Check if meta-strategist should generate new instruction
-            if await self.meta_strategist.should_generate_instruction():
+            # Increment meta-strategist cycle before planning
+            self.meta_strategist.tick_cycle()
+            # Use RL-based action selection if enabled
+            if self.rl_learner is not None:
+                print("[PLANNING] Using RL-based action selection with LLM reasoning...")
+                print(f"[PLANNING] RL reasoning neuron LLM status: {'Connected' if self.rl_reasoning_neuron.llm_interface else 'Using heuristics'}")
+                
+                # Check if meta-strategist should generate new instruction
+                if await self.meta_strategist.should_generate_instruction():
+                    q_values = self.rl_learner.get_q_values(state_dict)
+                    instruction = await self.meta_strategist.generate_instruction(
+                        current_state=state_dict,
+                        q_values=q_values,
+                        motivation=motivation.dominant_drive().value
+                    )
+                
+                # Get Q-values from RL
                 q_values = self.rl_learner.get_q_values(state_dict)
-                instruction = await self.meta_strategist.generate_instruction(
-                    current_state=state_dict,
+                print(f"[RL] Q-values: {', '.join([f'{k}={v:.2f}' for k, v in sorted(q_values.items(), key=lambda x: x[1], reverse=True)[:3]])}")
+                
+                # Get meta-strategic context
+                meta_context = self.meta_strategist.get_active_instruction_context()
+                
+                # Use RL reasoning neuron to think about Q-values (with meta-strategic guidance)
+                rl_reasoning = await self.rl_reasoning_neuron.reason_about_q_values(
+                    state=state_dict,
                     q_values=q_values,
-                    motivation=motivation.dominant_drive().value
+                    available_actions=available_actions,
+                    context={
+                        'motivation': motivation.dominant_drive().value,
+                        'terrain_type': self.skyrim_world.classify_terrain_from_scene(
+                            scene_type.value,
+                            game_state.in_combat
+                        ),
+                        'meta_strategy': meta_context  # Add strategic guidance
+                    }
                 )
-            
-            # Get Q-values from RL
-            q_values = self.rl_learner.get_q_values(state_dict)
-            print(f"[RL] Q-values: {', '.join([f'{k}={v:.2f}' for k, v in sorted(q_values.items(), key=lambda x: x[1], reverse=True)[:3]])}")
-            
-            # Get meta-strategic context
-            meta_context = self.meta_strategist.get_active_instruction_context()
-            
-            # Use RL reasoning neuron to think about Q-values (with meta-strategic guidance)
-            rl_reasoning = await self.rl_reasoning_neuron.reason_about_q_values(
-                state=state_dict,
-                q_values=q_values,
-                available_actions=available_actions,
-                context={
-                    'motivation': motivation.dominant_drive().value,
-                    'terrain_type': self.skyrim_world.classify_terrain_from_scene(
-                        scene_type.value,
-                        game_state.in_combat
-                    ),
-                    'meta_strategy': meta_context  # Add strategic guidance
-                }
+                
+                action = rl_reasoning.recommended_action
+                print(f"[RL-NEURON] Action: {action} (tactical score: {rl_reasoning.tactical_score:.2f})")
+                print(f"[RL-NEURON] Reasoning: {rl_reasoning.reasoning}")
+                if rl_reasoning.strategic_insight:
+                    print(f"[RL-NEURON] Insight: {rl_reasoning.strategic_insight}")
+                return action
+
+            # Get strategic analysis from world model (layer effectiveness)
+            strategic_analysis = self.skyrim_world.get_strategic_layer_analysis(
+                game_state.to_dict()
             )
             
-            action = rl_reasoning.recommended_action
-            print(f"[RL-NEURON] Action: {action} (tactical score: {rl_reasoning.tactical_score:.2f})")
-            print(f"[RL-NEURON] Reasoning: {rl_reasoning.reasoning}")
-            if rl_reasoning.strategic_insight:
-                print(f"[RL-NEURON] Insight: {rl_reasoning.strategic_insight}")
-            return action
-
-        # Get strategic analysis from world model (layer effectiveness)
-        strategic_analysis = self.skyrim_world.get_strategic_layer_analysis(
-            game_state.to_dict()
-        )
-        
-        # Get terrain-aware recommendations
-        terrain_recommendations = self.skyrim_world.get_terrain_recommendations(
-            game_state.location_name,
-            scene_type.value,
-            game_state.in_combat
-        )
-        strategic_analysis['terrain_recommendations'] = terrain_recommendations
-        
-        print(f"[STRATEGIC] Layer effectiveness: {strategic_analysis['layer_effectiveness']}")
-        if strategic_analysis['recommendations']:
-            print(f"[STRATEGIC] Recommendations: {strategic_analysis['recommendations']}")
-
-        # Meta-strategic reasoning: Should we switch layers?
-        optimal_layer = None
-        
-        # Combat situations - prioritize Combat layer if effective
-        if game_state.in_combat or scene_type == SceneType.COMBAT:
-            if current_layer != "Combat":
-                combat_effectiveness = strategic_analysis['layer_effectiveness'].get('Combat', 0.5)
-                if combat_effectiveness > 0.6:
-                    optimal_layer = "Combat"
-                    print(f"[META-STRATEGY] Switching to Combat layer (effectiveness: {combat_effectiveness:.2f})")
+            # Get terrain-aware recommendations
+            terrain_recommendations = self.skyrim_world.get_terrain_recommendations(
+                game_state.location_name,
+                scene_type.value,
+                game_state.in_combat
+            )
+            strategic_analysis['terrain_recommendations'] = terrain_recommendations
             
-            # Choose combat action based on context
-            if game_state.enemies_nearby > 2:
-                return 'power_attack' if 'power_attack' in available_actions else 'combat'
-            elif game_state.health < 50:
-                return 'block' if 'block' in available_actions else 'combat'
-            else:
-                return 'combat'
+            print(f"[STRATEGIC] Layer effectiveness: {strategic_analysis['layer_effectiveness']}")
+            if strategic_analysis['recommendations']:
+                print(f"[STRATEGIC] Recommendations: {strategic_analysis['recommendations']}")
 
-        # Low health - consider Menu layer for healing
-        if game_state.health < 30:
-            if current_layer != "Menu":
-                menu_effectiveness = strategic_analysis['layer_effectiveness'].get('Menu', 0.5)
-                if menu_effectiveness > 0.5:
-                    optimal_layer = "Menu"
-                    print(f"[META-STRATEGY] Switching to Menu layer for healing (effectiveness: {menu_effectiveness:.2f})")
+            # Meta-strategic reasoning: Should we switch layers?
+            optimal_layer = None
             
-            if 'consume_item' in available_actions:
-                return 'consume_item'
-            else:
-                return 'rest'
-
-        # Stealth opportunities
-        if (not game_state.in_combat and 
-            len(game_state.nearby_npcs) > 0 and 
-            motivation.dominant_drive().value == 'competence'):
-            stealth_effectiveness = strategic_analysis['layer_effectiveness'].get('Stealth', 0.5)
-            if stealth_effectiveness > 0.6 and current_layer != "Stealth":
-                optimal_layer = "Stealth"
-                print(f"[META-STRATEGY] Switching to Stealth layer (effectiveness: {stealth_effectiveness:.2f})")
-
-        # If we determined an optimal layer, suggest layer transition
-        if optimal_layer and optimal_layer != current_layer:
-            # Return a meta-action that will trigger layer switch
-            return f'switch_to_{optimal_layer.lower()}'
-
-        # Try LLM-based planning if available, otherwise use heuristics
-        has_attr = hasattr(self.agi, 'consciousness_llm')
-        has_llm = has_attr and self.agi.consciousness_llm is not None
-        
-        print(f"[DEBUG] LLM Check: hasattr={has_attr}, consciousness_llm={self.agi.consciousness_llm if has_attr else 'N/A'}")
-        
-        if has_llm:
-            print("[PLANNING] Using LLM-based strategic planning...")
-            try:
-                llm_action = await self._plan_action_with_llm(
-                    perception, game_state, scene_type, current_layer, available_actions, 
-                    strategic_analysis, motivation
-                )
-                if llm_action:
-                    print(f"[LLM] Selected action: {llm_action}")
-                    return llm_action
+            # Combat situations - prioritize Combat layer if effective
+            if game_state.in_combat or scene_type == SceneType.COMBAT:
+                if current_layer != "Combat":
+                    combat_effectiveness = strategic_analysis['layer_effectiveness'].get('Combat', 0.5)
+                    if combat_effectiveness > 0.6:
+                        optimal_layer = "Combat"
+                        print(f"[META-STRATEGY] Switching to Combat layer (effectiveness: {combat_effectiveness:.2f})")
+                
+                # Choose combat action based on context
+                if game_state.enemies_nearby > 2:
+                    return 'power_attack' if 'power_attack' in available_actions else 'combat'
+                elif game_state.health < 50:
+                    return 'block' if 'block' in available_actions else 'combat'
                 else:
-                    print("[LLM] LLM returned None, falling back to heuristics")
-            except Exception as e:
-                print(f"[LLM] Planning failed: {e}, using heuristics")
-                import traceback
-                traceback.print_exc()
-        else:
-            print("[PLANNING] LLM not available, using heuristic planning...")
-            if has_attr:
-                print(f"[PLANNING] consciousness_llm value: {self.agi.consciousness_llm}")
+                    return 'combat'
 
-        # Fallback: Action selection within current layer based on motivation
-        # Default to exploration with forward bias for most motivations
-        if motivation.dominant_drive().value == 'curiosity':
-            if 'activate' in available_actions:
-                return 'activate'  # Interact with world
-            return 'explore'  # Forward-biased exploration
-        elif motivation.dominant_drive().value == 'competence':
-            if 'power_attack' in available_actions and current_layer == "Combat":
-                return 'power_attack'  # Practice advanced combat
-            elif 'backstab' in available_actions and current_layer == "Stealth":
-                return 'backstab'  # Practice stealth
-            return 'explore'  # Practice by exploring (forward-biased)
-        elif motivation.dominant_drive().value == 'coherence':
-            # Even for coherence, prefer gentle exploration over rest
+            # Low health - consider Menu layer for healing
             if game_state.health < 30:
-                return 'rest'  # Only rest if low health
-            return 'explore'  # Gentle forward exploration
-        else:  # autonomy or default
-            return 'explore'  # Exercise autonomy through forward exploration
+                if current_layer != "Menu":
+                    menu_effectiveness = strategic_analysis['layer_effectiveness'].get('Menu', 0.5)
+                    if menu_effectiveness > 0.5:
+                        optimal_layer = "Menu"
+                        print(f"[META-STRATEGY] Switching to Menu layer for healing (effectiveness: {menu_effectiveness:.2f})")
+            
+                if 'consume_item' in available_actions:
+                    return 'consume_item'
+                else:
+                    return 'rest'
+
+            # Stealth opportunities
+            if (not game_state.in_combat and 
+                len(game_state.nearby_npcs) > 0 and 
+                motivation.dominant_drive().value == 'competence'):
+                stealth_effectiveness = strategic_analysis['layer_effectiveness'].get('Stealth', 0.5)
+                if stealth_effectiveness > 0.6 and current_layer != "Stealth":
+                    optimal_layer = "Stealth"
+                    print(f"[META-STRATEGY] Switching to Stealth layer (effectiveness: {stealth_effectiveness:.2f})")
+
+            # If we determined an optimal layer, suggest layer transition
+            if optimal_layer and optimal_layer != current_layer:
+                # Return a meta-action that will trigger layer switch
+                return f'switch_to_{optimal_layer.lower()}'
+
+            # Try LLM-based planning if available, otherwise use heuristics
+            has_attr = hasattr(self.agi, 'consciousness_llm')
+            has_llm = has_attr and self.agi.consciousness_llm is not None
+            
+            print(f"[DEBUG] LLM Check: hasattr={has_attr}, consciousness_llm={self.agi.consciousness_llm if has_attr else 'N/A'}")
+            
+            if has_llm:
+                print("[PLANNING] Using LLM-based strategic planning...")
+                try:
+                    llm_action = await self._plan_action_with_llm(
+                        perception, game_state, scene_type, current_layer, available_actions, 
+                        strategic_analysis, motivation
+                    )
+                    if llm_action:
+                        print(f"[LLM] Selected action: {llm_action}")
+                        return llm_action
+                    else:
+                        print("[LLM] LLM returned None, falling back to heuristics")
+                except Exception as e:
+                    print(f"[LLM] Planning failed: {e}, using heuristics")
+                    import traceback
+                    traceback.print_exc()
+            else:
+                print("[PLANNING] LLM not available, using heuristic planning...")
+                if has_attr:
+                    print(f"[PLANNING] consciousness_llm value: {self.agi.consciousness_llm}")
+
+            # Fallback: Action selection within current layer based on motivation
+            # Default to exploration with forward bias for most motivations
+            if motivation.dominant_drive().value == 'curiosity':
+                if 'activate' in available_actions:
+                    return 'activate'  # Interact with world
+                return 'explore'  # Forward-biased exploration
+            elif motivation.dominant_drive().value == 'competence':
+                if 'power_attack' in available_actions and current_layer == "Combat":
+                    return 'power_attack'  # Practice advanced combat
+                elif 'backstab' in available_actions and current_layer == "Stealth":
+                    return 'backstab'  # Practice stealth
+                return 'explore'  # Practice by exploring (forward-biased)
+            elif motivation.dominant_drive().value == 'coherence':
+                # Even for coherence, prefer gentle exploration over rest
+                if game_state.health < 30:
+                    return 'rest'  # Only rest if low health
+                return 'explore'  # Gentle forward exploration
+            else:  # autonomy or default
+                return 'explore'  # Exercise autonomy through forward exploration
+
+        except Exception as e:
+            print(f"[_plan_action] ERROR: {e}")
+            import traceback
+            traceback.print_exc()
+            return None
 
     async def _plan_action_with_llm(
         self,
@@ -1409,6 +1431,7 @@ class SkyrimAGI:
             print("[PHI4-ACTION] No action planning LLM available")
             return None
         
+        print("[_plan_action_with_llm] Using LLM interface:", llm_interface)
         # Build compact context for fast phi-4-mini reasoning
         context = f"""SKYRIM AGENT - QUICK ACTION DECISION
 
@@ -1442,45 +1465,45 @@ QUICK DECISION - Choose ONE action from available list:"""
                 response = result.get('consciousness_response', {}).get('response', '')
             
             print(f"[PHI4-ACTION] Response: {response[:200]}")
-
-            # Parse response to extract action
-            response_lower = response.lower()
-            
-            # Check for layer transition actions first
-            if 'switch_to_combat' in response_lower:
-                return 'switch_to_combat'
-            elif 'switch_to_menu' in response_lower:
-                return 'switch_to_menu'
-            elif 'switch_to_stealth' in response_lower:
-                return 'switch_to_stealth'
-            elif 'switch_to_exploration' in response_lower:
-                return 'switch_to_exploration'
-            
-            # Check for specific actions in available actions
-            for action in available_actions:
-                if action.lower() in response_lower:
-                    return action
-            
-            # Check for general action categories
-            if 'combat' in response_lower or 'attack' in response_lower:
-                return 'combat'
-            elif 'explore' in response_lower:
-                return 'explore'
-            elif 'interact' in response_lower:
-                return 'interact'
-            elif 'stealth' in response_lower or 'sneak' in response_lower:
-                return 'stealth'
-            elif 'rest' in response_lower or 'heal' in response_lower:
-                return 'rest'
-            elif 'navigate' in response_lower or 'move' in response_lower:
-                return 'navigate'
-            
-            print(f"[PHI4-ACTION] Could not parse action from response")
-            return None
-            
         except Exception as e:
-            print(f"[PHI4-ACTION] Error during planning: {e}")
+            print(f"[PHI4-ACTION] ERROR during LLM action planning: {e}")
+            import traceback
+            traceback.print_exc()
             return None
+
+        print("[_plan_action_with_llm] Parsing LLM response:", response)
+        response_lower = response.lower()
+        
+        # Check for layer transition actions first
+        if 'switch_to_combat' in response_lower:
+            return 'switch_to_combat'
+        elif 'switch_to_menu' in response_lower:
+            return 'switch_to_menu'
+        elif 'switch_to_stealth' in response_lower:
+            return 'switch_to_stealth'
+        elif 'switch_to_exploration' in response_lower:
+            return 'switch_to_exploration'
+        
+        # Check for specific actions in available actions
+        for action in available_actions:
+            if action.lower() in response_lower:
+                return action
+        
+        # Check for general action categories
+        if 'combat' in response_lower or 'attack' in response_lower:
+            return 'combat'
+        elif 'explore' in response_lower:
+            return 'explore'
+        elif 'interact' in response_lower:
+            return 'interact'
+        elif 'stealth' in response_lower or 'sneak' in response_lower:
+            return 'stealth'
+        elif 'rest' in response_lower or 'heal' in response_lower:
+            return 'rest'
+        elif 'navigate' in response_lower or 'move' in response_lower:
+            return 'move'
+        print("[_plan_action_with_llm] No matching action found in LLM response, returning None.")
+        return None
 
 
     def _evaluate_action_success(
