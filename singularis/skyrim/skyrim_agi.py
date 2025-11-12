@@ -90,7 +90,7 @@ class SkyrimConfig:
     # Core models
     phi4_action_model: str = "mistralai/mistral-nemo-instruct-2407"  # Action planning
     huihui_cognition_model: str = "huihui-moe-60b-a3b-abliterated-i1"  # Main cognition, reasoning, strategy
-    qwen3_vl_perception_model: str = "qwen/qwen3-vl-30b"  # Perception and spatial awareness
+    qwen3_vl_perception_model: str = "qwen/qwen3-vl-8b"  # Perception and spatial awareness
 
     # Learning
     surprise_threshold: float = 0.3  # Threshold for learning from surprise
@@ -412,7 +412,7 @@ class SkyrimAGI:
         
         try:
             print(f"[QWEN3-VL] Initializing {self.config.qwen3_vl_perception_model}...")
-            print("[QWEN3-VL] Model: qwen/qwen3-vl-30b (30B params)")
+            print("[QWEN3-VL] Model: qwen/qwen3-vl-8b (8B params)")
             print("[QWEN3-VL] Role: Visual perception, spatial awareness, environment understanding")
             vl_config = LMStudioConfig(
                 base_url=self.config.base_config.lm_studio_url,
@@ -481,7 +481,7 @@ class SkyrimAGI:
         print("=" * 70)
         print("mistral-nemo (12B): Fast action planning")
         print("huihui-moe-60b (60B MoE): Main cognition, reasoning, strategy")
-        print("qwen3-vl-30b (30B): Perception and spatial awareness")
+        print("qwen3-vl-8b (8B): Perception and spatial awareness")
         print("3 specialized models with clear roles")
         print("Async execution for parallel processing")
         print("=" * 70)
@@ -642,14 +642,35 @@ class SkyrimAGI:
                             print(f"[QWEN3-VL] Cycle {cycle_count}: perception_llm={self.perception_llm is not None}, screenshot={screenshot is not None}")
                         if screenshot:
                             print(f"[QWEN3-VL] Starting visual analysis for cycle {cycle_count}...")
-                            # Save screenshot temporarily for VL model
+                            
+                            # Import PIL Image for resizing
+                            from PIL import Image as PILImage
+                            
+                            # Resize screenshot to reduce size (vision models don't need full resolution)
+                            # Resize to max 1024px on longest side while maintaining aspect ratio
+                            max_size = 1024
+                            width, height = screenshot.size
+                            if width > max_size or height > max_size:
+                                if width > height:
+                                    new_width = max_size
+                                    new_height = int(height * (max_size / width))
+                                else:
+                                    new_height = max_size
+                                    new_width = int(width * (max_size / height))
+                                screenshot = screenshot.resize((new_width, new_height), PILImage.Resampling.LANCZOS)
+                                print(f"[QWEN3-VL] Resized screenshot from {width}x{height} to {new_width}x{new_height}")
+                            
+                            # Save screenshot temporarily for VL model with compression
                             import tempfile
                             import os
-                            with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp:
-                                screenshot.save(tmp.name, 'PNG')
+                            with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp:
+                                # Use JPEG with quality 85 for much smaller file size
+                                screenshot.save(tmp.name, 'JPEG', quality=85, optimize=True)
                                 screenshot_path = tmp.name
                             
-                            print(f"[QWEN3-VL] Screenshot saved to {screenshot_path}")
+                            # Check file size
+                            file_size = os.path.getsize(screenshot_path)
+                            print(f"[QWEN3-VL] Screenshot saved to {screenshot_path} ({file_size / 1024:.1f} KB)")
                             
                             try:
                                 # Get visual analysis from Qwen3-VL with image

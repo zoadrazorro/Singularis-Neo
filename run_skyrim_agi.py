@@ -55,7 +55,7 @@ async def main():
         exploration_weight=0.5,
         phi4_action_model="mistralai/mistral-nemo-instruct-2407",
         huihui_cognition_model="huihui-moe-60b-a3b-abliterated-i1",
-        qwen3_vl_perception_model="qwen/qwen3-vl-30b",
+        qwen3_vl_perception_model="qwen/qwen3-vl-8b",
     )
     
     # Create AGI
