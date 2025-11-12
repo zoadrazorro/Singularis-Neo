@@ -142,7 +142,7 @@ class SkyrimConfig:
     use_gemini_vision: bool = True
     gemini_model: str = "gemini-2.0-flash-exp"
     use_claude_reasoning: bool = True
-    claude_model: str = "claude-sonnet-4-20250514"
+    claude_model: str = "claude-sonnet-3-5-20241022"
     use_local_fallback: bool = False  # Optional local LLMs as fallback
     
     # Mixture of Experts (MoE) Architecture
@@ -1513,7 +1513,7 @@ class SkyrimAGI:
         if hasattr(self, 'hybrid_llm') and self.hybrid_llm:
             from singularis.llm.claude_client import ClaudeClient
             self.sensorimotor_llm = ClaudeClient(
-                model="claude-sonnet-4.5-20250514",
+                model="claude-sonnet-3-5-20241022",
                 timeout=120
             )
             if self.sensorimotor_llm.is_available():
@@ -2120,7 +2120,7 @@ Based on this visual and contextual data, provide:
                         try:
                             print("[SENSORIMOTOR] Getting Gemini visual analysis...")
                             gemini_visual = await asyncio.wait_for(
-                                self.hybrid_llm.generate_vision_text(
+                                self.hybrid_llm.generate_vision(
                                     image_data=perception.get('screenshot'),
                                     prompt="Describe the visual scene focusing on: spatial layout, obstacles, pathways, terrain features, landmarks, and any navigational cues. Be specific about what's visible in each direction.",
                                     max_tokens=512

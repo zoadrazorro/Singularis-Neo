@@ -14,7 +14,7 @@ class ClaudeClient:
     def __init__(
         self,
         api_key: Optional[str] = None,
-        model: str = "claude-sonnet-4-20250514",
+        model: str = "claude-sonnet-3-5-20241022",
         base_url: str = "https://api.anthropic.com/v1",
         timeout: int = 60,
     ) -> None:
