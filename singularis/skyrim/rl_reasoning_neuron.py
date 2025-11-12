@@ -98,12 +98,17 @@ class RLReasoningNeuron:
         
         try:
             # Query LLM (ExpertLLMInterface has generate() method directly)
+            print(f"[RL-NEURON] DEBUG - Prompt length: {len(prompt)} chars")
+            print(f"[RL-NEURON] DEBUG - System prompt length: {len(self._get_system_prompt())} chars")
+            
             response = await self.llm_interface.generate(
                 prompt=prompt,
                 system_prompt=self._get_system_prompt(),
                 temperature=0.7,
                 max_tokens=200
             )
+            
+            print(f"[RL-NEURON] DEBUG - Response received: {type(response)}")
             
             # Parse LLM response
             reasoning_result = self._parse_llm_response(
