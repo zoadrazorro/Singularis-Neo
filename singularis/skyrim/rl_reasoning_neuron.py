@@ -97,6 +97,10 @@ class RLReasoningNeuron:
         )
         
         try:
+            # Add small delay to prevent rate limiting
+            import asyncio
+            await asyncio.sleep(0.1)
+            
             # Query LLM (ExpertLLMInterface has generate() method directly)
             print(f"[RL-NEURON] DEBUG - Prompt length: {len(prompt)} chars")
             print(f"[RL-NEURON] DEBUG - System prompt length: {len(self._get_system_prompt())} chars")
