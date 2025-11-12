@@ -1649,16 +1649,18 @@ QUICK DECISION - Choose ONE action from available list:"""
             
             # Use dedicated LLM interface directly for faster response
             if self.action_planning_llm:
-                response = await self.action_planning_llm.generate(
+                result = await self.action_planning_llm.generate(
                     prompt=context,
                     max_tokens=300  # Enough for reasoning + action selection
                 )
+                # ExpertLLMInterface.generate() returns a dict with 'response' key
+                response = result.get('response', '') if isinstance(result, dict) else str(result)
             else:
                 # Fallback to main LLM through agi.process
                 result = await self.agi.process(context)
                 response = result.get('consciousness_response', {}).get('response', '')
             
-            print(f"[PHI4-ACTION] Response: {response[:200]}")
+            print(f"[PHI4-ACTION] Response: {response[:200] if len(response) > 200 else response}")
         except Exception as e:
             print(f"[PHI4-ACTION] ERROR during LLM action planning: {e}")
             import traceback
