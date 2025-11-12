@@ -1749,7 +1749,8 @@ class SkyrimAGI:
                     throttle_delay = base_interval
                 
                 # Enhance perception with Qwen3-VL using CLIP data (not raw images)
-                if self.perception_llm and cycle_count % 2 == 0:  # Every 2nd cycle for faster analysis
+                # DISABLED - Qwen3-VL is too slow and times out, adding 60s overhead
+                if False and self.perception_llm and cycle_count % 10 == 0:  # Disabled for performance
                     print(f"[QWEN3-VL] Cycle {cycle_count}: Starting CLIP-based analysis...")
                     try:
                         print(f"[QWEN3-VL] DEBUG: Extracting perception data...")
@@ -3534,7 +3535,7 @@ COHERENCE GAIN: <estimate 0.0-1.0 how much this increases understanding>
                     )
                     
                     # Race: Phi-4 vs Cloud LLM vs Local MoE (whichever finishes first)
-                    # Timeout after 60 seconds to allow local LLMs to complete
+                    # Timeout after 10 seconds - use fastest response for smooth gameplay
                     tasks_to_race = [phi4_task]
                     if cloud_task:
                         tasks_to_race.append(cloud_task)
@@ -3542,11 +3543,11 @@ COHERENCE GAIN: <estimate 0.0-1.0 how much this increases understanding>
                         tasks_to_race.append(local_moe_task)
                     
                     if len(tasks_to_race) > 1:
-                        print(f"[PARALLEL] Racing {len(tasks_to_race)} systems (60s timeout)...")
+                        print(f"[PARALLEL] Racing {len(tasks_to_race)} systems (10s timeout)...")
                         try:
                             done, pending = await asyncio.wait(
                                 tasks_to_race,
-                                timeout=60.0,  # 60 second timeout for local LLMs
+                                timeout=10.0,  # 10 second timeout - use first winner
                                 return_when=asyncio.FIRST_COMPLETED
                             )
                             
