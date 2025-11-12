@@ -25,6 +25,7 @@ Design principles:
 
 import asyncio
 import time
+import random
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 
@@ -286,6 +287,14 @@ class SkyrimAGI:
         # State tracking for consciousness
         self.current_consciousness: Optional[ConsciousnessState] = None
         self.last_consciousness: Optional[ConsciousnessState] = None
+        
+        # Stuck detection and recovery
+        self.stuck_detection_window = 5  # Check last N actions
+        self.action_history = []  # Track recent actions
+        self.coherence_history = []  # Track recent coherence values
+        self.stuck_threshold = 0.02  # Coherence change threshold
+        self.consecutive_same_action = 0  # Count same action repeats
+        self.last_executed_action = None
         
         print("Skyrim AGI initialization complete.")
         print("[OK] Skyrim AGI initialized with CONSCIOUSNESS INTEGRATION\n")
@@ -781,6 +790,11 @@ class SkyrimAGI:
                     self.stats['actions_taken'] += 1
                     self.stats['action_success_count'] += 1
                     print(f"[ACTION] Successfully executed: {action} ({execution_duration:.3f}s)")
+                    
+                    # Update stuck detection tracking
+                    if self.current_consciousness:
+                        coherence = self.current_consciousness.coherence
+                        self._update_stuck_tracking(action, coherence)
                 except Exception as e:
                     execution_duration = time.time() - execution_start
                     self.stats['execution_times'].append(execution_duration)
@@ -1486,9 +1500,25 @@ class SkyrimAGI:
                 print(f"[HEURISTIC] → navigate (careful indoor movement)")
                 return 'navigate'  # Careful indoor movement
             
-            # Add variety to avoid repetitive behavior - humans don't just explore
-            import random
+            # STUCK DETECTION: Check if we're repeating the same action without progress
+            is_stuck = self._detect_stuck()
             
+            if is_stuck:
+                print(f"[STUCK] Detected stuck state! Forcing recovery action...")
+                # Force recovery actions when stuck
+                recovery_actions = []
+                if 'jump' in available_actions:
+                    recovery_actions.append('jump')
+                if game_state.health > 50:  # Only try risky moves if healthy
+                    recovery_actions.extend(['turn_left', 'turn_right', 'move_backward'])
+                
+                if recovery_actions:
+                    recovery = random.choice(recovery_actions)
+                    print(f"[STUCK] → {recovery} (unstuck maneuver)")
+                    self.consecutive_same_action = 0  # Reset counter
+                    return recovery
+            
+            # Add variety to avoid repetitive behavior - humans don't just explore
             # Occasionally try to interact with objects (human-like curiosity)
             if random.random() < 0.15 and 'activate' in available_actions:
                 print(f"[HEURISTIC] → activate (random curiosity)")
@@ -1506,15 +1536,15 @@ class SkyrimAGI:
             
             # Motivation-based selection (for outdoor/general scenes)
             if dominant_drive == 'curiosity':
-                # Curiosity: prioritize interaction and exploration
+                # Curiosity: prioritize interaction and straight movement
                 if 'activate' in available_actions and random.random() < 0.4:
                     print(f"[HEURISTIC] → activate (curiosity-driven interaction)")
                     return 'activate'  # Interact with world
-                elif random.random() < 0.3:
+                elif random.random() < 0.5:
                     print(f"[HEURISTIC] → move_forward (direct movement)")
-                    return 'move_forward'  # Sometimes just move
+                    return 'move_forward'  # Prefer straight movement
                 print(f"[HEURISTIC] → explore (curiosity-driven exploration)")
-                return 'explore'  # Forward-biased exploration
+                return 'explore'  # Less frequent now
             elif dominant_drive == 'competence':
                 if 'power_attack' in available_actions and current_layer == "Combat":
                     print(f"[HEURISTIC] → power_attack (competence training)")
@@ -1525,28 +1555,28 @@ class SkyrimAGI:
                 elif random.random() < 0.2:
                     print(f"[HEURISTIC] → sneak (competence practice)")
                     return 'sneak'  # Practice stealth
-                print(f"[HEURISTIC] → explore (competence through exploration)")
-                return 'explore'  # Practice by exploring (forward-biased)
+                print(f"[HEURISTIC] → move_forward (competence through movement)")
+                return 'move_forward'  # Prefer straight movement
             elif dominant_drive == 'coherence':
                 # For coherence, prefer gentle exploration over rest unless critical
                 if game_state.health < 30:
                     print(f"[HEURISTIC] → rest (coherence restoration, critical health)")
                     return 'rest'  # Only rest if low health
-                elif random.random() < 0.25:
+                elif random.random() < 0.4:
                     print(f"[HEURISTIC] → move_forward (coherent movement)")
                     return 'move_forward'
-                print(f"[HEURISTIC] → explore (coherence through gentle exploration)")
-                return 'explore'  # Gentle forward exploration
+                print(f"[HEURISTIC] → move_forward (coherence through gentle movement)")
+                return 'move_forward'  # Prefer straight movement
             else:  # autonomy or default
                 # Add variety even for autonomy
                 if random.random() < 0.2 and 'activate' in available_actions:
                     print(f"[HEURISTIC] → activate (autonomous interaction)")
                     return 'activate'
-                elif random.random() < 0.3:
+                elif random.random() < 0.6:
                     print(f"[HEURISTIC] → move_forward (autonomous movement)")
                     return 'move_forward'
                 print(f"[HEURISTIC] → explore (autonomy/default)")
-                return 'explore'  # Exercise autonomy through forward exploration
+                return 'explore'  # Fallback only
 
         except Exception as e:
             print(f"[_plan_action] ERROR: {e}")
@@ -1791,8 +1821,12 @@ QUICK DECISION - Choose ONE action from available list:"""
 
         # Execute actions with better variety and human-like behavior
         if action == 'explore':
-            # Use waypoint-based exploration
-            await self.actions.explore_with_waypoints(duration=3.0)
+            # Simple forward exploration to avoid circles
+            print(f"[ACTION] Exploring forward")
+            await self.actions.move_forward(duration=2.5)
+            # Occasionally look around
+            if random.random() < 0.3:
+                await self.actions.look_around()
         elif action == 'combat':
             await self.actions.combat_sequence("Enemy")
         elif action in ('interact', 'activate'):
@@ -1819,6 +1853,15 @@ QUICK DECISION - Choose ONE action from available list:"""
         elif action == 'look_around':
             # Human-like looking behavior
             await self.actions.look_around()
+        elif action == 'turn_left':
+            # Recovery: turn left to avoid obstacles
+            await self.actions.turn_left(duration=1.0)
+        elif action == 'turn_right':
+            # Recovery: turn right to avoid obstacles
+            await self.actions.turn_right(duration=1.0)
+        elif action == 'move_backward':
+            # Recovery: back up from obstacles
+            await self.actions.move_backward(duration=0.8)
         elif action.startswith('switch_to_'):
             # Handle layer transition actions
             target_layer = action.replace('switch_to_', '').title()
@@ -1844,6 +1887,58 @@ QUICK DECISION - Choose ONE action from available list:"""
             # Fallback for unknown actions
             print(f"[ACTION] Unknown action '{action}', falling back to exploration")
             await self.actions.explore_with_waypoints(duration=2.0)
+
+    def _detect_stuck(self) -> bool:
+        """
+        Detect if the AGI is stuck (repeating same action without progress).
+        
+        Returns:
+            True if stuck, False otherwise
+        """
+        # Need at least a few actions to detect stuck
+        if len(self.action_history) < self.stuck_detection_window:
+            return False
+        
+        # Check if we're repeating the same action
+        recent_actions = self.action_history[-self.stuck_detection_window:]
+        if len(set(recent_actions)) == 1:  # All same action
+            same_action = recent_actions[0]
+            
+            # Check if coherence is changing (sign of progress)
+            if len(self.coherence_history) >= self.stuck_detection_window:
+                recent_coherence = self.coherence_history[-self.stuck_detection_window:]
+                coherence_change = max(recent_coherence) - min(recent_coherence)
+                
+                if coherence_change < self.stuck_threshold:
+                    print(f"[STUCK] Repeating '{same_action}' {self.stuck_detection_window}x with minimal progress (Δ𝒞={coherence_change:.3f})")
+                    return True
+        
+        # Check consecutive same action count
+        if self.consecutive_same_action >= 8:  # 8+ same actions in a row
+            print(f"[STUCK] Executed '{self.last_executed_action}' {self.consecutive_same_action} times consecutively")
+            return True
+        
+        return False
+    
+    def _update_stuck_tracking(self, action: str, coherence: float):
+        """Update stuck detection tracking."""
+        # Track action history
+        self.action_history.append(action)
+        if len(self.action_history) > self.stuck_detection_window * 2:
+            self.action_history.pop(0)
+        
+        # Track coherence history
+        self.coherence_history.append(coherence)
+        if len(self.coherence_history) > self.stuck_detection_window * 2:
+            self.coherence_history.pop(0)
+        
+        # Track consecutive same action
+        if action == self.last_executed_action:
+            self.consecutive_same_action += 1
+        else:
+            self.consecutive_same_action = 1
+        
+        self.last_executed_action = action
 
     def _print_final_stats(self):
         """Print final statistics."""

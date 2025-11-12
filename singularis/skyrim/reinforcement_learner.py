@@ -844,6 +844,15 @@ class ReinforcementLearner:
         with open(filepath, 'rb') as f:
             data = pickle.load(f)
 
+        # Validate that saved model is compatible with current action space
+        saved_q_weights = data['q_weights']
+        saved_n_actions = saved_q_weights.shape[1]  # Q-network output dimension
+        
+        if saved_n_actions != self.n_actions:
+            print(f"[RL] ⚠️  Model incompatible: saved model has {saved_n_actions} actions, current has {self.n_actions}")
+            print(f"[RL] ⚠️  Starting fresh (action space changed)")
+            return
+
         self.q_network.weights = data['q_weights']
         self.q_network.bias = data['q_bias']
         self.target_network.weights = data['target_weights']
@@ -852,7 +861,7 @@ class ReinforcementLearner:
         self.training_steps = data['training_steps']
         self.stats = data['stats']
 
-        print(f"[RL] Loaded model from {filepath}")
+        print(f"[RL] ✓ Loaded model from {filepath}")
         print(f"[RL] Training steps: {self.training_steps}, ε: {self.epsilon:.3f}")
 
 
