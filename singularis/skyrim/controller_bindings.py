@@ -97,56 +97,56 @@ class SkyrimControllerBindings:
             await ctrl.look(1.0, 0, duration=1.0)
         
         # Basic actions
-        async def jump(ctrl):
+        async def jump(ctrl, duration=0.0):
             await ctrl.tap_button(XboxButton.X)
         
-        async def activate(ctrl):
+        async def activate(ctrl, duration=0.0):
             await ctrl.tap_button(XboxButton.A)
         
-        async def sneak_toggle(ctrl):
+        async def sneak_toggle(ctrl, duration=0.0):
             await ctrl.tap_button(XboxButton.B)
         
-        async def sheath_weapon(ctrl):
+        async def sheath_weapon(ctrl, duration=0.0):
             ctrl.set_left_trigger(1.0)
             await asyncio.sleep(0.5)
             ctrl.set_left_trigger(0.0)
         
-        async def attack(ctrl):
+        async def attack(ctrl, duration=0.3):
             ctrl.set_right_trigger(1.0)
-            await asyncio.sleep(0.2)
+            await asyncio.sleep(duration if duration > 0 else 0.3)
             ctrl.set_right_trigger(0.0)
         
-        async def open_menu(ctrl):
+        async def open_menu(ctrl, duration=0.0):
             await ctrl.tap_button(XboxButton.START)
         
-        async def wait(ctrl):
+        async def wait(ctrl, duration=0.0):
             await ctrl.tap_button(XboxButton.BACK)
         
-        async def block(ctrl):
+        async def block(ctrl, duration=1.0):
             ctrl.set_left_trigger(1.0)
-            await asyncio.sleep(0.3)
+            await asyncio.sleep(duration if duration > 0 else 1.0)
             ctrl.set_left_trigger(0.0)
         
-        async def power_attack(ctrl):
+        async def power_attack(ctrl, duration=0.8):
             # Hold RT for power attack
             ctrl.set_right_trigger(1.0)
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(duration if duration > 0 else 0.8)
             ctrl.set_right_trigger(0.0)
         
-        async def shout(ctrl):
+        async def shout(ctrl, duration=0.0):
             await ctrl.tap_button(XboxButton.RB)
         
         # Favorites/quick access
-        async def favorite_up(ctrl):
+        async def favorite_up(ctrl, duration=0.0):
             await ctrl.tap_button(XboxButton.DPAD_UP)
         
-        async def favorite_down(ctrl):
+        async def favorite_down(ctrl, duration=0.0):
             await ctrl.tap_button(XboxButton.DPAD_DOWN)
         
-        async def favorite_left(ctrl):
+        async def favorite_left(ctrl, duration=0.0):
             await ctrl.tap_button(XboxButton.DPAD_LEFT)
         
-        async def favorite_right(ctrl):
+        async def favorite_right(ctrl, duration=0.0):
             await ctrl.tap_button(XboxButton.DPAD_RIGHT)
         
         # Bind actions
@@ -193,38 +193,38 @@ class SkyrimControllerBindings:
         """
         layer = self.controller.create_action_layer("Combat", priority=10)
         
-        async def quick_attack(ctrl):
+        async def quick_attack(ctrl, duration=0.3):
             ctrl.set_right_trigger(1.0)
-            await asyncio.sleep(0.15)
+            await asyncio.sleep(duration if duration > 0 else 0.3)
             ctrl.set_right_trigger(0.0)
         
-        async def power_attack(ctrl):
+        async def power_attack(ctrl, duration=0.8):
             await ctrl.tap_button(XboxButton.RB)
             ctrl.set_right_trigger(1.0)
-            await asyncio.sleep(0.3)
+            await asyncio.sleep(duration if duration > 0 else 0.8)
             ctrl.set_right_trigger(0.0)
         
-        async def block(ctrl):
+        async def block(ctrl, duration=1.0):
             ctrl.set_left_trigger(1.0)
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(duration if duration > 0 else 1.0)
             ctrl.set_left_trigger(0.0)
         
-        async def bash(ctrl):
+        async def bash(ctrl, duration=0.0):
             await ctrl.tap_button(XboxButton.LB)
         
-        async def shout(ctrl):
+        async def shout(ctrl, duration=0.0):
             await ctrl.tap_button(XboxButton.Y)
         
-        async def dodge_roll(ctrl):
+        async def dodge_roll(ctrl, duration=0.0):
             # Jump + direction
             await ctrl.tap_button(XboxButton.A)
         
-        async def retreat(ctrl):
+        async def retreat(ctrl, duration=1.5):
             # Sprint backward
             await ctrl.tap_button(XboxButton.LS)
-            await ctrl.move(0, -1.0, duration=0.5)
+            await ctrl.move(0, -1.0, duration=duration if duration > 0 else 1.5)
         
-        async def quick_heal(ctrl):
+        async def quick_heal(ctrl, duration=0.0):
             # Use favorite (assuming healing potion on DPad)
             await ctrl.tap_button(XboxButton.DPAD_DOWN)
         
