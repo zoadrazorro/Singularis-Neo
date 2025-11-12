@@ -42,6 +42,7 @@ from .memory_rag import MemoryRAG
 from .reinforcement_learner import ReinforcementLearner
 from .rl_reasoning_neuron import RLReasoningNeuron
 from .meta_strategist import MetaStrategist
+from .cloud_rl_system import CloudRLMemory, CloudRLAgent, RLMemoryConfig, Experience
 from .consciousness_bridge import ConsciousnessBridge, ConsciousnessState
 from .combat_tactics import SkyrimCombatTactics
 from .quest_tracker import QuestTracker
@@ -68,6 +69,8 @@ from ..llm import (
     HybridLLMClient,
     HybridConfig,
     TaskType,
+    MoEOrchestrator,
+    ExpertRole,
 )
 
 
@@ -122,6 +125,14 @@ class SkyrimConfig:
     rl_learning_rate: float = 0.01  # Q-network learning rate
     rl_epsilon_start: float = 0.3  # Initial exploration rate
     rl_train_freq: int = 5  # Train every N cycles
+    
+    # Cloud-Enhanced RL
+    use_cloud_rl: bool = True  # Enable cloud LLM-enhanced RL
+    rl_memory_dir: str = "skyrim_rl_memory"
+    rl_use_rag: bool = True  # Enable RAG context fetching
+    rl_cloud_reward_shaping: bool = True  # Use cloud LLM for reward shaping
+    rl_moe_evaluation: bool = True  # Use MoE for action evaluation
+    rl_save_frequency: int = 100  # Save RL memory every N experiences
 
     # Hybrid LLM Architecture (Primary: Gemini + Claude, Optional Fallback: Local)
     use_hybrid_llm: bool = True
@@ -130,6 +141,18 @@ class SkyrimConfig:
     use_claude_reasoning: bool = True
     claude_model: str = "claude-sonnet-4-20250514"
     use_local_fallback: bool = False  # Optional local LLMs as fallback
+    
+    # Mixture of Experts (MoE) Architecture
+    use_moe: bool = False  # Enable MoE with multiple expert instances
+    num_gemini_experts: int = 6  # Number of Gemini experts
+    num_claude_experts: int = 3  # Number of Claude experts
+    gemini_rpm_limit: int = 10  # Gemini requests per minute limit
+    claude_rpm_limit: int = 50  # Claude requests per minute limit
+    
+    # Parallel Mode (MoE + Hybrid simultaneously)
+    use_parallel_mode: bool = False  # Run both MoE and Hybrid in parallel
+    parallel_consensus_weight_moe: float = 0.6  # Weight for MoE consensus
+    parallel_consensus_weight_hybrid: float = 0.4  # Weight for Hybrid output
     
     # Legacy external augmentation (deprecated in favor of hybrid)
     enable_claude_meta: bool = False
@@ -234,6 +257,13 @@ class SkyrimAGI:
             self.rl_learner = None
             print("  [6/11] Reinforcement learning DISABLED")
         
+        # 6b. Cloud-Enhanced RL System (will be initialized after LLM setup)
+        self.cloud_rl_memory: Optional[CloudRLMemory] = None
+        self.cloud_rl_agent: Optional[CloudRLAgent] = None
+        if self.config.use_cloud_rl:
+            print("  [6b/11] Cloud-enhanced RL system (will initialize after LLM)...")
+            print("  [6b/11] Features: RAG context, cloud reward shaping, MoE evaluation")
+        
         # 7. Strategic Planner Neuron
         print("  [7/11] Strategic planner neuron...")
         self.strategic_planner = StrategicPlannerNeuron(memory_capacity=100)
@@ -260,6 +290,9 @@ class SkyrimAGI:
         
         # Hybrid LLM system (Gemini + Claude + optional local fallback)
         self.hybrid_llm: Optional[HybridLLMClient] = None
+        
+        # MoE system (6 Gemini + 3 Claude experts)
+        self.moe: Optional[MoEOrchestrator] = None
         
         # Legacy LLM references (for backward compatibility)
         self.huihui_llm = None  # Main cognition
@@ -412,8 +445,93 @@ class SkyrimAGI:
         print("=" * 70)
         print()
         
-        # ===== HYBRID LLM SYSTEM =====
-        if self.config.use_hybrid_llm:
+        # ===== PARALLEL MODE: MoE + Hybrid =====
+        if self.config.use_parallel_mode:
+            print("\n[PARALLEL] Initializing PARALLEL mode: MoE + Hybrid simultaneously")
+            print("[PARALLEL] This provides maximum intelligence by combining:")
+            print("[PARALLEL]   - MoE: 9 expert consensus (6 Gemini + 3 Claude)")
+            print("[PARALLEL]   - Hybrid: Single Gemini + Claude for speed")
+            print()
+            
+            # Initialize MoE
+            try:
+                logger.info("Initializing MoE component...")
+                self.moe = MoEOrchestrator(
+                    num_gemini_experts=self.config.num_gemini_experts,
+                    num_claude_experts=self.config.num_claude_experts,
+                    gemini_model=self.config.gemini_model,
+                    claude_model=self.config.claude_model,
+                    gemini_rpm_limit=self.config.gemini_rpm_limit,
+                    claude_rpm_limit=self.config.claude_rpm_limit,
+                )
+                await self.moe.initialize()
+                print("[PARALLEL] ✓ MoE component ready")
+                await self._connect_moe()
+            except Exception as e:
+                print(f"[PARALLEL] ⚠️ MoE initialization failed: {e}")
+                self.moe = None
+            
+            # Initialize Hybrid
+            try:
+                logger.info("Initializing Hybrid component...")
+                hybrid_config = HybridConfig(
+                    use_gemini_vision=self.config.use_gemini_vision,
+                    gemini_model=self.config.gemini_model,
+                    use_claude_reasoning=self.config.use_claude_reasoning,
+                    claude_model=self.config.claude_model,
+                    use_local_fallback=self.config.use_local_fallback,
+                    local_base_url=self.config.base_config.lm_studio_url if self.config.use_local_fallback else "http://localhost:1234/v1",
+                    local_vision_model=self.config.qwen3_vl_perception_model if self.config.use_local_fallback else "qwen/qwen3-vl-8b",
+                    local_reasoning_model=self.config.huihui_cognition_model if self.config.use_local_fallback else "huihui-moe-60b-a3b-abliterated-i1",
+                    local_action_model=self.config.phi4_action_model if self.config.use_local_fallback else "mistralai/mistral-nemo-instruct-2407",
+                    timeout=30,
+                    max_concurrent_requests=self.config.max_concurrent_llm_calls,
+                )
+                
+                self.hybrid_llm = HybridLLMClient(hybrid_config)
+                await self.hybrid_llm.initialize()
+                print("[PARALLEL] ✓ Hybrid component ready")
+                await self._connect_hybrid_llm()
+            except Exception as e:
+                print(f"[PARALLEL] ⚠️ Hybrid initialization failed: {e}")
+                self.hybrid_llm = None
+            
+            print(f"\n[PARALLEL] ✓ Parallel mode active")
+            print(f"[PARALLEL] Consensus weights: MoE={self.config.parallel_consensus_weight_moe}, Hybrid={self.config.parallel_consensus_weight_hybrid}")
+        
+        # ===== MIXTURE OF EXPERTS (MoE) ONLY =====
+        elif self.config.use_moe:
+            try:
+                logger.info("Initializing Mixture of Experts (MoE) system...")
+                logger.info(f"  {self.config.num_gemini_experts} Gemini experts")
+                logger.info(f"  {self.config.num_claude_experts} Claude experts")
+                
+                self.moe = MoEOrchestrator(
+                    num_gemini_experts=self.config.num_gemini_experts,
+                    num_claude_experts=self.config.num_claude_experts,
+                    gemini_model=self.config.gemini_model,
+                    claude_model=self.config.claude_model,
+                    gemini_rpm_limit=self.config.gemini_rpm_limit,
+                    claude_rpm_limit=self.config.claude_rpm_limit,
+                )
+                
+                await self.moe.initialize()
+                
+                print("\n[MoE] ✓ Mixture of Experts system initialized successfully")
+                print(f"[MoE] Total experts: {self.config.num_gemini_experts + self.config.num_claude_experts}")
+                print(f"[MoE] Rate limits: Gemini {self.config.gemini_rpm_limit} RPM, Claude {self.config.claude_rpm_limit} RPM")
+                
+                # Connect MoE to components
+                await self._connect_moe()
+                
+            except Exception as e:
+                print(f"[MoE] ⚠️ Failed to initialize MoE system: {e}")
+                import traceback
+                traceback.print_exc()
+                self.moe = None
+        
+        # ===== HYBRID LLM SYSTEM ONLY =====
+        elif self.config.use_hybrid_llm:
             try:
                 # Configure hybrid system
                 hybrid_config = HybridConfig(
@@ -456,10 +574,69 @@ class SkyrimAGI:
             print("✓ Hybrid system active: Gemini (vision) + Claude Sonnet 4 (reasoning)")
             if self.config.use_local_fallback:
                 print("✓ Local fallback enabled")
+        if self.moe:
+            print("✓ MoE system active: 6 Gemini + 3 Claude experts")
         print("Async execution for parallel processing")
         print("=" * 70)
         print()
+        
+        # ===== CLOUD-ENHANCED RL SYSTEM =====
+        if self.config.use_cloud_rl:
+            await self._initialize_cloud_rl()
+        
+        print("\n" + "=" * 70)
+        print("FULL SYSTEM INITIALIZATION COMPLETE")
+        print("=" * 70)
+        print()
 
+    async def _connect_moe(self):
+        """Connect MoE system to all AGI components."""
+        if not self.moe:
+            return
+        
+        print("\n[MoE] Connecting to AGI components...")
+        
+        # Connect to perception for vision tasks
+        if hasattr(self.perception, 'set_moe'):
+            self.perception.set_moe(self.moe)
+            print("[MoE] ✓ Connected to perception system")
+        
+        # Connect to strategic planner for reasoning
+        if self.strategic_planner and hasattr(self.strategic_planner, 'set_moe'):
+            self.strategic_planner.set_moe(self.moe)
+            print("[MoE] ✓ Connected to strategic planner")
+        
+        # Connect to meta-strategist
+        if hasattr(self.meta_strategist, 'set_moe'):
+            self.meta_strategist.set_moe(self.moe)
+            print("[MoE] ✓ Connected to meta-strategist")
+        
+        # Connect to RL reasoning neuron
+        if hasattr(self.rl_reasoning_neuron, 'set_moe'):
+            self.rl_reasoning_neuron.set_moe(self.moe)
+            print("[MoE] ✓ Connected to RL reasoning neuron")
+        
+        # Connect to world model
+        if hasattr(self.skyrim_world, 'set_moe'):
+            self.skyrim_world.set_moe(self.moe)
+            print("[MoE] ✓ Connected to world model")
+        
+        # Connect to consciousness bridge
+        if hasattr(self.consciousness_bridge, 'set_moe'):
+            self.consciousness_bridge.set_moe(self.moe)
+            print("[MoE] ✓ Connected to consciousness bridge")
+        
+        # Connect to quest tracker and dialogue
+        if hasattr(self.quest_tracker, 'set_moe'):
+            self.quest_tracker.set_moe(self.moe)
+            print("[MoE] ✓ Connected to quest tracker")
+        
+        if hasattr(self.dialogue_intelligence, 'set_moe'):
+            self.dialogue_intelligence.set_moe(self.moe)
+            print("[MoE] ✓ Connected to dialogue intelligence")
+        
+        print("[MoE] Component connection complete\n")
+    
     async def _connect_hybrid_llm(self):
         """Connect hybrid LLM system to all AGI components."""
         if not self.hybrid_llm:
@@ -507,6 +684,235 @@ class SkyrimAGI:
             print("[HYBRID] ✓ Connected to dialogue intelligence")
         
         print("[HYBRID] Component connection complete\n")
+    
+    async def query_parallel_llm(
+        self,
+        vision_prompt: str,
+        reasoning_prompt: str,
+        image=None,
+        context: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """
+        Query both MoE and Hybrid systems in parallel and combine results.
+        
+        Args:
+            vision_prompt: Prompt for vision analysis
+            reasoning_prompt: Prompt for reasoning
+            image: PIL Image for vision tasks
+            context: Additional context
+            
+        Returns:
+            Combined response with consensus from both systems
+        """
+        if not self.config.use_parallel_mode:
+            # Fallback to single system
+            if self.moe and image:
+                vision_resp = await self.moe.query_vision_experts(vision_prompt, image, context)
+                reasoning_resp = await self.moe.query_reasoning_experts(reasoning_prompt, None, context)
+                return {
+                    'vision': vision_resp.consensus,
+                    'reasoning': reasoning_resp.consensus,
+                    'source': 'moe_only',
+                    'coherence': (vision_resp.coherence_score + reasoning_resp.coherence_score) / 2
+                }
+            elif self.hybrid_llm:
+                if image:
+                    vision = await self.hybrid_llm.analyze_image(vision_prompt, image)
+                else:
+                    vision = ""
+                reasoning = await self.hybrid_llm.generate_reasoning(reasoning_prompt)
+                return {
+                    'vision': vision,
+                    'reasoning': reasoning,
+                    'source': 'hybrid_only',
+                    'coherence': 0.75  # Default
+                }
+        
+        # Parallel mode: query both simultaneously
+        tasks = []
+        
+        # MoE tasks
+        if self.moe:
+            if image:
+                moe_vision_task = self.moe.query_vision_experts(vision_prompt, image, context)
+                tasks.append(('moe_vision', moe_vision_task))
+            
+            moe_reasoning_task = self.moe.query_reasoning_experts(reasoning_prompt, None, context)
+            tasks.append(('moe_reasoning', moe_reasoning_task))
+        
+        # Hybrid tasks
+        if self.hybrid_llm:
+            if image:
+                hybrid_vision_task = self.hybrid_llm.analyze_image(vision_prompt, image)
+                tasks.append(('hybrid_vision', hybrid_vision_task))
+            
+            hybrid_reasoning_task = self.hybrid_llm.generate_reasoning(reasoning_prompt)
+            tasks.append(('hybrid_reasoning', hybrid_reasoning_task))
+        
+        # Execute all in parallel
+        results = {}
+        if tasks:
+            task_names = [t[0] for t in tasks]
+            task_coroutines = [t[1] for t in tasks]
+            
+            responses = await asyncio.gather(*task_coroutines, return_exceptions=True)
+            
+            for name, response in zip(task_names, responses):
+                if not isinstance(response, Exception):
+                    results[name] = response
+        
+        # Combine results with weighted consensus
+        moe_weight = self.config.parallel_consensus_weight_moe
+        hybrid_weight = self.config.parallel_consensus_weight_hybrid
+        
+        # Vision consensus
+        vision_parts = []
+        if 'moe_vision' in results:
+            vision_parts.append((results['moe_vision'].consensus, moe_weight))
+        if 'hybrid_vision' in results:
+            vision_parts.append((results['hybrid_vision'], hybrid_weight))
+        
+        vision_consensus = self._weighted_text_consensus(vision_parts)
+        
+        # Reasoning consensus
+        reasoning_parts = []
+        if 'moe_reasoning' in results:
+            reasoning_parts.append((results['moe_reasoning'].consensus, moe_weight))
+        if 'hybrid_reasoning' in results:
+            reasoning_parts.append((results['hybrid_reasoning'], hybrid_weight))
+        
+        reasoning_consensus = self._weighted_text_consensus(reasoning_parts)
+        
+        # Calculate overall coherence
+        coherence_scores = []
+        if 'moe_vision' in results:
+            coherence_scores.append(results['moe_vision'].coherence_score)
+        if 'moe_reasoning' in results:
+            coherence_scores.append(results['moe_reasoning'].coherence_score)
+        
+        avg_coherence = sum(coherence_scores) / len(coherence_scores) if coherence_scores else 0.75
+        
+        return {
+            'vision': vision_consensus,
+            'reasoning': reasoning_consensus,
+            'source': 'parallel',
+            'coherence': avg_coherence,
+            'moe_results': {k: v for k, v in results.items() if 'moe' in k},
+            'hybrid_results': {k: v for k, v in results.items() if 'hybrid' in k},
+        }
+    
+    def _weighted_text_consensus(self, text_weight_pairs: List[Tuple[str, float]]) -> str:
+        """
+        Combine multiple text responses with weights.
+        
+        For now, uses simple concatenation with headers.
+        In future, could use LLM to synthesize.
+        """
+        if not text_weight_pairs:
+            return ""
+        
+        if len(text_weight_pairs) == 1:
+            return text_weight_pairs[0][0]
+        
+        # Sort by weight (highest first)
+        sorted_pairs = sorted(text_weight_pairs, key=lambda x: x[1], reverse=True)
+        
+        # Combine with weighted emphasis
+        combined = []
+        for i, (text, weight) in enumerate(sorted_pairs):
+            if i == 0:
+                combined.append(f"[Primary Analysis (weight={weight:.1f})]:\n{text}")
+            else:
+                combined.append(f"\n[Supporting Analysis (weight={weight:.1f})]:\n{text}")
+        
+        return "\n".join(combined)
+    
+    async def _initialize_cloud_rl(self):
+        """Initialize cloud-enhanced RL system with RAG and LLM integration."""
+        print("\n" + "=" * 70)
+        print("INITIALIZING CLOUD-ENHANCED RL SYSTEM")
+        print("=" * 70)
+        print()
+        
+        try:
+            # Determine which LLM to use
+            llm_for_rl = self.hybrid_llm if self.hybrid_llm else None
+            moe_for_rl = self.moe if self.config.rl_moe_evaluation and self.moe else None
+            
+            # Create RL memory config
+            rl_memory_config = RLMemoryConfig(
+                memory_dir=self.config.rl_memory_dir,
+                max_experiences=100000,
+                batch_size=32,
+                use_rag=self.config.rl_use_rag,
+                rag_top_k=5,
+                use_cloud_reward_shaping=self.config.rl_cloud_reward_shaping,
+                reward_shaping_frequency=10,
+                use_moe_evaluation=self.config.rl_moe_evaluation,
+                save_frequency=self.config.rl_save_frequency,
+                auto_save=True,
+            )
+            
+            # Initialize cloud RL memory
+            print("[CLOUD-RL] Initializing memory system...")
+            self.cloud_rl_memory = CloudRLMemory(
+                config=rl_memory_config,
+                hybrid_llm=llm_for_rl,
+                moe=moe_for_rl,
+            )
+            print(f"[CLOUD-RL] ✓ Memory initialized: {len(self.cloud_rl_memory.experiences)} experiences loaded")
+            
+            if self.config.rl_use_rag:
+                if self.cloud_rl_memory.collection:
+                    print("[CLOUD-RL] ✓ RAG context fetching enabled (ChromaDB)")
+                else:
+                    print("[CLOUD-RL] ⚠️ RAG unavailable (install chromadb)")
+            
+            # Initialize cloud RL agent
+            print("[CLOUD-RL] Initializing RL agent...")
+            self.cloud_rl_agent = CloudRLAgent(
+                state_dim=64,
+                action_dim=20,  # Approximate number of action types
+                memory=self.cloud_rl_memory,
+                learning_rate=self.config.rl_learning_rate,
+                gamma=0.99,
+                epsilon_start=self.config.rl_epsilon_start,
+                epsilon_end=0.01,
+                epsilon_decay=0.995,
+            )
+            
+            # Try to load saved agent
+            agent_path = self.config.rl_memory_dir + "/cloud_rl_agent.pkl"
+            self.cloud_rl_agent.load(agent_path)
+            print("[CLOUD-RL] ✓ Agent initialized")
+            
+            # Report configuration
+            print("\n[CLOUD-RL] Configuration:")
+            print(f"  Cloud LLM reward shaping: {'✓ Enabled' if self.config.rl_cloud_reward_shaping else '✗ Disabled'}")
+            print(f"  MoE evaluation: {'✓ Enabled' if self.config.rl_moe_evaluation and moe_for_rl else '✗ Disabled'}")
+            print(f"  RAG context fetching: {'✓ Enabled' if self.config.rl_use_rag else '✗ Disabled'}")
+            print(f"  Memory persistence: ✓ Enabled (auto-save every {self.config.rl_save_frequency} experiences)")
+            
+            # Get and display stats
+            stats = self.cloud_rl_memory.get_stats()
+            print(f"\n[CLOUD-RL] Statistics:")
+            print(f"  Total experiences: {stats['total_experiences']}")
+            print(f"  Cloud evaluations: {stats['cloud_evaluations']}")
+            print(f"  MoE evaluations: {stats['moe_evaluations']}")
+            print(f"  Avg reward: {stats['avg_reward']:.3f}")
+            print(f"  Success rate: {stats['successful_actions']/(stats['successful_actions']+stats['failed_actions']+1)*100:.1f}%")
+            
+            print("\n[CLOUD-RL] ✓ Cloud-enhanced RL system ready")
+            
+        except Exception as e:
+            print(f"[CLOUD-RL] ⚠️ Failed to initialize: {e}")
+            import traceback
+            traceback.print_exc()
+            self.cloud_rl_memory = None
+            self.cloud_rl_agent = None
+        
+        print("=" * 70)
+        print()
     
     async def _initialize_legacy_llms(self):
         """Initialize legacy local LLM architecture (fallback if hybrid disabled)."""

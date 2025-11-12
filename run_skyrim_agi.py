@@ -50,7 +50,9 @@ async def main():
         print("\nLLM Architecture Options:")
         print("  1. Hybrid (Gemini vision + Claude Sonnet 4 reasoning) [Default]")
         print("  2. Hybrid with local fallback (adds optional local LLMs)")
-        print("  3. Local only (LM Studio models only)")
+        print("  3. MoE (6 Gemini + 3 Claude experts with rate limiting)")
+        print("  4. PARALLEL (MoE + Hybrid simultaneously - MAXIMUM INTELLIGENCE)")
+        print("  5. Local only (LM Studio models only)")
         
         llm_choice = input("\nSelect LLM mode [1]: ").strip()
         
@@ -58,6 +60,12 @@ async def main():
             llm_mode = "hybrid"
             use_local_fallback = True
         elif llm_choice == "3":
+            llm_mode = "moe"
+            use_local_fallback = False
+        elif llm_choice == "4":
+            llm_mode = "parallel"
+            use_local_fallback = False
+        elif llm_choice == "5":
             llm_mode = "local"
             use_local_fallback = False
         else:
@@ -76,12 +84,88 @@ async def main():
                 print(f"  Local Fallback: Enabled")
             else:
                 print(f"  Local Fallback: Disabled")
+        elif llm_mode == "moe":
+            print(f"  LLM Mode: MoE (6 Gemini + 3 Claude experts)")
+            print(f"  Rate Limiting: Enabled (10 RPM Gemini, 50 RPM Claude)")
+        elif llm_mode == "parallel":
+            print(f"  LLM Mode: PARALLEL (MoE + Hybrid simultaneously)")
+            print(f"  Total: 10 LLM instances running in parallel")
+            print(f"  Consensus: MoE 60% + Hybrid 40%")
         else:
             print(f"  LLM Mode: Local only (LM Studio)")
     print()
     
     # Create config based on LLM mode selection
-    if llm_mode == "hybrid":
+    if llm_mode == "parallel":
+        # Parallel mode: MoE + Hybrid simultaneously
+        config = SkyrimConfig(
+            dry_run=dry_run,
+            autonomous_duration=duration * 60,
+            cycle_interval=2.0,
+            save_interval=300,
+            surprise_threshold=0.3,
+            exploration_weight=0.5,
+            
+            # Parallel mode configuration
+            use_parallel_mode=True,
+            use_moe=False,  # Handled by parallel mode
+            use_hybrid_llm=False,  # Handled by parallel mode
+            
+            # MoE settings
+            num_gemini_experts=6,
+            num_claude_experts=3,
+            gemini_model="gemini-2.0-flash-exp",
+            claude_model="claude-sonnet-4-20250514",
+            gemini_rpm_limit=10,
+            claude_rpm_limit=50,
+            
+            # Hybrid settings
+            use_gemini_vision=True,
+            use_claude_reasoning=True,
+            use_local_fallback=False,
+            
+            # Consensus weights
+            parallel_consensus_weight_moe=0.6,
+            parallel_consensus_weight_hybrid=0.4,
+            
+            # Cloud RL enabled by default in parallel mode
+            use_cloud_rl=True,
+            rl_use_rag=True,
+            rl_cloud_reward_shaping=True,
+            rl_moe_evaluation=True,
+            
+            # Disable legacy
+            enable_claude_meta=False,
+            enable_gemini_vision=False,
+        )
+    elif llm_mode == "moe":
+        # MoE mode: 6 Gemini + 3 Claude experts with rate limiting
+        config = SkyrimConfig(
+            dry_run=dry_run,
+            autonomous_duration=duration * 60,
+            cycle_interval=2.0,
+            save_interval=300,
+            surprise_threshold=0.3,
+            exploration_weight=0.5,
+            
+            # MoE configuration
+            use_moe=True,
+            num_gemini_experts=6,
+            num_claude_experts=3,
+            gemini_model="gemini-2.0-flash-exp",
+            claude_model="claude-sonnet-4-20250514",
+            gemini_rpm_limit=10,  # Conservative rate limit
+            claude_rpm_limit=50,  # Conservative rate limit
+            
+            # Disable other LLM modes
+            use_hybrid_llm=False,
+            use_gemini_vision=False,
+            use_claude_reasoning=False,
+            use_local_fallback=False,
+            enable_claude_meta=False,
+            enable_gemini_vision=False,
+        )
+    elif llm_mode == "hybrid":
         # Hybrid mode: Gemini + Claude with optional local fallback
         config = SkyrimConfig(
             dry_run=dry_run,
@@ -98,6 +182,9 @@ async def main():
             use_claude_reasoning=True,
             claude_model="claude-sonnet-4-20250514",
             use_local_fallback=use_local_fallback,
+            
+            # MoE disabled
+            use_moe=False,
             
             # Local models (used only if fallback enabled)
             phi4_action_model="mistralai/mistral-nemo-instruct-2407",

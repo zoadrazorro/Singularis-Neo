@@ -8,6 +8,13 @@ from .lmstudio_client import (
 from .claude_client import ClaudeClient
 from .gemini_client import GeminiClient
 from .hybrid_client import HybridLLMClient, HybridConfig, TaskType
+from .moe_orchestrator import (
+    MoEOrchestrator,
+    ExpertRole,
+    ExpertConfig,
+    ExpertResponse,
+    MoEResponse,
+)
 
 __all__ = [
     "LMStudioClient",
@@ -18,4 +25,9 @@ __all__ = [
     "HybridLLMClient",
     "HybridConfig",
     "TaskType",
+    "MoEOrchestrator",
+    "ExpertRole",
+    "ExpertConfig",
+    "ExpertResponse",
+    "MoEResponse",
 ]
