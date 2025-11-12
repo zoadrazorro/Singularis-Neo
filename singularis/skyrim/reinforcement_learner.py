@@ -349,6 +349,9 @@ class ReinforcementLearner:
             'move_right',
             'jump',
             'sneak',
+            'look_around',
+            'turn_left',
+            'turn_right',
             # Combat actions (being belligerent with hostiles)
             'attack',
             'quick_attack',
