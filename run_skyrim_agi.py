@@ -42,30 +42,97 @@ async def main():
     use_llm = input("Use LLM for smarter decisions? [Y/n]: ").strip().lower()
     use_llm = use_llm != 'n'
     
+    # LLM Architecture Options
+    llm_mode = "hybrid"
+    use_local_fallback = False
+    
+    if use_llm:
+        print("\nLLM Architecture Options:")
+        print("  1. Hybrid (Gemini vision + Claude Sonnet 4 reasoning) [Default]")
+        print("  2. Hybrid with local fallback (adds optional local LLMs)")
+        print("  3. Local only (LM Studio models only)")
+        
+        llm_choice = input("\nSelect LLM mode [1]: ").strip()
+        
+        if llm_choice == "2":
+            llm_mode = "hybrid"
+            use_local_fallback = True
+        elif llm_choice == "3":
+            llm_mode = "local"
+            use_local_fallback = False
+        else:
+            llm_mode = "hybrid"
+            use_local_fallback = False
+    
     print()
     print("Configuration:")
     print(f"  Dry run: {dry_run}")
     print(f"  Duration: {duration} minutes")
     print(f"  LLM: {use_llm}")
+    if use_llm:
+        if llm_mode == "hybrid":
+            print(f"  LLM Mode: Hybrid (Gemini + Claude Sonnet 4)")
+            if use_local_fallback:
+                print(f"  Local Fallback: Enabled")
+            else:
+                print(f"  Local Fallback: Disabled")
+        else:
+            print(f"  LLM Mode: Local only (LM Studio)")
     print()
     
-    # Create config
-    config = SkyrimConfig(
-        dry_run=dry_run,
-        autonomous_duration=duration * 60,
-        cycle_interval=2.0,
-        save_interval=300,
-        surprise_threshold=0.3,
-        exploration_weight=0.5,
-        phi4_action_model="mistralai/mistral-nemo-instruct-2407",
-        huihui_cognition_model="huihui-moe-60b-a3b-abliterated-i1",
-        qwen3_vl_perception_model="qwen/qwen3-vl-8b",
-        
-        # 🆕 Lower API trigger frequencies for faster testing
-        enable_claude_meta=True,
-        enable_gemini_vision=True,
-        gemini_model="gemini-2.0-flash-exp",  # FREE tier (was gemini-2.5-pro)
-    )
+    # Create config based on LLM mode selection
+    if llm_mode == "hybrid":
+        # Hybrid mode: Gemini + Claude with optional local fallback
+        config = SkyrimConfig(
+            dry_run=dry_run,
+            autonomous_duration=duration * 60,
+            cycle_interval=2.0,
+            save_interval=300,
+            surprise_threshold=0.3,
+            exploration_weight=0.5,
+            
+            # Hybrid LLM configuration
+            use_hybrid_llm=True,
+            use_gemini_vision=True,
+            gemini_model="gemini-2.0-flash-exp",
+            use_claude_reasoning=True,
+            claude_model="claude-sonnet-4-20250514",
+            use_local_fallback=use_local_fallback,
+            
+            # Local models (used only if fallback enabled)
+            phi4_action_model="mistralai/mistral-nemo-instruct-2407",
+            huihui_cognition_model="huihui-moe-60b-a3b-abliterated-i1",
+            qwen3_vl_perception_model="qwen/qwen3-vl-8b",
+            
+            # Disable legacy augmentation
+            enable_claude_meta=False,
+            enable_gemini_vision=False,
+        )
+    else:
+        # Local only mode: LM Studio models
+        config = SkyrimConfig(
+            dry_run=dry_run,
+            autonomous_duration=duration * 60,
+            cycle_interval=2.0,
+            save_interval=300,
+            surprise_threshold=0.3,
+            exploration_weight=0.5,
+            
+            # Disable hybrid system
+            use_hybrid_llm=False,
+            use_gemini_vision=False,
+            use_claude_reasoning=False,
+            use_local_fallback=False,
+            
+            # Local models only
+            phi4_action_model="mistralai/mistral-nemo-instruct-2407",
+            huihui_cognition_model="huihui-moe-60b-a3b-abliterated-i1",
+            qwen3_vl_perception_model="qwen/qwen3-vl-8b",
+            
+            # Disable legacy augmentation
+            enable_claude_meta=False,
+            enable_gemini_vision=False,
+        )
     
     # Create AGI
     agi = SkyrimAGI(config)
