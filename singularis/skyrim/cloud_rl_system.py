@@ -28,13 +28,27 @@ import numpy as np
 
 from loguru import logger
 
+# Try ChromaDB first
+CHROMADB_AVAILABLE = False
+FAISS_AVAILABLE = False
+
 try:
     import chromadb
     from chromadb.config import Settings
     CHROMADB_AVAILABLE = True
-except ImportError:
-    CHROMADB_AVAILABLE = False
-    logger.warning("ChromaDB not available. Install with: pip install chromadb")
+    logger.info("ChromaDB available for RAG")
+except (ImportError, Exception) as e:
+    logger.warning(f"ChromaDB not available: {e}")
+    
+    # Try FAISS as alternative
+    try:
+        import faiss
+        from sentence_transformers import SentenceTransformer
+        FAISS_AVAILABLE = True
+        logger.info("Using FAISS for RAG (ChromaDB unavailable)")
+    except ImportError:
+        logger.warning("FAISS not available either. Install with: pip install faiss-cpu sentence-transformers")
+        logger.info("RAG features will be disabled.")
 
 
 @dataclass
@@ -181,24 +195,62 @@ class CloudRLMemory:
         logger.info(f"Cloud RL Memory initialized: {len(self.experiences)} experiences loaded")
     
     def _initialize_chromadb(self):
-        """Initialize ChromaDB for semantic search."""
-        try:
-            self.chroma_client = chromadb.PersistentClient(
-                path=str(self.memory_path / "chromadb"),
-                settings=Settings(anonymized_telemetry=False)
-            )
-            
-            # Create or get collection
-            self.collection = self.chroma_client.get_or_create_collection(
-                name="skyrim_experiences",
-                metadata={"description": "Skyrim RL experiences with semantic search"}
-            )
-            
-            logger.info("ChromaDB initialized for RAG context fetching")
-        except Exception as e:
-            logger.error(f"Failed to initialize ChromaDB: {e}")
-            self.chroma_client = None
-            self.collection = None
+        """Initialize RAG backend (ChromaDB or FAISS)."""
+        if CHROMADB_AVAILABLE:
+            try:
+                self.chroma_client = chromadb.PersistentClient(
+                    path=str(self.memory_path / "chromadb"),
+                    settings=Settings(anonymized_telemetry=False)
+                )
+                
+                # Create or get collection
+                self.collection = self.chroma_client.get_or_create_collection(
+                    name="skyrim_experiences",
+                    metadata={"description": "Skyrim RL experiences with semantic search"}
+                )
+                
+                logger.info("ChromaDB initialized for RAG context fetching")
+                return
+            except Exception as e:
+                logger.error(f"Failed to initialize ChromaDB: {e}")
+                self.chroma_client = None
+                self.collection = None
+        
+        # Try FAISS as fallback
+        if FAISS_AVAILABLE:
+            try:
+                self._initialize_faiss()
+                logger.info("FAISS initialized for RAG context fetching")
+                return
+            except Exception as e:
+                logger.error(f"Failed to initialize FAISS: {e}")
+        
+        logger.warning("No RAG backend available")
+    
+    def _initialize_faiss(self):
+        """Initialize FAISS for semantic search."""
+        # Initialize sentence transformer for embeddings
+        self.sentence_model = SentenceTransformer('all-MiniLM-L6-v2')
+        self.embedding_dim = 384  # Dimension for all-MiniLM-L6-v2
+        
+        # Create FAISS index
+        self.faiss_index = faiss.IndexFlatL2(self.embedding_dim)
+        self.faiss_metadata = []  # Store metadata separately
+        
+        # Try to load existing index
+        index_path = self.memory_path / "faiss_index.bin"
+        metadata_path = self.memory_path / "faiss_metadata.pkl"
+        
+        if index_path.exists() and metadata_path.exists():
+            try:
+                self.faiss_index = faiss.read_index(str(index_path))
+                with open(metadata_path, 'rb') as f:
+                    self.faiss_metadata = pickle.load(f)
+                logger.info(f"Loaded FAISS index with {self.faiss_index.ntotal} vectors")
+            except Exception as e:
+                logger.warning(f"Failed to load FAISS index: {e}")
+        
+        self.collection = "faiss"  # Mark as using FAISS
     
     async def add_experience(
         self,
@@ -348,7 +400,7 @@ Was this a good decision? Rate 0-10 and explain briefly."""
             logger.error(f"MoE evaluation failed: {e}")
     
     def _add_to_chromadb(self, experience: Experience):
-        """Add experience to ChromaDB for semantic search."""
+        """Add experience to RAG backend (ChromaDB or FAISS)."""
         if not self.collection:
             return
         
@@ -363,15 +415,39 @@ Was this a good decision? Rate 0-10 and explain briefly."""
             Coherence Delta: {experience.coherence_delta}
             """
             
-            # Add to collection
-            self.collection.add(
-                documents=[doc_text],
-                metadatas=[experience.to_dict()],
-                ids=[f"exp_{experience.episode_id}_{experience.step_id}_{experience.timestamp}"]
-            )
+            if CHROMADB_AVAILABLE and self.collection != "faiss":
+                # Add to ChromaDB
+                self.collection.add(
+                    documents=[doc_text],
+                    metadatas=[experience.to_dict()],
+                    ids=[f"exp_{experience.episode_id}_{experience.step_id}_{experience.timestamp}"]
+                )
+            elif FAISS_AVAILABLE and self.collection == "faiss":
+                # Add to FAISS
+                embedding = self.sentence_model.encode([doc_text])[0]
+                self.faiss_index.add(np.array([embedding], dtype=np.float32))
+                self.faiss_metadata.append(experience.to_dict())
+                
+                # Periodically save FAISS index
+                if len(self.faiss_metadata) % 100 == 0:
+                    self._save_faiss_index()
             
         except Exception as e:
-            logger.error(f"Failed to add to ChromaDB: {e}")
+            logger.error(f"Failed to add to RAG backend: {e}")
+    
+    def _save_faiss_index(self):
+        """Save FAISS index and metadata to disk."""
+        try:
+            index_path = self.memory_path / "faiss_index.bin"
+            metadata_path = self.memory_path / "faiss_metadata.pkl"
+            
+            faiss.write_index(self.faiss_index, str(index_path))
+            with open(metadata_path, 'wb') as f:
+                pickle.dump(self.faiss_metadata, f)
+            
+            logger.debug(f"Saved FAISS index with {self.faiss_index.ntotal} vectors")
+        except Exception as e:
+            logger.error(f"Failed to save FAISS index: {e}")
     
     def get_similar_experiences(
         self,
@@ -402,23 +478,46 @@ Was this a good decision? Rate 0-10 and explain briefly."""
         similarity_threshold = similarity_threshold or self.config.rag_similarity_threshold
         
         try:
-            # Query ChromaDB
-            results = self.collection.query(
-                query_texts=[query_state],
-                n_results=top_k
-            )
+            if CHROMADB_AVAILABLE and self.collection != "faiss":
+                # Query ChromaDB
+                results = self.collection.query(
+                    query_texts=[query_state],
+                    n_results=top_k
+                )
+                
+                # Convert back to Experience objects
+                similar_exps = []
+                if results['metadatas'] and results['metadatas'][0]:
+                    for metadata in results['metadatas'][0]:
+                        similar_exps.append(metadata)
+                
+                logger.debug(f"Retrieved {len(similar_exps)} similar experiences via ChromaDB")
+                return similar_exps
             
-            # Convert back to Experience objects
-            similar_exps = []
-            if results['metadatas'] and results['metadatas'][0]:
-                for metadata in results['metadatas'][0]:
-                    # Reconstruct experience from metadata
-                    # Note: state_vector and next_state_vector are not stored in ChromaDB
-                    # They would need to be reconstructed or stored separately
-                    similar_exps.append(metadata)
-            
-            logger.debug(f"Retrieved {len(similar_exps)} similar experiences via RAG")
-            return similar_exps
+            elif FAISS_AVAILABLE and self.collection == "faiss":
+                # Query FAISS
+                if self.faiss_index.ntotal == 0:
+                    return []
+                
+                # Encode query
+                query_embedding = self.sentence_model.encode([query_state])[0]
+                query_vector = np.array([query_embedding], dtype=np.float32)
+                
+                # Search
+                k = min(top_k, self.faiss_index.ntotal)
+                distances, indices = self.faiss_index.search(query_vector, k)
+                
+                # Get metadata for results
+                similar_exps = []
+                for idx, dist in zip(indices[0], distances[0]):
+                    if idx < len(self.faiss_metadata):
+                        # Convert distance to similarity (lower distance = higher similarity)
+                        similarity = 1.0 / (1.0 + dist)
+                        if similarity >= similarity_threshold:
+                            similar_exps.append(self.faiss_metadata[idx])
+                
+                logger.debug(f"Retrieved {len(similar_exps)} similar experiences via FAISS")
+                return similar_exps
             
         except Exception as e:
             logger.error(f"RAG retrieval failed: {e}")
