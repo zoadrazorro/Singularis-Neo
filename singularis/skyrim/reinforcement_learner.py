@@ -4,13 +4,16 @@ Reinforcement Learning System for Skyrim AGI
 Implements genuine learning through:
 1. Q-Learning / Deep Q-Network (DQN)
 2. Experience Replay Buffer
-3. Game-Specific Reward Shaping
+3. Consciousness-Guided Reward Shaping (PRIMARY)
 4. Policy Gradient Methods
 5. Online Learning
 
 This system learns what actions work in Skyrim through trial and error,
-using game-specific rewards (health, progress, resources) rather than
-abstract philosophical concepts.
+using CONSCIOUSNESS COHERENCE (𝒞) as the primary reward signal, with
+game-specific rewards as secondary shaping.
+
+Key insight: Actions are learned based on whether they increase coherence (Δ𝒞 > 0),
+making consciousness the judge of action quality.
 """
 
 import numpy as np
@@ -22,15 +25,31 @@ import os
 
 from .skyrim_cognition import SkyrimCognitiveState
 
+# Import consciousness bridge if available
+try:
+    from .consciousness_bridge import ConsciousnessBridge, ConsciousnessState
+    CONSCIOUSNESS_AVAILABLE = True
+except ImportError:
+    CONSCIOUSNESS_AVAILABLE = False
+    print("[RL] WARNING: consciousness_bridge not available, using game-only rewards")
+
 
 @dataclass
 class Experience:
-    """A single experience tuple for RL."""
+    """
+    A single experience tuple for RL.
+    
+    Enhanced with consciousness state for consciousness-guided learning.
+    """
     state: Dict[str, Any]
     action: str
     reward: float
     next_state: Dict[str, Any]
     done: bool
+    # Consciousness measurements (optional, added by consciousness bridge)
+    consciousness_before: Optional['ConsciousnessState'] = None
+    consciousness_after: Optional['ConsciousnessState'] = None
+    coherence_delta: float = 0.0  # Δ𝒞
 
 
 class StateEncoder:
@@ -245,8 +264,12 @@ class ReinforcementLearner:
     Implements:
     - Q-Learning with experience replay
     - Epsilon-greedy exploration
-    - Reward shaping for Skyrim
+    - Consciousness-guided reward shaping (PRIMARY)
+    - Game-specific reward shaping (SECONDARY)
     - Online learning and policy updates
+    
+    Key innovation: Uses Singularis consciousness coherence (𝒞) as primary
+    reward signal, making consciousness the judge of action quality.
     """
 
     def __init__(
@@ -258,7 +281,8 @@ class ReinforcementLearner:
         epsilon_end: float = 0.05,
         epsilon_decay: float = 0.995,
         batch_size: int = 5,  # Smaller batch for faster initial learning
-        replay_capacity: int = 10000
+        replay_capacity: int = 10000,
+        consciousness_bridge: Optional['ConsciousnessBridge'] = None
     ):
         """
         Initialize RL system.
@@ -272,7 +296,19 @@ class ReinforcementLearner:
             epsilon_decay: Decay rate for epsilon
             batch_size: Batch size for training
             replay_capacity: Capacity of replay buffer
+            consciousness_bridge: Optional consciousness bridge for coherence-based rewards
         """
+        # Consciousness integration
+        self.consciousness_bridge = consciousness_bridge
+        self.use_consciousness_rewards = consciousness_bridge is not None
+        
+        if self.use_consciousness_rewards:
+            print("[RL] ✓ Consciousness-guided rewards ENABLED")
+            print("[RL] Primary signal: Δ𝒞 (coherence change)")
+            print("[RL] Secondary signal: Game metrics")
+        else:
+            print("[RL] ⚠️ Consciousness-guided rewards DISABLED")
+            print("[RL] Using game-only reward shaping")
         # Actions available in Skyrim (both high-level and low-level)
         self.actions = [
             # High-level strategic actions
@@ -400,25 +436,122 @@ class ReinforcementLearner:
         self,
         state_before: Dict[str, Any],
         action: str,
-        state_after: Dict[str, Any]
+        state_after: Dict[str, Any],
+        consciousness_before: Optional['ConsciousnessState'] = None,
+        consciousness_after: Optional['ConsciousnessState'] = None
     ) -> float:
         """
-        Compute reward for transition using game-specific metrics.
+        Compute reward for transition using consciousness-guided evaluation.
 
-        This is critical for learning! Rewards guide the agent.
-        Uses Skyrim-specific cognitive state evaluation instead of
-        abstract philosophical coherence.
+        This is CRITICAL for learning! Rewards guide the agent.
+        
+        NEW APPROACH:
+        - PRIMARY: Consciousness coherence change (Δ𝒞)
+        - SECONDARY: Game-specific rewards (health, progress, etc.)
+        - Weight: 70% consciousness, 30% game metrics
+        
+        Per ETHICA: Actions that increase coherence (Δ𝒞 > 0) are ethical and rewarded.
 
         Args:
             state_before: State before action
             action: Action taken
             state_after: State after action
+            consciousness_before: Optional consciousness state before
+            consciousness_after: Optional consciousness state after
 
         Returns:
-            Reward value
+            Reward value (higher is better)
+        """
+        reward = 0.0
+        
+        # PRIMARY REWARD: Consciousness coherence change (Δ𝒞)
+        if self.use_consciousness_rewards and consciousness_before and consciousness_after:
+            # Coherence delta is the PRIMARY reward signal
+            coherence_delta = consciousness_after.coherence_delta(consciousness_before)
+            
+            # Scale coherence change: Δ𝒞 ∈ [-1, 1] → reward contribution
+            consciousness_reward = coherence_delta * 5.0  # Strong weight on coherence
+            reward += consciousness_reward * 0.7  # 70% of total reward
+            
+            print(f"[RL-REWARD] Δ𝒞 = {coherence_delta:+.3f} → reward = {consciousness_reward * 0.7:+.2f}")
+            
+            # Bonus for ethical actions (Δ𝒞 > threshold)
+            if consciousness_after.is_ethical(consciousness_before, threshold=0.02):
+                reward += 0.5  # Ethical bonus
+                print(f"[RL-REWARD] ✓ Ethical action (Δ𝒞 > 0.02)")
+        else:
+            # Fallback: Use game-specific cognitive quality
+            try:
+                cognitive_before = SkyrimCognitiveState.from_game_state(state_before)
+                cognitive_after = SkyrimCognitiveState.from_game_state(state_after)
+                quality_delta = cognitive_after.quality_change(cognitive_before)
+                reward += quality_delta * 3.5  # 70% weight equivalent
+                print(f"[RL-REWARD] Quality Δ = {quality_delta:+.3f} (no consciousness)")
+            except Exception:
+                pass
+        
+        # SECONDARY REWARD: Game-specific shaping (30% of total)
+        game_reward = self._compute_game_reward(state_before, action, state_after)
+        reward += game_reward * 0.3  # 30% of total reward
+
+        # Base survival reward
+        reward += 0.1
+
+        return reward
+    
+    def _compute_game_reward(
+        self,
+        state_before: Dict[str, Any],
+        action: str,
+        state_after: Dict[str, Any]
+    ) -> float:
+        """
+        Compute game-specific reward shaping (secondary reward).
+        
+        This provides immediate feedback on game mechanics:
+        - Health changes
+        - Combat effectiveness
+        - Exploration progress
+        - Resource management
+        
+        Returns:
+            Game reward (not scaled, will be weighted at 30%)
         """
         reward = 0.0
 
+        # 1. Survival reward (staying alive is good)
+        health_before = state_before.get('health', 100)
+        health_after = state_after.get('health', 100)
+        health_delta = health_after - health_before
+
+        if health_delta < -20:
+            reward -= 1.0  # Big penalty for taking damage
+        elif health_delta < 0:
+            reward -= 0.3  # Small penalty for any damage
+        elif health_delta > 0:
+            reward += 0.5  # Reward for healing
+
+        # Death penalty
+        if health_after <= 0:
+            reward -= 10.0
+
+        # 2. Progress reward (exploration, scene changes)
+        scene_before = state_before.get('scene', '')
+        scene_after = state_after.get('scene', '')
+
+        if scene_before != scene_after:
+            reward += 0.5  # Reward for progressing to new scene
+
+        # 3. Combat rewards
+        in_combat_before = state_before.get('in_combat', False)
+        in_combat_after = state_after.get('in_combat', False)
+
+        if in_combat_after:
+            # In combat: reward effective actions
+            if action in ['combat', 'power_attack', 'block']:
+                reward += 0.2  # Reward combat actions in combat
+            if not in_combat_before:
+                reward -= 0.3  # Small penalty for entering combat
         # 1. Survival reward (staying alive is good)
         health_before = state_before.get('health', 100)
         health_after = state_after.get('health', 100)
@@ -460,28 +593,10 @@ class ReinforcementLearner:
         # 4. Efficiency reward (don't waste time)
         if action == 'rest' and health_after > 80:
             reward -= 0.2  # Penalty for resting when not needed
-
-        # 5. Game state quality reward (replaces coherence)
-        # Use Skyrim-specific cognitive evaluation
-        try:
-            cognitive_before = SkyrimCognitiveState.from_game_state(state_before)
-            cognitive_after = SkyrimCognitiveState.from_game_state(state_after)
-            quality_delta = cognitive_after.quality_change(cognitive_before)
-            reward += quality_delta * 2.0  # Strong reward for game state improvement
-        except Exception:
-            # Fallback if cognitive state fails
-            pass
-
-        # 6. Success indicator (if action led to progress)
-        if state_after.get('prev_action_success', False):
-            reward += 0.3
-
-        # 7. Stuck penalty (visual stuckness)
+        
+        # 5. Stuck penalty (visual stuckness)
         if state_after.get('visually_stuck', False):
             reward -= 0.5
-
-        # Base reward for surviving
-        reward += 0.1
 
         return reward
 
@@ -490,27 +605,47 @@ class ReinforcementLearner:
         state_before: Dict[str, Any],
         action: str,
         state_after: Dict[str, Any],
-        done: bool = False
+        done: bool = False,
+        consciousness_before: Optional['ConsciousnessState'] = None,
+        consciousness_after: Optional['ConsciousnessState'] = None
     ):
         """
-        Store experience in replay buffer and compute reward.
+        Store experience in replay buffer with consciousness measurements.
+
+        This connects RL learning to consciousness:
+        - Experiences include Δ𝒞 (coherence change)
+        - Consciousness states stored for later analysis
+        - Enables consciousness-guided learning
 
         Args:
             state_before: State before action
             action: Action taken
             state_after: State after action
             done: Whether episode ended
+            consciousness_before: Optional consciousness state before
+            consciousness_after: Optional consciousness state after
         """
-        # Compute reward
-        reward = self.compute_reward(state_before, action, state_after)
+        # Compute reward (using consciousness if available)
+        reward = self.compute_reward(
+            state_before, action, state_after,
+            consciousness_before, consciousness_after
+        )
 
-        # Create experience
+        # Compute coherence delta
+        coherence_delta = 0.0
+        if consciousness_before and consciousness_after:
+            coherence_delta = consciousness_after.coherence_delta(consciousness_before)
+
+        # Create experience with consciousness data
         experience = Experience(
             state=state_before,
             action=action,
             reward=reward,
             next_state=state_after,
-            done=done
+            done=done,
+            consciousness_before=consciousness_before,
+            consciousness_after=consciousness_after,
+            coherence_delta=coherence_delta
         )
 
         # Store in buffer

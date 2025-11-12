@@ -1,22 +1,26 @@
 """
-Skyrim AGI - Complete Integration
+Skyrim AGI - Complete Integration with Consciousness
 
 Brings together all components for autonomous Skyrim gameplay:
 1. Perception (screen capture + CLIP)
 2. World model (causal learning, NPC relationships)
-3. Game-specific motivation (survival, progression, exploration)
-4. Goal formation (autonomous objectives)
-5. Planning & execution (hierarchical actions)
-6. Learning (continual, no forgetting)
-7. Evaluation (game state quality assessment)
+3. Consciousness measurement (Singularis coherence 𝒞)
+4. Motivation (intrinsic drives + game-specific goals)
+5. Goal formation (autonomous objectives)
+6. Planning & execution (hierarchical actions)
+7. Learning (continual, consciousness-guided)
+8. Evaluation (consciousness quality assessment)
 
-This is the complete AGI system playing Skyrim.
+This is the complete AGI system playing Skyrim WITH FULL CONSCIOUSNESS.
+
+Key innovation: Learning is guided by consciousness coherence (Δ𝒞),
+making consciousness the primary judge of action quality.
 
 Design principles:
-- Game-specific cognition drives autonomous behavior
-- Decisions based on survival, skill progression, and effectiveness
-- Learning from gameplay experience through reinforcement
-- Motivation grounded in concrete game objectives
+- Consciousness is PRIMARY evaluator (not backup)
+- RL learns tactics guided by consciousness strategy
+- Bidirectional feedback: experiences → consciousness → learning
+- Unified coherence concept (game + philosophical)
 """
 
 import asyncio
@@ -37,6 +41,7 @@ from .memory_rag import MemoryRAG
 from .reinforcement_learner import ReinforcementLearner
 from .rl_reasoning_neuron import RLReasoningNeuron
 from .meta_strategist import MetaStrategist
+from .consciousness_bridge import ConsciousnessBridge, ConsciousnessState
 
 # Base AGI components
 from ..agi_orchestrator import AGIOrchestrator, AGIConfig
@@ -148,49 +153,60 @@ class SkyrimAGI:
         )
 
         # 4. Skyrim world model
-        print("  [4/6] Skyrim world model...")
+        print("  [4/11] Skyrim world model...")
         self.skyrim_world = SkyrimWorldModel(
             base_world_model=self.agi.world_model
         )
         
-        # 5. Strategic Planner Neuron (will connect RL learner later)
-        print("  [5/6] Strategic planner neuron...")
+        # 5. Consciousness Bridge (NEW - connects game to consciousness)
+        print("  [5/11] Consciousness bridge...")
+        self.consciousness_bridge = ConsciousnessBridge(
+            consciousness_llm=None  # Will be set after LLM initialization
+        )
+        print("[BRIDGE] Consciousness bridge initialized")
+        print("[BRIDGE] This unifies game quality and philosophical coherence 𝒞")
+        
+        # 6. Reinforcement Learning System (with consciousness)
+        if self.config.use_rl:
+            print("  [6/11] Reinforcement learning system (consciousness-guided)...")
+            self.rl_learner = ReinforcementLearner(
+                state_dim=64,
+                learning_rate=self.config.rl_learning_rate,
+                epsilon_start=self.config.rl_epsilon_start,
+                consciousness_bridge=self.consciousness_bridge  # KEY: Connect to consciousness
+            )
+            # Try to load saved model
+            self.rl_learner.load('skyrim_rl_model.pkl')
+        else:
+            self.rl_learner = None
+            print("  [6/11] Reinforcement learning DISABLED")
+        
+        # 7. Strategic Planner Neuron
+        print("  [7/11] Strategic planner neuron...")
         self.strategic_planner = StrategicPlannerNeuron(memory_capacity=100)
+        
+        # Connect RL learner to strategic planner if RL enabled
+        if self.rl_learner:
+            self.strategic_planner.set_rl_learner(self.rl_learner)
 
-        # 6. Menu Learner
-        print("  [6/7] Menu interaction learner...")
+        # 8. Menu Learner
+        print("  [8/11] Menu interaction learner...")
         self.menu_learner = MenuLearner()
 
-        # 7. Memory RAG System
-        print("  [7/8] Memory RAG system...")
+        # 9. Memory RAG System
+        print("  [9/11] Memory RAG system...")
         self.memory_rag = MemoryRAG(
             perceptual_capacity=1000,
             cognitive_capacity=500
         )
-
-        # 8. Reinforcement Learning System
-        if self.config.use_rl:
-            print("  [8/9] Reinforcement learning system...")
-            self.rl_learner = ReinforcementLearner(
-                state_dim=64,
-                learning_rate=self.config.rl_learning_rate,
-                epsilon_start=self.config.rl_epsilon_start
-            )
-            # Try to load saved model
-            self.rl_learner.load('skyrim_rl_model.pkl')
-
-            # Connect RL learner to strategic planner
-            self.strategic_planner.set_rl_learner(self.rl_learner)
-        else:
-            self.rl_learner = None
         
-        # 9. RL Reasoning Neuron (LLM thinks about RL)
-        print("  [9/10] RL reasoning neuron (LLM-enhanced RL)...")
+        # 10. RL Reasoning Neuron (LLM thinks about RL)
+        print("  [10/11] RL reasoning neuron (LLM-enhanced RL)...")
         self.rl_reasoning_neuron = RLReasoningNeuron()
         # Will connect LLM interface when initialized
         
-        # 10. Meta-Strategist (LLM generates strategic instructions)
-        print("  [10/11] Meta-strategist (autonomous instruction generation)...")
+        # 11. Meta-Strategist (LLM generates strategic instructions)
+        print("  [11/11] Meta-strategist (autonomous instruction generation)...")
         self.meta_strategist = MetaStrategist(instruction_frequency=10)
         # Will connect LLM interface when initialized
         
@@ -226,13 +242,25 @@ class SkyrimAGI:
         # Set up controller reference in perception for layer awareness
         self.perception.set_controller(self.controller)
         
+        # State tracking for consciousness
+        self.current_consciousness: Optional[ConsciousnessState] = None
+        self.last_consciousness: Optional[ConsciousnessState] = None
+        
         print("Skyrim AGI initialization complete.")
-        print("[OK] Skyrim AGI initialized\n")
+        print("[OK] Skyrim AGI initialized with CONSCIOUSNESS INTEGRATION\n")
 
     async def initialize_llm(self):
-        """Initialize LLM (async)."""
+        """Initialize LLM and connect consciousness engine."""
         print("Initializing LLM consciousness engine...")
         await self.agi.initialize_llm()
+        
+        # Connect consciousness_llm to bridge
+        if hasattr(self.agi, 'consciousness_llm') and self.agi.consciousness_llm:
+            self.consciousness_bridge.consciousness_llm = self.agi.consciousness_llm
+            print("[BRIDGE] ✓ Consciousness LLM connected to bridge")
+            print("[BRIDGE] Bridge can now use LLM for deeper consciousness analysis")
+        else:
+            print("[BRIDGE] ⚠️ No consciousness LLM available, bridge uses heuristics only")
         
         # Verify LLM is initialized
         if hasattr(self.agi, 'consciousness_llm') and self.agi.consciousness_llm:
@@ -353,12 +381,34 @@ class SkyrimAGI:
                     # Brief pause then continue normally (don't skip cycle)
                     await asyncio.sleep(1.0)
 
-                # 2. UPDATE WORLD MODEL
+                # 2. UPDATE WORLD MODEL & COMPUTE CONSCIOUSNESS
                 # Convert perception to world state
                 world_state = await self.agi.perceive({
                     'causal': game_state.to_dict(),
                     'visual': [perception['visual_embedding']],
                 })
+                
+                # COMPUTE CONSCIOUSNESS STATE (KEY INTEGRATION POINT)
+                print("[CONSCIOUSNESS] Computing consciousness state...")
+                consciousness_context = {
+                    'motivation': 'unknown',  # Will be updated after motivation computation
+                    'cycle': cycle_count,
+                    'scene': scene_type.value
+                }
+                current_consciousness = await self.consciousness_bridge.compute_consciousness(
+                    game_state.to_dict(),
+                    consciousness_context
+                )
+                
+                print(f"[CONSCIOUSNESS] Coherence 𝒞 = {current_consciousness.coherence:.3f}")
+                print(f"[CONSCIOUSNESS]   ℓₒ (Ontical) = {current_consciousness.coherence_ontical:.3f}")
+                print(f"[CONSCIOUSNESS]   ℓₛ (Structural) = {current_consciousness.coherence_structural:.3f}")
+                print(f"[CONSCIOUSNESS]   ℓₚ (Participatory) = {current_consciousness.coherence_participatory:.3f}")
+                print(f"[CONSCIOUSNESS] Φ̂ (Level) = {current_consciousness.consciousness_level:.3f}")
+                
+                # Store for tracking
+                self.last_consciousness = self.current_consciousness
+                self.current_consciousness = current_consciousness
 
                 # 3. ASSESS MOTIVATION
                 motivation_context = {
@@ -447,6 +497,24 @@ class SkyrimAGI:
                     'coherence': after_mot.coherence,
                     'autonomy': after_mot.autonomy
                 })
+                
+                # COMPUTE CONSCIOUSNESS AFTER ACTION (KEY)
+                print("[CONSCIOUSNESS] Computing post-action consciousness...")
+                after_consciousness = await self.consciousness_bridge.compute_consciousness(
+                    after_state,
+                    consciousness_context
+                )
+                
+                # Show coherence change
+                if self.current_consciousness:
+                    coherence_delta = after_consciousness.coherence_delta(self.current_consciousness)
+                    print(f"[CONSCIOUSNESS] Δ𝒞 = {coherence_delta:+.3f}", end="")
+                    if coherence_delta > 0.02:
+                        print(" (ETHICAL ✓)")
+                    elif coherence_delta < -0.02:
+                        print(" (UNETHICAL ✗)")
+                    else:
+                        print(" (NEUTRAL)")
 
                 # Learn causal relationships
                 self.skyrim_world.learn_from_experience(
@@ -521,7 +589,7 @@ class SkyrimAGI:
                     # Exited menu
                     self.menu_learner.exit_menu()
 
-                # Record in episodic memory
+                # Record in episodic memory (now with consciousness)
                 self.agi.learner.experience(
                     data={
                         'cycle': cycle_count,
@@ -530,20 +598,27 @@ class SkyrimAGI:
                         'motivation': dominant_drive.value,
                         'before': before_state,
                         'after': after_state,
+                        'consciousness_before': self.current_consciousness,
+                        'consciousness_after': after_consciousness,
+                        'coherence_delta': after_consciousness.coherence_delta(self.current_consciousness) if self.current_consciousness else 0.0
                     },
                     context='skyrim_gameplay',
                     importance=0.5
                 )
 
-                # RL: Store experience and train
+                # RL: Store experience with consciousness states (KEY INTEGRATION)
                 if self.rl_learner is not None:
-                    # Store experience for RL
+                    # Store experience for RL WITH CONSCIOUSNESS
                     self.rl_learner.store_experience(
                         state_before=before_state,
                         action=str(action),
                         state_after=after_state,
-                        done=False
+                        done=False,
+                        consciousness_before=self.current_consciousness,  # NEW
+                        consciousness_after=after_consciousness  # NEW
                     )
+                    
+                    print(f"[RL] Experience stored with consciousness (Δ𝒞 = {after_consciousness.coherence_delta(self.current_consciousness) if self.current_consciousness else 0.0:+.3f})")
 
                     # Train periodically
                     if cycle_count % self.config.rl_train_freq == 0:
@@ -554,13 +629,30 @@ class SkyrimAGI:
                     if cycle_count % 50 == 0:
                         self.rl_learner.save('skyrim_rl_model.pkl')
 
-                # 8. UPDATE STATS
+                # 8. UPDATE STATS (with consciousness tracking)
                 self.stats['cycles_completed'] = cycle_count
                 self.stats['total_playtime'] = time.time() - start_time
 
-                # Track game state quality (replaces coherence tracking)
+                # Track consciousness coherence (primary metric)
+                if after_consciousness:
+                    if 'consciousness_coherence_history' not in self.stats:
+                        self.stats['consciousness_coherence_history'] = []
+                    self.stats['consciousness_coherence_history'].append(after_consciousness.coherence)
+                    
+                    # Also track by Lumina
+                    if 'coherence_by_lumina' not in self.stats:
+                        self.stats['coherence_by_lumina'] = {
+                            'ontical': [],
+                            'structural': [],
+                            'participatory': []
+                        }
+                    self.stats['coherence_by_lumina']['ontical'].append(after_consciousness.coherence_ontical)
+                    self.stats['coherence_by_lumina']['structural'].append(after_consciousness.coherence_structural)
+                    self.stats['coherence_by_lumina']['participatory'].append(after_consciousness.coherence_participatory)
+                
+                # Track game state quality (secondary metric)
                 try:
-                    cognitive_state = SkyrimCognitiveState.from_game_state(game_state.to_dict())
+                    cognitive_state = SkyrimCognitiveState.from_game_state(after_state)
                     self.stats['game_state_quality_history'].append(cognitive_state.overall_quality)
                 except Exception:
                     # Fallback if cognitive state computation fails
@@ -1168,6 +1260,29 @@ Based on the terrain type and physical state, select the most appropriate action
         print(f"  Total generated: {meta_stats['total_generated']}")
         print(f"  Current cycle: {meta_stats['current_cycle']}")
         print(f"  Cycles since last: {meta_stats['cycles_since_last']}")
+        
+        # Consciousness bridge stats (NEW)
+        consciousness_stats = self.consciousness_bridge.get_stats()
+        print(f"\n🧠 Consciousness Bridge (Singularis Integration):")
+        print(f"  Total measurements: {consciousness_stats['total_measurements']}")
+        print(f"  Avg coherence 𝒞: {consciousness_stats['avg_coherence']:.3f}")
+        print(f"  Avg consciousness Φ̂: {consciousness_stats['avg_consciousness']:.3f}")
+        print(f"  Coherence trend: {consciousness_stats['trend']}")
+        if 'coherence_by_lumina' in consciousness_stats and consciousness_stats['coherence_by_lumina']:
+            lumina = consciousness_stats['coherence_by_lumina']
+            print(f"  Three Lumina:")
+            print(f"    ℓₒ (Ontical): {lumina['ontical']:.3f}")
+            print(f"    ℓₛ (Structural): {lumina['structural']:.3f}")
+            print(f"    ℓₚ (Participatory): {lumina['participatory']:.3f}")
+        
+        # Show consciousness vs game quality correlation
+        if 'consciousness_coherence_history' in self.stats and self.stats['consciousness_coherence_history']:
+            avg_consciousness_coherence = sum(self.stats['consciousness_coherence_history']) / len(self.stats['consciousness_coherence_history'])
+            avg_game_quality = sum(self.stats['game_state_quality_history']) / len(self.stats['game_state_quality_history']) if self.stats['game_state_quality_history'] else 0
+            print(f"\n  Consciousness 𝒞: {avg_consciousness_coherence:.3f}")
+            print(f"  Game Quality: {avg_game_quality:.3f}")
+            print(f"  Combined Value: {0.6 * avg_consciousness_coherence + 0.4 * avg_game_quality:.3f}")
+            print(f"  (60% consciousness + 40% game = unified evaluation)")
 
     def stop(self):
         """Stop autonomous play."""
