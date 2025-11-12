@@ -1409,20 +1409,29 @@ class SkyrimAGI:
             print(f"[META-STRATEGY] Evaluating layer switches (current: {current_layer})")
             
             # Combat situations - prioritize Combat layer if effective
-            if game_state.in_combat or scene_type == SceneType.COMBAT:
+            # Only engage in combat if there are actually enemies
+            if (game_state.in_combat or scene_type == SceneType.COMBAT) and game_state.enemies_nearby > 0:
                 if current_layer != "Combat":
                     combat_effectiveness = strategic_analysis['layer_effectiveness'].get('Combat', 0.5)
                     if combat_effectiveness > 0.6:
                         optimal_layer = "Combat"
                         print(f"[META-STRATEGY] ✓ Switching to Combat layer (effectiveness: {combat_effectiveness:.2f}, {game_state.enemies_nearby} enemies)")
                 
-                # Choose combat action based on context
+                # Choose combat action based on context - only if enemies present
                 if game_state.enemies_nearby > 2:
-                    return 'power_attack' if 'power_attack' in available_actions else 'combat'
+                    action = 'power_attack' if 'power_attack' in available_actions else 'attack'
+                    if action in available_actions:
+                        print(f"[META-STRATEGY] → {action} (multiple enemies)")
+                        return action
                 elif game_state.health < 50:
-                    return 'block' if 'block' in available_actions else 'combat'
-                else:
-                    return 'combat'
+                    action = 'block' if 'block' in available_actions else 'attack'
+                    if action in available_actions:
+                        print(f"[META-STRATEGY] → {action} (defensive)")
+                        return action
+                elif 'attack' in available_actions:
+                    print(f"[META-STRATEGY] → attack (engage enemy)")
+                    return 'attack'
+                # If no combat actions available, fall through
 
             # Low health - consider Menu layer for healing
             if game_state.health < 30:
