@@ -2533,10 +2533,10 @@ Strongest System: {stats['strongest_system']} ({stats['strongest_weight']:.2f})"
                                 motivation=mot_state,
                                 goal=self.current_goal
                             ),
-                            timeout=11.0  # Max 11s for planning to prevent hangs
+                            timeout=8.0  # Max 8s for planning to prevent hangs
                         )
                 except asyncio.TimeoutError:
-                    print("[REASONING] ⚠️ Planning timed out after 11s, using fallback")
+                    print("[REASONING] ⚠️ Planning timed out after 8s, using fallback")
                     action = None
                 except Exception as e:
                     print(f"[REASONING] ⚠️ Planning error: {e}, using fallback")
@@ -3592,6 +3592,81 @@ REASONING: <explanation>"""
             print(f"[CLOUD-LLM] Error: {e}")
             return None
     
+    async def _claude_background_reasoning(
+        self,
+        perception: Dict[str, Any],
+        state_dict: Dict[str, Any],
+        game_state: Any,
+        scene_type: Any,
+        motivation: Any
+    ) -> None:
+        """
+        Claude runs deep reasoning/sensorimotor analysis in background.
+        Stores insights to memory independently without blocking action planning.
+        """
+        try:
+            print("[CLAUDE-ASYNC] Running deep analysis...")
+            
+            # Build comprehensive reasoning prompt
+            reasoning_prompt = f"""Analyze this Skyrim situation deeply:
+
+Scene: {scene_type.value}
+Location: {game_state.location_name}
+Health: {state_dict.get('health', 100)}% | Stamina: {state_dict.get('stamina', 100)}% | Magicka: {state_dict.get('magicka', 100)}%
+Combat: {state_dict.get('in_combat', False)} | Enemies: {state_dict.get('enemies_nearby', 0)}
+Motivation: {motivation.dominant_drive().value}
+
+Provide strategic insights about:
+1. Current tactical situation
+2. Potential threats and opportunities
+3. Resource management considerations
+4. Recommended strategic approach
+
+Be detailed and thoughtful."""
+
+            # Query Claude with extended thinking
+            reasoning_text = await self.hybrid_llm.generate_reasoning(
+                prompt=reasoning_prompt,
+                system_prompt="You are a strategic advisor for Skyrim gameplay. Provide deep, thoughtful analysis.",
+                temperature=0.7,
+                max_tokens=2048
+            )
+            
+            print(f"[CLAUDE-ASYNC] ✓ Analysis complete ({len(reasoning_text)} chars)")
+            
+            # Store in memory RAG
+            self.memory_rag.store_cognitive_memory(
+                situation={
+                    'type': 'claude_strategic_analysis',
+                    'scene': scene_type.value,
+                    'location': game_state.location_name,
+                    'health': state_dict.get('health', 100),
+                    'in_combat': state_dict.get('in_combat', False)
+                },
+                action_taken='background_reasoning',
+                outcome={'analysis_length': len(reasoning_text)},
+                success=True,
+                reasoning=reasoning_text
+            )
+            
+            # Hebbian: Record Claude contribution
+            self.hebbian.record_activation(
+                system_name='claude_background_reasoning',
+                success=True,
+                contribution_strength=0.8,
+                context={'stored_to_memory': True}
+            )
+            
+            print("[CLAUDE-ASYNC] ✓ Stored to memory")
+            
+        except Exception as e:
+            print(f"[CLAUDE-ASYNC] Error: {e}")
+            self.hebbian.record_activation(
+                system_name='claude_background_reasoning',
+                success=False,
+                contribution_strength=0.3
+            )
+    
     async def _dialectical_reasoning(
         self,
         situation: str,
@@ -3840,31 +3915,49 @@ COHERENCE GAIN: <estimate 0.0-1.0 how much this increases understanding>
                             self.stats['gemini_stuck_detections'] = self.stats.get('gemini_stuck_detections', 0) + 1
                             return 'sneak'
                 
-                # Try cloud LLM system every cycle for maximum intelligence
-                # Always use cloud LLMs (Gemini + Claude)
-                use_cloud_llm = True  # Every cycle now!
-                
-                # Start cloud LLM query in background (non-blocking)
-                cloud_task = None
-                if use_cloud_llm:
-                    # Use full MoE+Hybrid only in critical situations
-                    is_critical = (
-                        game_state.health < 30 or
-                        game_state.enemies_nearby > 3 or
-                        (game_state.in_combat and game_state.health < 60)
-                    )
+                # Gemini MoE: Fast action selection with 6 Gemini Flash experts (participates in race)
+                gemini_moe_task = None
+                if self.moe and hasattr(self.moe, 'gemini_experts') and len(self.moe.gemini_experts) > 0:
+                    print(f"[GEMINI-MOE] Starting {len(self.moe.gemini_experts)} Gemini Flash experts for fast action selection...")
                     
-                    print(f"[CLOUD-LLM] Starting cloud query in background...")
-                    cloud_task = asyncio.create_task(
-                        self._get_cloud_llm_action_recommendation(
-                            perception=perception,
-                            state_dict=state_dict,
-                            q_values=q_values,
-                            available_actions=available_actions,
-                            motivation=motivation,
-                            use_full_moe=is_critical
+                    # Build prompt for Gemini experts
+                    vision_prompt = f"""Analyze this Skyrim gameplay:
+Scene: {perception.get('scene_type', 'unknown')}
+Health: {state_dict.get('health', 100)}%
+In Combat: {state_dict.get('in_combat', False)}
+Enemies: {state_dict.get('enemies_nearby', 0)}
+
+What do you see and recommend?"""
+                    
+                    reasoning_prompt = f"""Recommend ONE action:
+Available: {', '.join(available_actions)}
+Top Q-values: {', '.join(f'{k}={v:.2f}' for k, v in sorted(q_values.items(), key=lambda x: x[1], reverse=True)[:3])}
+
+Format: ACTION: <action_name>"""
+                    
+                    gemini_moe_task = asyncio.create_task(
+                        self.moe.query_all_experts(
+                            vision_prompt=vision_prompt,
+                            reasoning_prompt=reasoning_prompt,
+                            image=perception.get('screenshot'),
+                            context=state_dict
                         )
                     )
+                
+                # Claude: Deep reasoning/sensorimotor (async background, stores to memory)
+                claude_reasoning_task = None
+                if self.hybrid_llm and hasattr(self.hybrid_llm, 'claude'):
+                    print(f"[CLAUDE-ASYNC] Starting Claude reasoning in background (non-blocking)...")
+                    claude_reasoning_task = asyncio.create_task(
+                        self._claude_background_reasoning(
+                            perception=perception,
+                            state_dict=state_dict,
+                            game_state=game_state,
+                            scene_type=scene_type,
+                            motivation=motivation
+                        )
+                    )
+                    # Don't await - let it run independently and store to memory
                 
                 # Fallback: Start Local MoE in background (4x Qwen3-VL + Phi-4)
                 local_moe_task = None
@@ -4067,11 +4160,11 @@ COHERENCE GAIN: <estimate 0.0-1.0 how much this increases understanding>
                         )
                     )
                     
-                    # Race: Phi-4 vs Cloud LLM vs Local MoE (whichever finishes first)
+                    # Race: Phi-4 vs Gemini MoE vs Local MoE (whichever finishes first)
                     # Timeout after 10 seconds - use fastest response for smooth gameplay
                     tasks_to_race = [phi4_task]
-                    if cloud_task:
-                        tasks_to_race.append(cloud_task)
+                    if gemini_moe_task:
+                        tasks_to_race.append(gemini_moe_task)
                     if local_moe_task:
                         tasks_to_race.append(local_moe_task)
                     
@@ -4086,34 +4179,42 @@ COHERENCE GAIN: <estimate 0.0-1.0 how much this increases understanding>
                             
                             # Check which one finished first
                             for task in done:
-                                if task == cloud_task:
-                                    cloud_recommendation = task.result()
-                                    if cloud_recommendation:
-                                        action, reasoning = cloud_recommendation
-                                        print(f"[CLOUD-LLM] ✓ Won the race! Using: {action}")
-                                        self.cloud_llm_failures = 0  # Reset on success
-                                        
-                                        # Hebbian: Record successful cloud LLM activation
-                                        self.hebbian.record_activation(
-                                            system_name='cloud_llm_hybrid',
-                                            success=True,
-                                            contribution_strength=1.0,
-                                            context={'action': action, 'won_race': True}
-                                        )
-                                        
-                                        # Cancel other tasks
-                                        for t in pending:
-                                            t.cancel()
-                                        return action
-                                    else:
-                                        self.cloud_llm_failures += 1
-                                        print(f"[CLOUD-LLM] ⚠️ Returned None (failures: {self.cloud_llm_failures}/{self.max_consecutive_failures})")
-                                        # Hebbian: Record failure
-                                        self.hebbian.record_activation(
-                                            system_name='cloud_llm_hybrid',
-                                            success=False,
-                                            contribution_strength=0.5
-                                        )
+                                if task == gemini_moe_task:
+                                    try:
+                                        vision_resp, reasoning_resp = task.result()
+                                        if reasoning_resp and reasoning_resp.consensus:
+                                            # Parse action from consensus
+                                            consensus_text = reasoning_resp.consensus
+                                            action = None
+                                            if "ACTION:" in consensus_text:
+                                                action_line = [l for l in consensus_text.split('\n') if 'ACTION:' in l][0]
+                                                action = action_line.split('ACTION:')[1].strip().lower()
+                                            
+                                            if action and action in available_actions:
+                                                print(f"[GEMINI-MOE] ✓ Won the race! {len(self.moe.gemini_experts)} experts chose: {action}")
+                                                
+                                                # Hebbian: Record successful Gemini MoE activation
+                                                self.hebbian.record_activation(
+                                                    system_name='gemini_moe',
+                                                    success=True,
+                                                    contribution_strength=1.0,
+                                                    context={'action': action, 'won_race': True, 'experts': len(self.moe.gemini_experts)}
+                                                )
+                                                
+                                                # Cancel other tasks (but NOT Claude - let it finish in background)
+                                                for t in pending:
+                                                    if t != claude_reasoning_task:
+                                                        t.cancel()
+                                                return action
+                                    except Exception as e:
+                                        print(f"[GEMINI-MOE] ⚠️ Error parsing result: {e}")
+                                    
+                                    # Hebbian: Record failure
+                                    self.hebbian.record_activation(
+                                        system_name='gemini_moe',
+                                        success=False,
+                                        contribution_strength=0.5
+                                    )
                                 elif task == local_moe_task:
                                     moe_recommendation = task.result()
                                     if moe_recommendation:
