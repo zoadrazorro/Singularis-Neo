@@ -252,6 +252,32 @@ class ExpertLLMInterface:
         """
         self.client = client
     
+    async def generate(
+        self,
+        prompt: str,
+        system_prompt: Optional[str] = None,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """
+        Direct generation method (convenience wrapper for client.generate).
+        
+        Args:
+            prompt: User prompt
+            system_prompt: Optional system prompt
+            temperature: Optional temperature
+            max_tokens: Optional max tokens
+            
+        Returns:
+            Dict with 'content', 'tokens', etc.
+        """
+        return await self.client.generate(
+            prompt=prompt,
+            system_prompt=system_prompt,
+            temperature=temperature,
+            max_tokens=max_tokens
+        )
+    
     async def expert_query(
         self,
         expert_name: str,
