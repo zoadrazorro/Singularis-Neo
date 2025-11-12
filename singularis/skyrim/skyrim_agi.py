@@ -1522,6 +1522,28 @@ class SkyrimAGI:
                 print("[SENSORIMOTOR] ⚠️ Claude Sonnet 4.5 not available")
                 self.sensorimotor_llm = None
         
+        # Initialize Hebbian Integration System
+        from singularis.skyrim.hebbian_integration import HebbianIntegrator
+        self.hebbian = HebbianIntegrator(
+            temporal_window=30.0,  # 30 second window for co-activation
+            learning_rate=0.1,
+            decay_rate=0.01
+        )
+        print("[HEBBIAN] ✓ Integration system initialized: 'Neurons that fire together, wire together'")
+        
+        # Initialize MAIN BRAIN (GPT-4o synthesis)
+        from singularis.llm.openai_client import OpenAIClient
+        from singularis.skyrim.main_brain import MainBrain
+        
+        self.openai_client = OpenAIClient(model="gpt-4o", timeout=120)
+        self.main_brain = MainBrain(openai_client=self.openai_client)
+        
+        if self.openai_client.is_available():
+            print(f"[MAIN BRAIN] 🧠 Initialized - Session: {self.main_brain.session_id}")
+            print(f"[MAIN BRAIN] GPT-4o will synthesize all outputs into session report")
+        else:
+            print("[MAIN BRAIN] ⚠️ OpenAI API key not found - fallback mode only")
+        
         # Initialize LLM semaphore for resource management
         self.llm_semaphore = asyncio.Semaphore(self.config.max_concurrent_llm_calls)
 
@@ -1545,6 +1567,22 @@ class SkyrimAGI:
             print("AUTONOMOUS GAMEPLAY COMPLETE")
             print(f"{'=' * 60}")
             self._print_final_stats()
+            
+            # Generate Main Brain session report
+            print(f"\n{'=' * 60}")
+            print("GENERATING SESSION REPORT")
+            print(f"{'=' * 60}")
+            try:
+                import asyncio
+                loop = asyncio.get_event_loop()
+                report_path = loop.run_until_complete(
+                    self.main_brain.generate_session_markdown()
+                )
+                print(f"\n[MAIN BRAIN] 🧠✨ Session report generated!")
+                print(f"[MAIN BRAIN] 📄 Location: {report_path}")
+                print(f"[MAIN BRAIN] 🎯 Session ID: {self.main_brain.session_id}")
+            except Exception as e:
+                print(f"[MAIN BRAIN] ⚠️ Failed to generate report: {e}")
 
     async def _autonomous_play_async(self, duration_seconds: int, start_time: float):
         """
@@ -2187,12 +2225,62 @@ EXTENDED THINKING PROCESS:
                         
                         print("[SENSORIMOTOR] ✓ Stored in RAG memory (with visual learning from Gemini & Local)")
                         
+                        # Hebbian: Record successful sensorimotor reasoning
+                        contribution = 1.0 if (gemini_visual and local_visual and thinking) else 0.7
+                        self.hebbian.record_activation(
+                            system_name='sensorimotor_claude45',
+                            success=True,
+                            contribution_strength=contribution,
+                            context={'has_visual': bool(visual_analysis), 'has_thinking': bool(thinking)}
+                        )
+                        
+                        # Main Brain: Record sensorimotor output
+                        self.main_brain.record_output(
+                            system_name='Sensorimotor Claude 4.5',
+                            content=f"Visual Analysis:\n{visual_analysis[:200]}...\n\nSpatial Reasoning:\n{analysis[:300]}...",
+                            metadata={
+                                'has_gemini': bool(gemini_visual),
+                                'has_local': bool(local_visual),
+                                'has_thinking': bool(thinking),
+                                'cycle': cycle_count
+                            },
+                            success=True
+                        )
+                        
+                        # If Gemini provided visual, record its contribution
+                        if gemini_visual:
+                            self.hebbian.record_activation(
+                                system_name='gemini_vision',
+                                success=True,
+                                contribution_strength=0.8,
+                                context={'purpose': 'sensorimotor_visual'}
+                            )
+                        
+                        # If Local vision provided analysis, record it
+                        if local_visual:
+                            self.hebbian.record_activation(
+                                system_name='local_vision_qwen',
+                                success=True,
+                                contribution_strength=0.7,
+                                context={'purpose': 'sensorimotor_visual'}
+                            )
+                        
                     except asyncio.TimeoutError:
                         print("[SENSORIMOTOR] Timed out after 90s")
+                        self.hebbian.record_activation(
+                            system_name='sensorimotor_claude45',
+                            success=False,
+                            contribution_strength=0.3
+                        )
                     except Exception as e:
                         print(f"[SENSORIMOTOR] Error: {e}")
                         import traceback
                         traceback.print_exc()
+                        self.hebbian.record_activation(
+                            system_name='sensorimotor_claude45',
+                            success=False,
+                            contribution_strength=0.2
+                        )
                     
                     print("="*70 + "\n")
                 
@@ -2324,12 +2412,73 @@ Be concise but insightful. Focus on what Singularis might have missed."""
                         
                         print("="*70 + "\n")
                         
+                        # Hebbian: Record successful Singularis dialectical reasoning
+                        self.hebbian.record_activation(
+                            system_name='singularis_orchestrator',
+                            success=True,
+                            contribution_strength=1.0,
+                            context={'with_claude_meta': True}
+                        )
+                        
+                        # Huihui contributed successfully
+                        self.hebbian.record_activation(
+                            system_name='huihui_dialectical',
+                            success=True,
+                            contribution_strength=0.9,
+                            context={'purpose': 'singularis'}
+                        )
+                        
+                        # Main Brain: Record Singularis orchestrator output
+                        self.main_brain.record_output(
+                            system_name='Singularis Orchestrator',
+                            content=f"Dialectical Strategy:\n{singularis_result.get('analysis', '')[:400]}...",
+                            metadata={
+                                'has_claude_meta': True,
+                                'cycle': cycle_count
+                            },
+                            success=True
+                        )
+                        
                     except asyncio.TimeoutError:
                         print("[SINGULARIS] Full orchestrator timed out after 90s")
+                        self.hebbian.record_activation(
+                            system_name='singularis_orchestrator',
+                            success=False,
+                            contribution_strength=0.3
+                        )
                     except Exception as e:
                         print(f"[SINGULARIS] Error in full orchestrator: {e}")
                         import traceback
                         traceback.print_exc()
+                        self.hebbian.record_activation(
+                            system_name='singularis_orchestrator',
+                            success=False,
+                            contribution_strength=0.2
+                        )
+                
+                # Hebbian Integration Status - Print every 30 cycles
+                if cycle_count % 30 == 0 and cycle_count > 0:
+                    self.hebbian.print_status()
+                    
+                    # Apply synaptic decay
+                    self.hebbian.apply_hebbian_decay()
+                    
+                    # Main Brain: Record Hebbian status
+                    stats = self.hebbian.get_statistics()
+                    synergies = self.hebbian.get_synergistic_pairs(threshold=1.0)
+                    
+                    hebbian_summary = f"""Success Rate: {stats['success_rate']:.1%}
+Top Synergistic Pairs:
+{chr(10).join(f'  {a} ↔ {b}: {s:.2f}' for a, b, s in synergies[:3])}
+
+Strongest System: {stats['strongest_system']} ({stats['strongest_weight']:.2f})"""
+                    
+                    self.main_brain.record_output(
+                        system_name='Hebbian Integration',
+                        content=hebbian_summary,
+                        metadata=stats,
+                        success=True
+                    )
                 
                 # Plan action (with LLM throttling and timeout protection)
                 planning_start = time.time()
@@ -2407,6 +2556,21 @@ Be concise but insightful. Focus on what Singularis might have missed."""
                 self.last_successful_action = action
                 
                 print(f"[REASONING] Planned action: {action} ({planning_duration:.3f}s)")
+                
+                # Main Brain: Increment cycle and record action decision
+                self.main_brain.increment_cycle()
+                
+                if cycle_count % 5 == 0:  # Record every 5th action to avoid spam
+                    self.main_brain.record_output(
+                        system_name='Action Planning',
+                        content=f"Cycle {cycle_count}: {action}",
+                        metadata={
+                            'planning_time': planning_duration,
+                            'scene': scene_type.value,
+                            'coherence': self.current_consciousness.coherence if self.current_consciousness else 0
+                        },
+                        success=True
+                    )
                 
                 # Queue action for execution (non-blocking)
                 try:
@@ -3879,6 +4043,15 @@ COHERENCE GAIN: <estimate 0.0-1.0 how much this increases understanding>
                                         action, reasoning = cloud_recommendation
                                         print(f"[CLOUD-LLM] ✓ Won the race! Using: {action}")
                                         self.cloud_llm_failures = 0  # Reset on success
+                                        
+                                        # Hebbian: Record successful cloud LLM activation
+                                        self.hebbian.record_activation(
+                                            system_name='cloud_llm_hybrid',
+                                            success=True,
+                                            contribution_strength=1.0,
+                                            context={'action': action, 'won_race': True}
+                                        )
+                                        
                                         # Cancel other tasks
                                         for t in pending:
                                             t.cancel()
@@ -3886,12 +4059,27 @@ COHERENCE GAIN: <estimate 0.0-1.0 how much this increases understanding>
                                     else:
                                         self.cloud_llm_failures += 1
                                         print(f"[CLOUD-LLM] ⚠️ Returned None (failures: {self.cloud_llm_failures}/{self.max_consecutive_failures})")
+                                        # Hebbian: Record failure
+                                        self.hebbian.record_activation(
+                                            system_name='cloud_llm_hybrid',
+                                            success=False,
+                                            contribution_strength=0.5
+                                        )
                                 elif task == local_moe_task:
                                     moe_recommendation = task.result()
                                     if moe_recommendation:
                                         action, reasoning = moe_recommendation
                                         print(f"[LOCAL-MOE] ✓ Won the race! Using: {action}")
                                         self.local_moe_failures = 0  # Reset on success
+                                        
+                                        # Hebbian: Record successful local MoE activation
+                                        self.hebbian.record_activation(
+                                            system_name='local_moe',
+                                            success=True,
+                                            contribution_strength=0.9,  # Slightly lower than cloud
+                                            context={'action': action, 'won_race': True}
+                                        )
+                                        
                                         # Cancel other tasks
                                         for t in pending:
                                             t.cancel()
@@ -3899,11 +4087,26 @@ COHERENCE GAIN: <estimate 0.0-1.0 how much this increases understanding>
                                     else:
                                         self.local_moe_failures += 1
                                         print(f"[LOCAL-MOE] ⚠️ Returned None (failures: {self.local_moe_failures}/{self.max_consecutive_failures})")
+                                        # Hebbian: Record failure
+                                        self.hebbian.record_activation(
+                                            system_name='local_moe',
+                                            success=False,
+                                            contribution_strength=0.5
+                                        )
                                 elif task == phi4_task:
                                     llm_action = task.result()
                                     if llm_action:
                                         print(f"[PHI4] ✓ Won the race! Using: {llm_action}")
                                         self.stats['llm_action_count'] += 1
+                                        
+                                        # Hebbian: Record successful Phi-4 activation
+                                        self.hebbian.record_activation(
+                                            system_name='phi4_planner',
+                                            success=True,
+                                            contribution_strength=0.8,
+                                            context={'action': llm_action, 'won_race': True}
+                                        )
+                                        
                                         # Cancel other tasks
                                         for t in pending:
                                             t.cancel()

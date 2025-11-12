@@ -20,6 +20,104 @@ The Skyrim AGI implements a sophisticated multi-tier reasoning architecture comb
 
 ---
 
+## MAIN BRAIN - Meta-Level Synthesis ⭐ NEW
+
+### GPT-4o Session Report Generation
+
+**Purpose:** Synthesizes all AGI subsystem outputs into coherent session reports
+
+**Model:** GPT-4o (OpenAI)
+
+**Features:**
+- Collects outputs from all subsystems
+- Generates unique session ID with timestamp
+- Synthesizes comprehensive markdown reports
+- Tracks system activations and success rates
+- Auto-saves at session end
+
+**Output Format:**
+```
+sessions/skyrim_agi_20241112_153000_a1b2c3d4.md
+```
+
+**Report Sections:**
+1. **Session Metadata** - ID, timestamps, duration, cycles
+2. **GPT-4o Synthesis** - Coherent narrative of session
+3. **System Activation Summary** - Table with success rates
+4. **Detailed System Outputs** - Last 5 outputs per system
+
+**Collected Systems:**
+- Sensorimotor Claude 4.5
+- Singularis Orchestrator
+- Hebbian Integration
+- Action Planning
+- (All major subsystems)
+
+**Synthesis Prompt:**
+- Key patterns across systems
+- System integration effectiveness
+- Notable behaviors and adaptations
+- Performance analysis
+- Strategic recommendations
+
+---
+
+## Hebbian Integration System ⭐ NEW
+
+### "Neurons that Fire Together, Wire Together"
+
+**Purpose:** Learn which AGI systems work well together and strengthen those connections
+
+**Tracked Systems:**
+- Cloud LLM (Gemini + Claude Hybrid)
+- Local MoE (4x Qwen3-VL + Phi-4)
+- Phi-4 Planner
+- Sensorimotor Reasoning (Claude 4.5)
+- Gemini Vision
+- Local Vision (Qwen3-VL)
+- Singularis Orchestrator
+- Huihui Dialectical Reasoning
+
+**Key Features:**
+1. **Temporal Co-activation:** Tracks systems active within 30-second window
+2. **Success Reinforcement:** Systems that succeed together get stronger connections
+3. **Failure Weakening:** Failed co-activations reduce correlation strength
+4. **Adaptive Weights:** Each system's importance learned from experience
+5. **Synaptic Decay:** Unused connections gradually weaken (prevents overfitting)
+
+**Learning Rules:**
+```python
+# Success: Δ correlation = learning_rate × recency × strength_product
+# Failure: Δ correlation = -learning_rate × 0.3
+# Decay: correlation *= (1 - decay_rate) every 30 cycles
+```
+
+**Status Reporting:** Every 30 cycles
+- Total activations & success rate
+- Strongest system (highest weight)
+- Top synergistic pairs (systems that work well together)
+- System importance weights
+
+**Example Output:**
+```
+HEBBIAN INTEGRATION STATUS
+Total Activations: 245
+Successful Integrations: 198
+Success Rate: 80.8%
+
+Top Synergistic System Pairs:
+  1. sensorimotor_claude45 ↔ gemini_vision: 1.85
+  2. cloud_llm_hybrid ↔ phi4_planner: 1.62
+  3. singularis_orchestrator ↔ huihui_dialectical: 1.58
+
+System Importance Weights:
+  cloud_llm_hybrid: 1.45
+  sensorimotor_claude45: 1.38
+  gemini_vision: 1.25
+```
+
+---
+
 ## LLM Architecture
 
 ### Specialized Reasoning Systems
