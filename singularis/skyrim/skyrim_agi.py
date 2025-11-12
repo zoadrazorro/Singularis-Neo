@@ -457,7 +457,7 @@ class SkyrimAGI:
             print("[PHI4-ACTION] ✓ Action planning LLM initialized")
             
             # Connect to action affordance system
-            if hasattr(self.action_affordances, 'set_planning_llm'):
+            if hasattr(self, 'action_affordances') and hasattr(self.action_affordances, 'set_planning_llm'):
                 self.action_affordances.set_planning_llm(self.action_planning_llm)
                 print("[PHI4-ACTION] ✓ Connected to action affordance system")
             
@@ -613,6 +613,30 @@ class SkyrimAGI:
                 
                 # Only perceive if queue has space
                 perception = await self.perception.perceive()
+                
+                # Enhance perception with Qwen3-VL if available
+                if self.perception_llm and cycle_count % 3 == 0:  # Every 3rd cycle for performance
+                    try:
+                        # Get visual analysis from Qwen3-VL
+                        visual_prompt = f"""Analyze this Skyrim scene:
+- Scene type: {perception.get('scene_type', 'unknown')}
+- Location: {perception.get('game_state', {}).get('location_name', 'unknown')}
+- Health: {perception.get('game_state', {}).get('health', 100):.0f}/100
+- In combat: {perception.get('game_state', {}).get('in_combat', False)}
+
+Provide: 1) What you see, 2) Spatial layout, 3) Threats/opportunities, 4) Recommended focus"""
+                        
+                        visual_analysis = await self.perception_llm.generate(
+                            prompt=visual_prompt,
+                            max_tokens=256
+                        )
+                        perception['visual_analysis'] = visual_analysis.get('content', '')
+                        if cycle_count % 9 == 0:  # Log occasionally
+                            print(f"[QWEN3-VL] Visual analysis: {visual_analysis.get('content', '')[:100]}...")
+                    except Exception as e:
+                        if cycle_count % 30 == 0:  # Log errors occasionally
+                            print(f"[QWEN3-VL] Visual analysis failed: {e}")
+                
                 self.current_perception = perception
                 
                 # Queue perception for reasoning (should succeed since we checked above)
@@ -1324,16 +1348,16 @@ class SkyrimAGI:
             # Check if we should force variety (prevent RL dominance)
             force_variety = self.consecutive_same_action >= 6  # Force variety after 6 same actions
             
-            # ALSO: Randomly force variety 30% of the time to prevent RL monopoly
-            if random.random() < 0.3:
-                force_variety = True
+            # Inject variety: Sometimes use heuristics even with RL to explore
+            use_rl = random.random() > 0.1  # 90% RL, 10% heuristics for variety
+            if not use_rl:
                 print(f"[VARIETY] Random variety injection - using heuristics instead of RL")
             
             if force_variety and self.consecutive_same_action >= 6:
                 print(f"[VARIETY] Forcing variety after {self.consecutive_same_action}x '{self.last_executed_action}' - skipping RL")
             
             # Use RL-based action selection if enabled (but not if forcing variety)
-            if self.rl_learner is not None and not force_variety:
+            if self.rl_learner is not None and use_rl:
                 print("[PLANNING] Using RL-based action selection with LLM reasoning...")
                 print(f"[PLANNING] RL reasoning neuron LLM status: {'Connected' if self.rl_reasoning_neuron.llm_interface else 'Using heuristics'}")
                 
@@ -1409,7 +1433,7 @@ class SkyrimAGI:
                     combat_effectiveness = strategic_analysis['layer_effectiveness'].get('Combat', 0.5)
                     if combat_effectiveness > 0.6:
                         optimal_layer = "Combat"
-                        print(f"[META-STRATEGY] ✓ Switching to Combat layer (effectiveness: {combat_effectiveness:.2f}, {game_state.enemies_nearby} enemies)")
+                        print(f"[META-STRATEGY] Switching to Combat layer (effectiveness: {combat_effectiveness:.2f}, {game_state.enemies_nearby} enemies)")
                 
                 # Choose combat action based on context - only if enemies present
                 if game_state.enemies_nearby > 2:
@@ -1433,7 +1457,7 @@ class SkyrimAGI:
                     menu_effectiveness = strategic_analysis['layer_effectiveness'].get('Menu', 0.5)
                     if menu_effectiveness > 0.5:
                         optimal_layer = "Menu"
-                        print(f"[META-STRATEGY] ✓ Switching to Menu layer for healing (health: {game_state.health:.0f})")
+                        print(f"[META-STRATEGY] Switching to Menu layer for healing (health: {game_state.health:.0f})")
             
                 if 'consume_item' in available_actions:
                     print(f"[META-STRATEGY] → Action: consume_item (critical health: {game_state.health:.0f})")
@@ -1449,7 +1473,7 @@ class SkyrimAGI:
                 stealth_effectiveness = strategic_analysis['layer_effectiveness'].get('Stealth', 0.5)
                 if stealth_effectiveness > 0.6 and current_layer != "Stealth":
                     optimal_layer = "Stealth"
-                    print(f"[META-STRATEGY] ✓ Switching to Stealth layer (effectiveness: {stealth_effectiveness:.2f}, {len(game_state.nearby_npcs)} NPCs nearby)")
+                    print(f"[META-STRATEGY] Switching to Stealth layer (effectiveness: {stealth_effectiveness:.2f}, {len(game_state.nearby_npcs)} NPCs nearby)")
 
             # If we determined an optimal layer, suggest layer transition
             if optimal_layer and optimal_layer != current_layer:
@@ -1459,29 +1483,26 @@ class SkyrimAGI:
             elif optimal_layer:
                 print(f"[META-STRATEGY] Already in optimal layer: {current_layer}")
 
-            # Try LLM-based planning if available, otherwise use heuristics
-            has_attr = hasattr(self.agi, 'consciousness_llm')
-            has_llm = has_attr and self.agi.consciousness_llm is not None
-            
-            if has_llm:
-                print("[PLANNING] Using LLM-based strategic planning...")
+            # Always use Phi-4 for action planning (fast, decisive)
+            if self.action_planning_llm:
+                print("[PLANNING] Using Phi-4 for action planning...")
                 try:
                     llm_action = await self._plan_action_with_llm(
                         perception, game_state, scene_type, current_layer, available_actions, 
                         strategic_analysis, motivation
                     )
                     if llm_action:
-                        print(f"[LLM] Selected action: {llm_action}")
+                        print(f"[PHI4] Selected action: {llm_action}")
                         self.stats['llm_action_count'] += 1
                         return llm_action
                     else:
-                        print("[LLM] LLM returned None, falling back to heuristics")
+                        print("[PHI4] Phi-4 returned None, falling back to heuristics")
                 except Exception as e:
-                    print(f"[LLM] Planning failed: {e}, using heuristics")
+                    print(f"[PHI4] Planning failed: {e}, using heuristics")
                     import traceback
                     traceback.print_exc()
             else:
-                print("[PLANNING] LLM not available, using heuristic planning...")
+                print("[PLANNING] Phi-4 not available, using heuristic planning...")
             
             # Track heuristic usage
             self.stats['heuristic_action_count'] += 1
