@@ -2079,14 +2079,26 @@ Be concise but insightful. Focus on what Singularis might have missed."""
                         import traceback
                         traceback.print_exc()
                 
-                # Plan action (with LLM throttling)
+                # Plan action (with LLM throttling and timeout protection)
                 planning_start = time.time()
-                async with self.llm_semaphore:
-                    action = await self._plan_action(
-                        perception=perception,
-                        motivation=mot_state,
-                        goal=self.current_goal
-                    )
+                action = None
+                try:
+                    async with self.llm_semaphore:
+                        action = await asyncio.wait_for(
+                            self._plan_action(
+                                perception=perception,
+                                motivation=mot_state,
+                                goal=self.current_goal
+                            ),
+                            timeout=30.0  # Max 30s for planning to prevent hangs
+                        )
+                except asyncio.TimeoutError:
+                    print("[REASONING] ⚠️ Planning timed out after 30s, using fallback")
+                    action = None
+                except Exception as e:
+                    print(f"[REASONING] ⚠️ Planning error: {e}, using fallback")
+                    action = None
+                
                 planning_duration = time.time() - planning_start
                 self.stats['planning_times'].append(planning_duration)
                 
@@ -3593,11 +3605,11 @@ COHERENCE GAIN: <estimate 0.0-1.0 how much this increases understanding>
                             
                             # Timeout - cancel pending tasks and use heuristic
                             if pending:
-                                print(f"[PARALLEL] ⏱️ Timeout after 5s, using heuristic")
+                                print(f"[PARALLEL] ⏱️ Timeout after 10s, using heuristic (cancelled {len(pending)} pending tasks)")
                                 for task in pending:
                                     task.cancel()
                         except asyncio.TimeoutError:
-                            print(f"[PARALLEL] ⏱️ Timeout, using heuristic")
+                            print(f"[PARALLEL] ⏱️ Timeout after 10s, using heuristic")
                             for task in tasks_to_race:
                                 task.cancel()
                     else:
