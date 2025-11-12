@@ -2227,7 +2227,22 @@ Local Vision Model Analysis:
                         
                         # Store in dedicated RAG memory with visual learning
                         self.memory_rag.store_cognitive_memory(
-                            thought=f"""SENSORIMOTOR & GEOSPATIAL ANALYSIS:
+                            situation={
+                                'type': 'sensorimotor_geospatial',
+                                'location': game_state.location_name,
+                                'terrain': perception.get('terrain_type', 'unknown'),
+                                'scene': scene_type.value,
+                                'cycle': cycle_count,
+                                'repeated_action': self.last_successful_action,
+                                'repeat_count': self.repeated_action_count,
+                                'has_gemini_visual': bool(gemini_visual),
+                                'has_claude_analysis': bool(analysis),
+                                'has_extended_thinking': bool(thinking)
+                            },
+                            action_taken='sensorimotor_analysis',
+                            outcome={'analysis_length': len(analysis), 'thinking_length': len(thinking) if thinking else 0},
+                            success=True,
+                            reasoning=f"""SENSORIMOTOR & GEOSPATIAL ANALYSIS:
 
 VISUAL LEARNING (from Gemini & Local Models):
 {visual_analysis}
@@ -2237,19 +2252,7 @@ CLAUDE SONNET 4.5 ANALYSIS:
 
 EXTENDED THINKING PROCESS:
 {thinking}
-""",
-                            context={
-                                'type': 'sensorimotor_geospatial',
-                                'location': game_state.location_name,
-                                'terrain': perception.get('terrain_type', 'unknown'),
-                                'scene': scene_type.value,
-                                'cycle': cycle_count,
-                                'repeated_action': self.last_successful_action,
-                                'repeat_count': self.repeated_action_count,
-                                'has_gemini_visual': bool(gemini_visual),
-                                'has_local_visual': bool(local_visual),
-                                'visual_similarity': visual_similarity_info
-                            }
+"""
                         )
                         
                         print("[SENSORIMOTOR] ✓ Stored in RAG memory (with visual learning from Gemini & Local)")
@@ -2425,13 +2428,16 @@ Be concise but insightful. Focus on what Singularis might have missed."""
                                 
                                 # Store Claude's meta-analysis
                                 self.memory_rag.store_cognitive_memory(
-                                    thought=f"CLAUDE META-ANALYSIS:\n{claude_response}",
-                                    context={
+                                    situation={
                                         'type': 'claude_meta_strategy',
                                         'based_on_singularis': True,
                                         'location': game_state.location_name,
                                         'cycle': cycle_count
-                                    }
+                                    },
+                                    action_taken='meta_analysis',
+                                    outcome={'response_length': len(claude_response)},
+                                    success=True,
+                                    reasoning=f"CLAUDE META-ANALYSIS:\n{claude_response}"
                                 )
                                 
                             except asyncio.TimeoutError:
