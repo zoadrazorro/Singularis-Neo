@@ -634,7 +634,12 @@ class SkyrimAGI:
                 perception = await self.perception.perceive()
                 
                 # Enhance perception with Qwen3-VL using CLIP data (not raw images)
-                if self.perception_llm and cycle_count % 5 == 0:  # Every 5th cycle for efficiency
+                # Debug: Check if Qwen3-VL is available
+                if cycle_count % 2 == 0:
+                    if not self.perception_llm:
+                        print(f"[QWEN3-VL] Cycle {cycle_count}: perception_llm is None - not initialized")
+                
+                if self.perception_llm and cycle_count % 2 == 0:  # Every 2nd cycle for faster analysis
                     try:
                         game_state = perception.get('game_state')
                         scene_type = perception.get('scene_type', 'unknown')
