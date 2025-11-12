@@ -250,22 +250,26 @@ class SkyrimAGI:
         else:
             print("[LLM] ⚠️ LLM consciousness engine is None - RL reasoning will use heuristics")
         
-        # Initialize separate Mistral LLM for meta-strategist
+        # Initialize Eva-Qwen2.5-14B LLM for meta-strategist (instructor)
+        # This is the "instructor" that provides verbose strategic guidance
         try:
-            print("\n[META-LLM] Initializing Mistral-7B for meta-strategic reasoning...")
-            mistral_config = LMStudioConfig(
-                base_url=self.config.lm_studio_url,
-                model_name='mistralai/mistral-7b-instruct-v0.3'
+            print("\n[INSTRUCTOR-LLM] Initializing Eva-Qwen2.5-14B for strategic instruction generation...")
+            instructor_config = LMStudioConfig(
+                base_url=self.config.base_config.lm_studio_url,
+                model_name='eva-qwen2.5-14b-v0.2',
+                temperature=0.8,  # Higher temperature for creative strategic thinking
+                max_tokens=4096   # Increased for verbose, detailed instructions
             )
-            mistral_client = LMStudioClient(mistral_config)
-            mistral_interface = ExpertLLMInterface(mistral_client)
+            instructor_client = LMStudioClient(instructor_config)
+            instructor_interface = ExpertLLMInterface(instructor_client)
             
-            self.meta_strategist.llm_interface = mistral_interface
-            print("[META-LLM] ✓ Meta-strategist connected to Mistral-7B")
-            print(f"[META-LLM] Model: {mistral_config.model_name}")
+            self.meta_strategist.llm_interface = instructor_interface
+            print("[INSTRUCTOR-LLM] ✓ Meta-strategist connected to Eva-Qwen2.5-14B")
+            print(f"[INSTRUCTOR-LLM] Model: {instructor_config.model_name}")
+            print(f"[INSTRUCTOR-LLM] Max tokens: {instructor_config.max_tokens} (verbose instructions enabled)")
         except Exception as e:
-            print(f"[META-LLM] ⚠️ Mistral initialization failed: {e}")
-            print("[META-LLM] Meta-strategist will use heuristic strategies")
+            print(f"[INSTRUCTOR-LLM] ⚠️ Eva-Qwen2.5-14B initialization failed: {e}")
+            print("[INSTRUCTOR-LLM] Meta-strategist will use heuristic strategies")
 
     async def autonomous_play(self, duration_seconds: Optional[int] = None):
         """

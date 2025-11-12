@@ -49,14 +49,19 @@ python -c "import pyautogui; print('✓ Input control ready')"
 - Make a new save in a safe location (e.g., Whiterun)
 - Name it "AGI_Test" or similar
 
-### 4. Start LM Studio (Optional but Recommended)
+### 4. Start LM Studio (Recommended for Enhanced Instruction)
+
+For the best SkyrimAGI experience with verbose strategic instructions:
 
 ```bash
 # 1. Open LM Studio
-# 2. Load model: huihui-moe-60b-a38
+# 2. Load model: eva-qwen2.5-14b-v0.2 (recommended for instructor)
+#    This model provides detailed, actionable gameplay guidance
 # 3. Start server on localhost:1234
 # 4. Verify it's running
 ```
+
+Note: The eva-qwen2.5-14b-v0.2 model is optimized for generating verbose strategic instructions like "go to this location because it will afford you specific items and progression benefits." This is specifically configured for the meta-strategist (instructor) component.
 
 Test LM Studio:
 ```bash
