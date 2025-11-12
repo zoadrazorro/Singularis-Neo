@@ -142,7 +142,7 @@ class SkyrimConfig:
     use_gemini_vision: bool = True
     gemini_model: str = "gemini-2.0-flash-exp"
     use_claude_reasoning: bool = True
-    claude_model: str = "claude-sonnet-3-5-20241022"
+    claude_model: str = "claude-3-5-sonnet-20241022"
     use_local_fallback: bool = False  # Optional local LLMs as fallback
     
     # Mixture of Experts (MoE) Architecture
@@ -1513,7 +1513,7 @@ class SkyrimAGI:
         if hasattr(self, 'hybrid_llm') and self.hybrid_llm:
             from singularis.llm.claude_client import ClaudeClient
             self.sensorimotor_llm = ClaudeClient(
-                model="claude-sonnet-3-5-20241022",
+                model="claude-3-5-sonnet-20241022",
                 timeout=120
             )
             if self.sensorimotor_llm.is_available():

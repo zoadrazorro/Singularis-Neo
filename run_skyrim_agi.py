@@ -116,7 +116,7 @@ async def main():
             num_gemini_experts=6,
             num_claude_experts=3,
             gemini_model="gemini-2.0-flash-exp",
-            claude_model="claude-sonnet-3-5-20241022",
+            claude_model="claude-3-5-sonnet-20241022",
             gemini_rpm_limit=10,
             claude_rpm_limit=50,
             
@@ -160,7 +160,7 @@ async def main():
             num_gemini_experts=6,
             num_claude_experts=3,
             gemini_model="gemini-2.0-flash-exp",
-            claude_model="claude-sonnet-3-5-20241022",
+            claude_model="claude-3-5-sonnet-20241022",
             gemini_rpm_limit=10,  # Conservative rate limit
             claude_rpm_limit=50,  # Conservative rate limit
             
@@ -187,7 +187,7 @@ async def main():
             use_gemini_vision=True,
             gemini_model="gemini-2.0-flash-exp",
             use_claude_reasoning=True,
-            claude_model="claude-sonnet-3-5-20241022",
+            claude_model="claude-3-5-sonnet-20241022",
             use_local_fallback=use_local_fallback,
             
             # MoE disabled
