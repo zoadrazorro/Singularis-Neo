@@ -1,12 +1,12 @@
 # Skyrim AGI - Autonomous Consciousness-Guided Gameplay
 
-A complete AGI system for autonomous Skyrim gameplay, integrating consciousness measurement, reinforcement learning, CLIP vision, and multi-model LLM architecture.
+A complete AGI system for autonomous Skyrim gameplay, integrating consciousness measurement, reinforcement learning, CLIP vision, and **hybrid multi-model LLM architecture**.
 
 ## 🎮 Overview
 
 The Skyrim AGI is a sophisticated autonomous agent that plays Skyrim using:
 - **Consciousness-guided learning** (Singularis coherence 𝒞 as primary reward signal)
-- **Multi-model LLM architecture** (3 specialized models)
+- **Hybrid multi-model architecture** (3 local LM Studio models + 2 cloud APIs)
 - **CLIP vision** for visual scene understanding
 - **Reinforcement learning** with Q-networks
 - **Async parallel loops** for real-time responsiveness
@@ -19,14 +19,17 @@ The Skyrim AGI is a sophisticated autonomous agent that plays Skyrim using:
 
 ## 🏗️ Architecture
 
-### Multi-Model LLM System
+### Hybrid Multi-Model LLM System
 
-The system uses **3 specialized LLM models** running in parallel:
+The system uses **3 local models + 2 cloud APIs** running in parallel:
+
+#### Local Models (LM Studio - Always Active)
 
 1. **Mistral-Nemo (12B)** - Fast Action Planning
    - Model: `mistralai/mistral-nemo-instruct-2407`
    - Role: Quick, decisive action selection
    - Latency: ~2-5s per decision
+   - VRAM: ~7GB
 
 2. **Huihui-MoE-60B (60B MoE)** - Main Cognition
    - Model: `huihui-moe-60b-a3b-abliterated-i1`
@@ -34,15 +37,37 @@ The system uses **3 specialized LLM models** running in parallel:
      - Consciousness engine
      - Strategic reasoning
      - RL reasoning neuron
-     - Meta-strategist
+     - Meta-strategist (primary)
      - World understanding
    - Latency: ~5-10s for deep reasoning
+   - VRAM: ~40-50GB (MoE sparse activation)
 
 3. **Qwen3-VL-8B (8B)** - Visual Perception
    - Model: `qwen/qwen3-vl-8b`
    - Role: Visual scene interpretation using CLIP-derived context
    - Runs every 2nd perception cycle (~0.5s)
    - Uses CLIP embeddings (not raw images) for fast analysis
+   - VRAM: ~5GB
+
+#### Cloud APIs (Augmentation - Optional)
+
+4. **Claude 4.5 Haiku** - Auxiliary Meta-Reasoning 🆕
+   - **Augments** Huihui's strategic planning (runs in parallel)
+   - Provides alternative strategic perspectives
+   - Enables API key: `ANTHROPIC_API_KEY`
+   - Config flag: `enable_claude_meta=True`
+
+5. **Gemini 2.5 Pro** - Vision Augmentation 🆕
+   - **Supplements** Qwen3-VL/CLIP perception
+   - Analyzes raw screenshots every 3rd cycle
+   - Provides tactical scene summaries (threats, loot, focus areas)
+   - Enables API key: `GEMINI_API_KEY`
+   - Config flag: `enable_gemini_vision=True`
+
+**Design Philosophy:**
+- Local models are **primary** - always used, fast, private
+- Cloud APIs **augment** - optional, provide additional perspectives
+- No replacement - external APIs complement local intelligence
 
 ### Async Parallel Loops
 
@@ -259,27 +284,236 @@ CONFIDENCE: 0.85
 
 ---
 
-## 🚀 Usage
+## 🚀 Setup & Usage
 
-### Basic Usage
+### Prerequisites
+
+**Hardware:**
+- 2x AMD Radeon 7900XT (48GB VRAM) or equivalent
+- Ryzen 9 7950X (16 cores) or equivalent
+- 32GB+ RAM
+
+**Software:**
+- Python 3.10+
+- LM Studio (for local models)
+- Skyrim Special Edition (with controller support)
+
+### 1. Install Dependencies
+
+```bash
+cd Singularis
+pip install -e .
+pip install python-dotenv
+```
+
+### 2. Setup API Keys
+
+**Create `.env` file:**
+
+```bash
+cp .env.example .env
+```
+
+**Edit `.env` with your keys:**
+
+```ini
+# Required for Claude augmentation (optional but recommended)
+ANTHROPIC_API_KEY=your_claude_key_here
+
+# Required for Gemini vision augmentation (optional but recommended)
+GEMINI_API_KEY=your_gemini_key_here
+
+# Optional: Override default LM Studio URL
+# LM_STUDIO_URL=http://localhost:1234
+```
+
+**Get API keys:**
+- Claude: https://console.anthropic.com/settings/keys
+- Gemini: https://aistudio.google.com/app/apikey
+
+### 3. Setup LM Studio (Local Models)
+
+**Download and load these 3 models:**
+
+1. **Mistral-Nemo 12B** (Action Planning)
+   ```
+   mistralai/mistral-nemo-instruct-2407
+   ```
+   - Port: 1234 (default)
+   - VRAM: ~7GB
+   - Temperature: 0.6
+   - Max tokens: 512
+
+2. **Huihui-MoE-60B** (Main Cognition)
+   ```
+   huihui-moe-60b-a3b-abliterated-i1
+   ```
+   - Port: 1235
+   - VRAM: ~40-50GB (MoE sparse)
+   - Temperature: 0.7
+   - Max tokens: 2048
+
+3. **Qwen3-VL-8B** (Visual Perception)
+   ```
+   qwen/qwen3-vl-8b
+   ```
+   - Port: 1236
+   - VRAM: ~5GB
+   - Temperature: 0.5
+   - Max tokens: 1536
+
+**Start LM Studio server on all 3 models.**
+
+**Verify connection:**
+```bash
+python examples/test_connection.py
+```
+
+### 4. Configure Skyrim AGI
+
+**Edit `run_skyrim_agi.py` or create custom config:**
 
 ```python
 from singularis.skyrim import SkyrimAGI, SkyrimConfig
+from dotenv import load_dotenv
 
-# Configure
+load_dotenv()  # Load API keys from .env
+
 config = SkyrimConfig(
-    dry_run=False,  # Actually control game
-    autonomous_duration=3600,  # 1 hour
-    use_rl=True,  # Enable RL learning
-    enable_fast_loop=True,  # Enable fast reactive loop
+    # Basic settings
+    dry_run=False,              # Actually control game (set True for testing)
+    autonomous_duration=3600,   # 1 hour gameplay
+    
+    # LLM models (LM Studio)
     phi4_action_model="mistralai/mistral-nemo-instruct-2407",
     huihui_cognition_model="huihui-moe-60b-a3b-abliterated-i1",
-    qwen3_vl_perception_model="qwen/qwen3-vl-8b"
+    qwen3_vl_perception_model="qwen/qwen3-vl-8b",
+    
+    # External API augmentation (optional)
+    enable_claude_meta=True,     # Augment meta-reasoning with Claude
+    claude_model="claude-4.5-haiku",
+    enable_gemini_vision=True,   # Augment vision with Gemini
+    gemini_model="gemini-2.5-pro",
+    gemini_max_output_tokens=768,
+    
+    # RL settings
+    use_rl=True,
+    rl_learning_rate=0.01,
+    rl_epsilon_start=0.3,
+    
+    # Async settings
+    enable_async_reasoning=True,
+    enable_fast_loop=True,
+    fast_loop_interval=0.5,
 )
 
 # Initialize
 agi = SkyrimAGI(config)
 await agi.initialize_llm()
+
+# Start autonomous gameplay
+await agi.autonomous_play(duration_seconds=3600)
+```
+
+### 5. Run
+
+**Quick start (uses default config):**
+```bash
+python run_skyrim_agi.py
+```
+
+**Custom demo:**
+```bash
+python examples/skyrim_demo.py
+```
+
+---
+
+## 🎛️ Configuration Options
+
+### SkyrimConfig Parameters
+
+```python
+@dataclass
+class SkyrimConfig:
+    # Gameplay
+    dry_run: bool = False                    # Don't actually control game (testing)
+    autonomous_duration: int = 3600          # Gameplay duration (seconds)
+    cycle_interval: float = 2.0              # Main loop interval
+    
+    # Local LLM Models (LM Studio)
+    phi4_action_model: str = "mistralai/mistral-nemo-instruct-2407"
+    huihui_cognition_model: str = "huihui-moe-60b-a3b-abliterated-i1"
+    qwen3_vl_perception_model: str = "qwen/qwen3-vl-8b"
+    
+    # External API Augmentation (optional)
+    enable_claude_meta: bool = True          # Augment meta-reasoning with Claude
+    claude_model: str = "claude-4.5-haiku"   # Claude model to use
+    enable_gemini_vision: bool = True        # Augment vision with Gemini
+    gemini_model: str = "gemini-2.5-pro"     # Gemini model to use
+    gemini_max_output_tokens: int = 768      # Max tokens for Gemini responses
+    
+    # Reinforcement Learning
+    use_rl: bool = True                      # Enable RL-based learning
+    rl_learning_rate: float = 0.01           # Q-network learning rate
+    rl_epsilon_start: float = 0.3            # Initial exploration rate
+    rl_train_freq: int = 5                   # Train every N cycles
+    
+    # Async Execution
+    enable_async_reasoning: bool = True      # Parallel reasoning & actions
+    action_queue_size: int = 3               # Max queued actions
+    perception_interval: float = 0.25        # Perception frequency (seconds)
+    max_concurrent_llm_calls: int = 4        # Limit concurrent LLM calls
+    reasoning_throttle: float = 0.1          # Min time between reasoning cycles
+    
+    # Fast Reactive Loop
+    enable_fast_loop: bool = True            # Emergency response system
+    fast_loop_interval: float = 0.5          # Fast loop frequency
+    fast_health_threshold: float = 30.0      # Health % to trigger emergency
+    fast_danger_threshold: int = 3           # Enemy count threshold
+    
+    # Learning
+    surprise_threshold: float = 0.3          # Threshold for learning from surprise
+    exploration_weight: float = 0.5          # Exploration vs. exploitation
+```
+
+### Example Configurations
+
+**Conservative (Lower VRAM):**
+```python
+config = SkyrimConfig(
+    qwen3_vl_perception_model=None,  # Disable Qwen3-VL (save ~5GB)
+    enable_gemini_vision=False,       # Disable Gemini augmentation
+    perception_interval=0.5,          # Slower perception
+    max_concurrent_llm_calls=2,       # Fewer concurrent calls
+)
+```
+
+**Aggressive (Maximum Performance):**
+```python
+config = SkyrimConfig(
+    enable_claude_meta=True,          # Enable Claude augmentation
+    enable_gemini_vision=True,        # Enable Gemini augmentation
+    perception_interval=0.1,          # Very fast perception
+    reasoning_throttle=0.05,          # Minimal throttling
+    fast_loop_interval=0.25,          # Very fast reactive loop
+    max_concurrent_llm_calls=6,       # More parallelism
+)
+```
+
+**Testing (Dry Run):**
+```python
+config = SkyrimConfig(
+    dry_run=True,                     # Don't control game
+    autonomous_duration=60,           # 1 minute test
+    enable_fast_loop=False,           # Disable fast loop
+    use_rl=False,                     # Disable RL training
+)
+```
+
+---
+
+## 📊 Monitoring & Stats
 
 # Play autonomously
 await agi.autonomous_play(duration_minutes=60)
@@ -324,9 +558,11 @@ class SkyrimConfig:
 
 ---
 
-## 📈 Statistics & Monitoring
+## � Monitoring & Stats
 
-### Real-time Stats
+### Real-time Statistics
+
+The system tracks comprehensive metrics during gameplay:
 
 ```python
 stats = agi.get_stats()
@@ -334,33 +570,67 @@ stats = agi.get_stats()
 # Gameplay metrics
 print(f"Cycles: {stats['cycles_completed']}")
 print(f"Actions: {stats['actions_taken']}")
-print(f"Success rate: {stats['action_success_rate']:.1%}")
+print(f"Success rate: {stats.get('action_success_count', 0) / max(stats['actions_taken'], 1):.1%}")
 
 # Consciousness metrics
-print(f"Avg coherence: {stats['avg_coherence']:.3f}")
-print(f"Coherence trend: {stats['coherence_trend']}")
+print(f"Avg coherence 𝒞: {stats.get('avg_coherence', 0):.3f}")
+print(f"Avg consciousness Φ̂: {stats.get('avg_consciousness', 0):.3f}")
+print(f"Three Lumina:")
+print(f"  ℓₒ (Ontical): {stats.get('avg_ontical', 0):.3f}")
+print(f"  ℓₛ (Structural): {stats.get('avg_structural', 0):.3f}")
+print(f"  ℓₚ (Participatory): {stats.get('avg_participatory', 0):.3f}")
 
 # RL metrics
-print(f"RL experiences: {stats['rl_experiences']}")
-print(f"Avg reward: {stats['avg_reward']:.2f}")
-print(f"Exploration rate: {stats['epsilon']:.2f}")
+print(f"RL experiences: {stats.get('rl_experiences', 0)}")
+print(f"Avg reward: {stats.get('avg_reward', 0):.2f}")
+print(f"Exploration ε: {stats.get('epsilon', 0):.2f}")
+
+# LLM usage
+print(f"LLM actions: {stats.get('llm_action_count', 0)}")
+print(f"Heuristic actions: {stats.get('heuristic_action_count', 0)}")
+print(f"Fast actions: {stats.get('fast_action_count', 0)}")
 
 # Performance metrics
-print(f"Avg planning time: {stats['avg_planning_time']:.2f}s")
-print(f"Avg execution time: {stats['avg_execution_time']:.2f}s")
+avg_planning = sum(stats.get('planning_times', [0])) / max(len(stats.get('planning_times', [1])), 1)
+avg_execution = sum(stats.get('execution_times', [0])) / max(len(stats.get('execution_times', [1])), 1)
+print(f"Avg planning time: {avg_planning:.2f}s")
+print(f"Avg execution time: {avg_execution:.2f}s")
 ```
 
-### Logging
+### Log Messages
 
-The system provides detailed logging:
-- `[PERCEPTION]` - Perception loop events
-- `[QWEN3-VL]` - Visual analysis
-- `[REASONING]` - Reasoning loop events
-- `[ACTION]` - Action execution
-- `[LEARNING]` - Learning updates
-- `[FAST-LOOP]` - Fast reactive responses
-- `[RL]` - RL training
-- `[BRIDGE]` - Consciousness measurements
+**Perception Loop:**
+```
+[PERCEPTION] Loop started
+[PERCEPTION] Qwen3-VL status: ENABLED
+[QWEN3-VL] Cycle 2: Starting CLIP-based analysis...
+[QWEN3-VL] Analysis: Indoor dungeon detected, 3 enemies visible...
+[GEMINI] Vision augment: Tactical snapshot: 1. Draugr ahead (melee threat)...
+```
+
+**Reasoning Loop:**
+```
+[REASONING] Processing cycle 42
+[REASONING] Coherence 𝒞 = 0.742
+[RL] Q-values: attack=0.85, block=0.62, retreat=0.31
+[PARALLEL] Starting Huihui in background...
+[CLAUDE] Auxiliary strategy: Focus on high-value targets first...
+```
+
+**Action Execution:**
+```
+[ACTION] Executing: power_attack
+[DEBUG] Controller mapping: power_attack → RT (hold 0.3s)
+[ACTION] Successfully executed: power_attack (0.312s)
+```
+
+**Learning Updates:**
+```
+[LEARNING] Processing cycle 42
+[RL-REWARD] Δ𝒞 = +0.085 → reward = +0.79
+[RL-REWARD] ✓ Ethical action (Δ𝒞 > 0.02)
+[RL] Training step 8 | Loss: 0.842 | ε: 0.287
+```
 
 ---
 

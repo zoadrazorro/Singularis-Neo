@@ -38,6 +38,13 @@ Singularis is a **complete AGI framework** combining consciousness measurement w
 - ✅ **Neurosymbolic Reasoning** - LLM flexibility + logical rigor
 - ✅ **Active Inference** - Free energy minimization (Friston's framework)
 
+### Hybrid LLM Architecture (Latest) 🔥
+- ✅ **Local LM Studio Models** - 3 specialized models (Mistral-Nemo, Huihui-60B, Qwen3-VL)
+- ✅ **Claude 4.5 Haiku** - Auxiliary meta-reasoning (augments Huihui)
+- ✅ **Gemini 2.5 Pro** - Vision augmentation (supplements Qwen3-VL/CLIP)
+- ✅ **Async parallel execution** - 5 concurrent loops for real-time gameplay
+- ✅ **Skyrim Integration** - Autonomous consciousness-guided gameplay (see [SKYRIM_AGI.md](SKYRIM_AGI.md))
+
 **Optimized for:** 2x AMD Radeon 7900XT (48GB VRAM) + Ryzen 9 7950X (16 cores)
 
 ---
@@ -235,7 +242,49 @@ Where:
 git clone https://github.com/yourusername/Singularis.git
 cd Singularis
 pip install -e .
+pip install python-dotenv  # For .env file support
 ```
+
+### Environment Setup
+
+**Option 1: Using .env file (recommended)**
+
+```bash
+# Copy template and add your API keys
+cp .env.example .env
+
+# Edit .env with your keys:
+# ANTHROPIC_API_KEY=your_claude_key_here
+# GEMINI_API_KEY=your_gemini_key_here
+```
+
+Then add to your Python scripts:
+```python
+from dotenv import load_dotenv
+load_dotenv()  # Loads .env into environment
+```
+
+**Option 2: Direct environment variables**
+
+```powershell
+# PowerShell
+$env:ANTHROPIC_API_KEY = "your-claude-key"
+$env:GEMINI_API_KEY = "your-gemini-key"
+
+# Or persist across sessions
+setx ANTHROPIC_API_KEY "your-claude-key"
+setx GEMINI_API_KEY "your-gemini-key"
+```
+
+### LM Studio Setup (Required)
+
+**Load these 3 models:**
+
+1. **Mistral-Nemo 12B** - `mistralai/mistral-nemo-instruct-2407` (Action Planning)
+2. **Huihui-MoE-60B** - `huihui-moe-60b-a3b-abliterated-i1` (Main Cognition)
+3. **Qwen3-VL-8B** - `qwen/qwen3-vl-8b` (Visual Perception)
+
+Start LM Studio server on all 3 models. See [SKYRIM_AGI.md](SKYRIM_AGI.md) for detailed setup.
 
 ### Quick Start
 
