@@ -1792,9 +1792,13 @@ QUICK DECISION - Choose ONE action from available list:"""
             print(f"[ACTION] Invalid action: {action}, using fallback")
             action = 'explore'
         
-        # Handle menu interactions with learning ONLY when actually in a menu
-        if scene_type in [SceneType.INVENTORY, SceneType.MAP, SceneType.DIALOGUE]:
-            # We're in a menu - use menu learner
+        # Handle menu interactions with learning ONLY when the action is menu-related
+        menu_related_actions = ['open_inventory', 'open_map', 'open_magic', 'open_skills', 
+                               'navigate_inventory', 'navigate_map', 'use_item', 'equip_item', 
+                               'consume_item', 'favorite_item', 'exit_menu', 'exit']
+        
+        if scene_type in [SceneType.INVENTORY, SceneType.MAP, SceneType.DIALOGUE] and action in menu_related_actions:
+            # We're in a menu AND trying to do menu actions - use menu learner
             if not self.menu_learner.current_menu:
                 # Entering menu
                 menu_type = scene_type.value
@@ -1811,7 +1815,7 @@ QUICK DECISION - Choose ONE action from available list:"""
                 print(f"[MENU] Using learned action: {suggested_action}")
                 action = suggested_action
         else:
-            # Not in menu - ensure menu learner is exited
+            # Not doing menu actions - ensure menu learner is exited
             if self.menu_learner.current_menu:
                 self.menu_learner.exit_menu()
         
@@ -1857,6 +1861,29 @@ QUICK DECISION - Choose ONE action from available list:"""
             await self.actions.execute(Action(ActionType.SNEAK))
         elif action == 'attack':
             await self.actions.execute(Action(ActionType.ATTACK))
+        elif action in ('power_attack', 'quick_attack'):
+            # Combat actions - use attack for now
+            await self.actions.execute(Action(ActionType.ATTACK))
+        elif action == 'block':
+            # Block action
+            await self.actions.execute(Action(ActionType.BLOCK))
+        elif action in ('bash', 'shout'):
+            # Special combat actions - use attack as fallback
+            await self.actions.execute(Action(ActionType.ATTACK))
+        elif action == 'dodge':
+            # Dodge by moving backward briefly
+            await self.actions.move_backward(duration=0.5)
+        elif action == 'retreat':
+            # Retreat by moving backward
+            await self.actions.move_backward(duration=1.5)
+        elif action == 'heal':
+            # Open inventory to heal (simplified)
+            print("[ACTION] Attempting to heal (opening inventory)")
+            await self.actions.execute(Action(ActionType.INVENTORY))
+            await asyncio.sleep(0.5)
+        elif action == 'exit':
+            # Exit menu/dialogue
+            await self.actions.execute(Action(ActionType.BACK))
         elif action == 'look_around':
             # Human-like looking behavior
             await self.actions.look_around()

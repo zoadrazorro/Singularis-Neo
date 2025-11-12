@@ -351,10 +351,15 @@ class ReinforcementLearner:
             'sneak',
             # Combat actions (being belligerent with hostiles)
             'attack',
+            'quick_attack',
             'power_attack',
             'block',
+            'bash',
             'backstab',
             'shout',
+            'dodge',
+            'retreat',
+            'heal',
             # NPC interaction actions (talking to NPCs)
             'activate',  # Used for both objects and NPC interaction
             'talk',
