@@ -349,6 +349,7 @@ class SkyrimAGI:
 
         # State
         self.running = False
+        self.cycle_count = 0  # Track cycles for rate limiting
         self.current_perception: Optional[Dict[str, Any]] = None
         self.current_goal: Optional[str] = None
         self.last_save_time = time.time()
@@ -1683,6 +1684,7 @@ Based on this visual and contextual data, provide:
                 
                 perception = perception_data['perception']
                 cycle_count = perception_data['cycle']
+                self.cycle_count = cycle_count  # Update global cycle count for rate limiting
                 
                 print(f"\n[REASONING] Processing cycle {cycle_count}")
                 
@@ -2465,10 +2467,14 @@ Based on this visual and contextual data, provide:
         state_dict: Dict[str, Any],
         q_values: Dict[str, float],
         available_actions: List[str],
-        motivation
+        motivation,
+        use_full_moe: bool = False
     ) -> Optional[Tuple[str, str]]:
         """
         Get action recommendation from parallel cloud LLM system.
+        
+        Args:
+            use_full_moe: If True, use full MoE+Hybrid. If False, use Hybrid only (faster)
         
         Returns:
             (action, reasoning) or None if cloud LLMs unavailable
@@ -2501,29 +2507,54 @@ Recommend ONE action from the available list and explain why.
 Format: ACTION: <action_name>
 REASONING: <explanation>"""
 
-            # Query parallel system
-            if self.config.use_parallel_mode:
-                response = await self.query_parallel_llm(
-                    vision_prompt=vision_prompt,
-                    reasoning_prompt=reasoning_prompt,
-                    image=perception.get('screenshot'),
-                    context=state_dict
-                )
-                reasoning_text = response['reasoning']
-            elif self.moe:
-                _, reasoning_resp = await self.moe.query_all_experts(
-                    vision_prompt=vision_prompt,
-                    reasoning_prompt=reasoning_prompt,
-                    image=perception.get('screenshot'),
-                    context=state_dict
-                )
-                reasoning_text = reasoning_resp.consensus
-            elif self.hybrid_llm:
-                reasoning_text = await self.hybrid_llm.generate_reasoning(
-                    prompt=reasoning_prompt,
-                    system_prompt="You are an expert Skyrim player providing tactical advice."
-                )
-            else:
+            # Query system based on priority with local fallback
+            reasoning_text = None
+            
+            try:
+                # Full parallel (MoE+Hybrid) only for critical situations
+                if self.config.use_parallel_mode and use_full_moe:
+                    print("[CLOUD-LLM] Using FULL parallel (MoE + Hybrid)")
+                    response = await self.query_parallel_llm(
+                        vision_prompt=vision_prompt,
+                        reasoning_prompt=reasoning_prompt,
+                        image=perception.get('screenshot'),
+                        context=state_dict
+                    )
+                    reasoning_text = response['reasoning']
+                # Hybrid only for routine decisions (much faster, less API calls)
+                elif self.hybrid_llm:
+                    print("[CLOUD-LLM] Using Hybrid only (fast mode)")
+                    reasoning_text = await self.hybrid_llm.generate_reasoning(
+                        prompt=reasoning_prompt,
+                        system_prompt="You are an expert Skyrim player providing tactical advice."
+                    )
+                elif self.moe:
+                    _, reasoning_resp = await self.moe.query_all_experts(
+                        vision_prompt=vision_prompt,
+                        reasoning_prompt=reasoning_prompt,
+                        image=perception.get('screenshot'),
+                        context=state_dict
+                    )
+                    reasoning_text = reasoning_resp.consensus
+            except Exception as e:
+                print(f"[CLOUD-LLM] Cloud API failed: {e}")
+                reasoning_text = None
+            
+            # Fallback to local LLM if cloud failed
+            if not reasoning_text and self.huihui_llm:
+                print("[FALLBACK] Cloud LLM failed, using local Huihui")
+                try:
+                    local_response = await self.huihui_llm.generate(
+                        prompt=reasoning_prompt,
+                        system_prompt="You are an expert Skyrim player. Recommend ONE action.",
+                        max_tokens=200
+                    )
+                    reasoning_text = local_response
+                except Exception as local_e:
+                    print(f"[FALLBACK] Local LLM also failed: {local_e}")
+                    return None
+            
+            if not reasoning_text:
                 return None
             
             # Parse action from response
@@ -2617,20 +2648,39 @@ REASONING: <explanation>"""
                 # Get meta-strategic context
                 meta_context = self.meta_strategist.get_active_instruction_context()
                 
-                # Try cloud LLM system first (parallel MoE + Hybrid)
-                cloud_recommendation = await self._get_cloud_llm_action_recommendation(
-                    perception=perception,
-                    state_dict=state_dict,
-                    q_values=q_values,
-                    available_actions=available_actions,
-                    motivation=motivation
+                # Try cloud LLM system (but not every cycle to avoid rate limits)
+                # Use cloud LLMs every 5th cycle or in critical situations
+                use_cloud_llm = (
+                    self.cycle_count % 5 == 0 or  # Every 5th cycle
+                    game_state.health < 50 or  # Low health
+                    game_state.enemies_nearby > 2 or  # Multiple enemies
+                    game_state.in_combat  # In combat
                 )
                 
-                if cloud_recommendation:
-                    action, reasoning = cloud_recommendation
-                    print(f"[CLOUD-LLM] Using cloud recommendation: {action}")
-                    print(f"[CLOUD-LLM] Reasoning: {reasoning[:200]}...")
-                    return action
+                if use_cloud_llm:
+                    # Use full MoE+Hybrid only in critical situations
+                    is_critical = (
+                        game_state.health < 30 or
+                        game_state.enemies_nearby > 3 or
+                        (game_state.in_combat and game_state.health < 60)
+                    )
+                    
+                    cloud_recommendation = await self._get_cloud_llm_action_recommendation(
+                        perception=perception,
+                        state_dict=state_dict,
+                        q_values=q_values,
+                        available_actions=available_actions,
+                        motivation=motivation,
+                        use_full_moe=is_critical  # Full parallel only when critical
+                    )
+                    
+                    if cloud_recommendation:
+                        action, reasoning = cloud_recommendation
+                        print(f"[CLOUD-LLM] Using cloud recommendation: {action}")
+                        print(f"[CLOUD-LLM] Reasoning: {reasoning[:200]}...")
+                        return action
+                else:
+                    print(f"[RATE-LIMIT] Skipping cloud LLM (cycle {self.cycle_count % 5}/5)")
                 
                 # Fallback: Start Huihui in background (don't wait)
                 print("[FALLBACK] Cloud LLM unavailable, using local heuristics")

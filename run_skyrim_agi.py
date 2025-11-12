@@ -89,7 +89,8 @@ async def main():
             print(f"  Rate Limiting: Enabled (10 RPM Gemini, 50 RPM Claude)")
         elif llm_mode == "parallel":
             print(f"  LLM Mode: PARALLEL (MoE + Hybrid simultaneously)")
-            print(f"  Total: 10 LLM instances running in parallel")
+            print(f"  Cloud: 10 LLM instances (6 Gemini + 3 Claude + 1 Hybrid)")
+            print(f"  Fallback: Local LLMs (Huihui, Qwen3-VL, Phi-4)")
             print(f"  Consensus: MoE 60% + Hybrid 40%")
         else:
             print(f"  LLM Mode: Local only (LM Studio)")
@@ -97,7 +98,7 @@ async def main():
     
     # Create config based on LLM mode selection
     if llm_mode == "parallel":
-        # Parallel mode: MoE + Hybrid simultaneously
+        # Parallel mode: MoE + Hybrid simultaneously with local fallback
         config = SkyrimConfig(
             dry_run=dry_run,
             autonomous_duration=duration * 60,
@@ -122,7 +123,12 @@ async def main():
             # Hybrid settings
             use_gemini_vision=True,
             use_claude_reasoning=True,
-            use_local_fallback=False,
+            use_local_fallback=True,  # Enable local fallback for resilience
+            
+            # Local fallback models (LM Studio)
+            qwen3_vl_perception_model="qwen/qwen3-vl-8b",
+            huihui_cognition_model="huihui-moe-60b-a3b-abliterated-i1",
+            phi4_action_model="mistralai/mistral-nemo-instruct-2407",
             
             # Consensus weights
             parallel_consensus_weight_moe=0.6,
