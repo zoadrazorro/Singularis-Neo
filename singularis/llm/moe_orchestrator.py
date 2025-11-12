@@ -120,8 +120,8 @@ class MoEOrchestrator:
         self,
         num_gemini_experts: int = 6,
         num_claude_experts: int = 3,
-        gemini_model: str = "gemini-2.0-flash-exp",
-        claude_model: str = "claude-3-5-sonnet-20241022",
+        gemini_model: str = "gemini-2.5-flash",
+        claude_model: str = "claude-sonnet-4-5-20250929",
         # Rate limits (requests per minute)
         gemini_rpm_limit: int = 10,  # Conservative limit for Gemini 2.0 Flash
         claude_rpm_limit: int = 50,  # Conservative limit for Claude (Tier 1+)
