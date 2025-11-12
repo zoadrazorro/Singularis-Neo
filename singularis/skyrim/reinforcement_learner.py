@@ -5,15 +5,23 @@ Implements genuine learning through:
 1. Q-Learning / Deep Q-Network (DQN)
 2. Experience Replay Buffer
 3. Consciousness-Guided Reward Shaping (PRIMARY)
-4. Policy Gradient Methods
-5. Online Learning
+4. Game-Embedded Reward Shaping (SECONDARY)
+5. Policy Gradient Methods
+6. Online Learning
 
 This system learns what actions work in Skyrim through trial and error,
 using CONSCIOUSNESS COHERENCE (𝒞) as the primary reward signal, with
 game-specific rewards as secondary shaping.
 
+ENHANCED FOR EMBEDDED GAMEPLAY:
+The reward system now strongly incentivizes core Skyrim gameplay behaviors:
+- Being belligerent with video game hostiles (combat engagement)
+- Talking to NPCs (dialogue interactions)
+- Navigating in menus (inventory, skills, map management)
+
 Key insight: Actions are learned based on whether they increase coherence (Δ𝒞 > 0),
-making consciousness the judge of action quality.
+making consciousness the judge of action quality, with game-specific rewards
+encouraging authentic Skyrim gameplay patterns.
 """
 
 import numpy as np
@@ -73,7 +81,8 @@ class StateEncoder:
             'inventory': 2,
             'dialogue': 3,
             'map': 4,
-            'unknown': 5
+            'menu': 5,
+            'unknown': 6
         }
 
         self.action_layer_to_id = {
@@ -131,6 +140,15 @@ class StateEncoder:
         features[33] = state.get('gold', 0) / 10000.0  # Wealth
         features[34] = state.get('completed_quests', 0) / 100.0  # Quest progress
         features[35] = state.get('equipment_quality', 0.3)  # Gear quality
+        
+        # NPC and dialogue tracking
+        features[36] = 1.0 if state.get('in_dialogue', False) else 0.0
+        features[37] = min(len(state.get('nearby_npcs', [])), 10) / 10.0
+        features[38] = state.get('npc_relationship_delta', 0.0)
+        
+        # Menu state tracking
+        features[39] = 1.0 if state.get('in_menu', False) else 0.0
+        features[40] = 1.0 if state.get('equipment_changed', False) else 0.0
 
         return features
 
@@ -310,6 +328,7 @@ class ReinforcementLearner:
             print("[RL] ⚠️ Consciousness-guided rewards DISABLED")
             print("[RL] Using game-only reward shaping")
         # Actions available in Skyrim (both high-level and low-level)
+        # EXPANDED for embedded Skyrim gameplay
         self.actions = [
             # High-level strategic actions
             'explore',
@@ -322,6 +341,7 @@ class ReinforcementLearner:
             'switch_to_exploration',
             'switch_to_menu',
             'switch_to_stealth',
+            'switch_to_dialogue',
             # Low-level movement actions
             'move_forward',
             'move_backward',
@@ -329,11 +349,31 @@ class ReinforcementLearner:
             'move_right',
             'jump',
             'sneak',
+            # Combat actions (being belligerent with hostiles)
             'attack',
-            'activate',
             'power_attack',
             'block',
-            'backstab'
+            'backstab',
+            'shout',
+            # NPC interaction actions (talking to NPCs)
+            'activate',  # Used for both objects and NPC interaction
+            'talk',
+            'select_dialogue_option',
+            'exit_dialogue',
+            # Menu navigation actions
+            'open_inventory',
+            'open_map',
+            'open_magic',
+            'open_skills',
+            'navigate_inventory',
+            'navigate_map',
+            'navigate_magic',
+            'navigate_skills',
+            'use_item',
+            'equip_item',
+            'consume_item',
+            'favorite_item',
+            'exit_menu'
         ]
 
         self.action_to_idx = {a: i for i, a in enumerate(self.actions)}
@@ -508,11 +548,13 @@ class ReinforcementLearner:
         """
         Compute game-specific reward shaping (secondary reward).
         
-        This provides immediate feedback on game mechanics:
-        - Health changes
-        - Combat effectiveness
+        ENHANCED FOR EMBEDDED SKYRIM GAMEPLAY:
+        This provides immediate feedback on core Skyrim gameplay:
+        - Combat engagement (being belligerent with hostiles)
+        - NPC interactions (talking to NPCs)
+        - Menu navigation (inventory, skills, map)
+        - Health management
         - Exploration progress
-        - Resource management
         
         Returns:
             Game reward (not scaled, will be weighted at 30%)
@@ -525,9 +567,9 @@ class ReinforcementLearner:
         health_delta = health_after - health_before
 
         if health_delta < -20:
-            reward -= 1.0  # Big penalty for taking damage
+            reward -= 0.5  # Reduced penalty - taking damage in combat is normal
         elif health_delta < 0:
-            reward -= 0.3  # Small penalty for any damage
+            reward -= 0.1  # Small penalty for any damage
         elif health_delta > 0:
             reward += 0.5  # Reward for healing
 
@@ -542,59 +584,92 @@ class ReinforcementLearner:
         if scene_before != scene_after:
             reward += 0.5  # Reward for progressing to new scene
 
-        # 3. Combat rewards
+        # 3. COMBAT REWARDS - Incentivize being belligerent with hostiles
         in_combat_before = state_before.get('in_combat', False)
         in_combat_after = state_after.get('in_combat', False)
+        enemies_before = state_before.get('enemies_nearby', 0)
+        enemies_after = state_after.get('enemies_nearby', 0)
 
         if in_combat_after:
-            # In combat: reward effective actions
-            if action in ['combat', 'power_attack', 'block']:
-                reward += 0.2  # Reward combat actions in combat
+            # REWARD combat engagement (not penalize!)
             if not in_combat_before:
-                reward -= 0.3  # Small penalty for entering combat
-        # 1. Survival reward (staying alive is good)
-        health_before = state_before.get('health', 100)
-        health_after = state_after.get('health', 100)
-        health_delta = health_after - health_before
-
-        if health_delta < -20:
-            reward -= 1.0  # Big penalty for taking damage
-        elif health_delta < 0:
-            reward -= 0.3  # Small penalty for any damage
-        elif health_delta > 0:
-            reward += 0.5  # Reward for healing
-
-        # Death penalty
-        if health_after <= 0:
-            reward -= 10.0
-
-        # 2. Progress reward (exploration, scene changes)
-        scene_before = state_before.get('scene', '')
-        scene_after = state_after.get('scene', '')
-
-        if scene_before != scene_after:
-            reward += 0.5  # Reward for progressing to new scene
-
-        # 3. Combat rewards
-        in_combat_before = state_before.get('in_combat', False)
-        in_combat_after = state_after.get('in_combat', False)
-
-        if in_combat_after:
-            # In combat: reward effective actions
-            if action in ['combat', 'power_attack', 'block']:
-                reward += 0.2  # Reward combat actions in combat
-            if not in_combat_before:
-                reward -= 0.3  # Small penalty for entering combat
+                reward += 0.8  # BIG REWARD for engaging hostiles
+                print("[RL-REWARD] ✓ Engaged in combat with hostiles! +0.8")
+            
+            # Reward aggressive combat actions
+            if action in ['combat', 'attack', 'power_attack', 'block', 'shout', 'backstab']:
+                reward += 0.6  # Strong reward for combat actions
+                print(f"[RL-REWARD] ✓ Combat action '{action}' in battle! +0.6")
+            
+            # Reward for defeating enemies
+            if enemies_after < enemies_before:
+                enemy_defeats = enemies_before - enemies_after
+                defeat_reward = enemy_defeats * 1.5  # Major reward per enemy
+                reward += defeat_reward
+                print(f"[RL-REWARD] ✓ Defeated {enemy_defeats} hostile(s)! +{defeat_reward:.1f}")
         else:
             # Not in combat: reward exploration
             if action in ['explore', 'navigate']:
                 reward += 0.3  # Reward exploration when safe
 
-        # 4. Efficiency reward (don't waste time)
+        # 4. NPC INTERACTION REWARDS - Incentivize talking to NPCs
+        npcs_before = len(state_before.get('nearby_npcs', []))
+        npcs_after = len(state_after.get('nearby_npcs', []))
+        in_dialogue_before = state_before.get('in_dialogue', False)
+        in_dialogue_after = state_after.get('in_dialogue', False)
+        
+        # Reward entering dialogue
+        if in_dialogue_after and not in_dialogue_before:
+            reward += 1.2  # MAJOR REWARD for talking to NPCs
+            print("[RL-REWARD] ✓ Started dialogue with NPC! +1.2")
+        
+        # Reward staying in dialogue (listening/conversing)
+        if in_dialogue_after and in_dialogue_before:
+            reward += 0.4  # Reward for continuing conversation
+            print("[RL-REWARD] ✓ Continuing dialogue! +0.4")
+        
+        # Reward dialogue actions
+        if action in ['select_dialogue_option', 'talk', 'activate'] and (npcs_after > 0 or in_dialogue_after):
+            reward += 0.8  # Strong reward for dialogue interaction
+            print(f"[RL-REWARD] ✓ Dialogue action with NPC! +0.8")
+        
+        # Reward relationship building
+        relationship_change = state_after.get('npc_relationship_delta', 0)
+        if relationship_change > 0:
+            reward += relationship_change * 2.0  # Reward positive relationships
+            print(f"[RL-REWARD] ✓ Improved NPC relationship! +{relationship_change * 2.0:.1f}")
+
+        # 5. MENU NAVIGATION REWARDS - Incentivize using game menus
+        in_menu_before = state_before.get('in_menu', False)
+        in_menu_after = state_after.get('in_menu', False)
+        menu_type_after = state_after.get('menu_type', '')
+        
+        # Reward opening menus
+        if in_menu_after and not in_menu_before:
+            reward += 0.6  # Good reward for accessing menus
+            print(f"[RL-REWARD] ✓ Opened {menu_type_after} menu! +0.6")
+        
+        # Reward menu navigation actions
+        if action in ['navigate_inventory', 'navigate_map', 'navigate_magic', 'navigate_skills',
+                     'open_inventory', 'open_map', 'open_magic', 'open_skills']:
+            reward += 0.5  # Reward menu interaction
+            print(f"[RL-REWARD] ✓ Menu action '{action}'! +0.5")
+        
+        # Reward using items from inventory
+        if action in ['use_item', 'equip_item', 'consume_item', 'favorite_item']:
+            reward += 0.7  # Strong reward for inventory management
+            print(f"[RL-REWARD] ✓ Used item from inventory! +0.7")
+        
+        # Reward equipment improvements
+        if state_after.get('equipment_changed', False):
+            reward += 0.8  # Reward gear upgrades
+            print("[RL-REWARD] ✓ Changed equipment! +0.8")
+
+        # 6. Efficiency reward (don't waste time)
         if action == 'rest' and health_after > 80:
             reward -= 0.2  # Penalty for resting when not needed
         
-        # 5. Stuck penalty (visual stuckness)
+        # 7. Stuck penalty (visual stuckness)
         if state_after.get('visually_stuck', False):
             reward -= 0.5
 
