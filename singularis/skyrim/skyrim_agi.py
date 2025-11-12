@@ -1544,6 +1544,23 @@ class SkyrimAGI:
         else:
             print("[MAIN BRAIN] ⚠️ OpenAI API key not found - fallback mode only")
         
+        # Record initial system status
+        self.main_brain.record_output(
+            system_name='System Initialization',
+            content=f"""AGI System Started
+- LLM Mode: {'PARALLEL' if self.config.use_parallel_mode else 'Hybrid' if self.config.use_hybrid_llm else 'Local'}
+- Cloud LLMs: {10 if self.config.use_parallel_mode else 1 if self.config.use_hybrid_llm else 0}
+- Consciousness Nodes: {len(self.consciousness_monitor.registered_nodes)}
+- Hebbian Learning: Active
+- Sensorimotor: Claude Sonnet 4.5
+- Session ID: {self.main_brain.session_id}""",
+            metadata={
+                'llm_mode': 'PARALLEL' if self.config.use_parallel_mode else 'Hybrid',
+                'total_nodes': len(self.consciousness_monitor.registered_nodes)
+            },
+            success=True
+        )
+        
         # Initialize LLM semaphore for resource management
         self.llm_semaphore = asyncio.Semaphore(self.config.max_concurrent_llm_calls)
 
@@ -2571,7 +2588,8 @@ Strongest System: {stats['strongest_system']} ({stats['strongest_weight']:.2f})"
                 # Main Brain: Increment cycle and record action decision
                 self.main_brain.increment_cycle()
                 
-                if cycle_count % 5 == 0:  # Record every 5th action to avoid spam
+                # Record first 10 cycles, then every 5th to capture early behavior
+                if cycle_count <= 10 or cycle_count % 5 == 0:
                     self.main_brain.record_output(
                         system_name='Action Planning',
                         content=f"Cycle {cycle_count}: {action}",
