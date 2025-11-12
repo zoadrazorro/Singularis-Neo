@@ -53,10 +53,8 @@ async def main():
         save_interval=300,
         surprise_threshold=0.3,
         exploration_weight=0.5,
-        phi4_main_model="microsoft/phi-4-mini-reasoning:1",
-        phi4_rl_model="microsoft/phi-4-mini-reasoning:2",
-        phi4_meta_model="microsoft/phi-4-mini-reasoning:3",
-        phi4_action_model="microsoft/phi-4-mini-reasoning:4",
+        phi4_main_model="microsoft/phi-4:2",
+        phi4_action_model="microsoft/phi-4:3",
     )
     
     # Create AGI
