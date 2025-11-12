@@ -1837,16 +1837,26 @@ QUICK DECISION - Choose ONE action from available list:"""
             if self.menu_learner.current_menu:
                 self.menu_learner.exit_menu()
         
-        # Sync action layer to context
-        if action in ('explore', 'navigate', 'quest_objective', 'practice'):
+        # Sync action layer to context - ensure actions execute in correct layer
+        if action in ('explore', 'navigate', 'quest_objective', 'practice', 'move_forward', 'move_backward', 
+                      'move_left', 'move_right', 'jump', 'activate', 'look_around', 'turn_left', 'turn_right'):
+            # Movement and exploration actions
             self.bindings.switch_to_exploration()
-        elif action == 'combat':
+        elif action in ('combat', 'attack', 'power_attack', 'quick_attack', 'block', 'bash', 'dodge', 'retreat'):
+            # Combat actions
             self.bindings.switch_to_combat()
-        elif action == 'interact':
+        elif action in ('sneak', 'backstab'):
+            # Stealth actions
+            self.bindings.switch_to_stealth()
+        elif action in ('interact', 'rest'):
             self.bindings.switch_to_exploration()
-        elif action == 'rest':
-            self.bindings.switch_to_exploration()
-        # Extend with menu/dialogue/stealth as needed
+        elif action.startswith('switch_to_'):
+            # Layer transitions handled below
+            pass
+        else:
+            # Default to exploration for unknown actions
+            if not scene_type in [SceneType.INVENTORY, SceneType.MAP, SceneType.DIALOGUE]:
+                self.bindings.switch_to_exploration()
 
         # Execute actions with better variety and human-like behavior
         if action == 'explore':
