@@ -3411,6 +3411,47 @@ Based on this visual and contextual data, provide:
                 
                 print(f"[REASONING] Coherence 𝒞 = {current_consciousness.coherence:.3f}")
                 
+                # Track GPT-5 differential coherence (every 5 cycles)
+                if self.gpt5_orchestrator and cycle_count % 5 == 0:
+                    try:
+                        # Get average coherence from other consciousness nodes
+                        consciousness_nodes = self.consciousness_monitor.get_statistics()
+                        other_nodes_coherence = consciousness_nodes.get('avg_coherence', current_consciousness.coherence)
+                        
+                        # Assume GPT-5's coherence assessment is similar to consciousness bridge
+                        # In future, could query GPT-5 directly for its coherence assessment
+                        gpt5_coherence = current_consciousness.coherence
+                        
+                        # Record differential
+                        self.gpt5_orchestrator.record_coherence_differential(
+                            gpt5_coherence=gpt5_coherence,
+                            other_nodes_coherence=other_nodes_coherence,
+                            cycle=cycle_count
+                        )
+                        
+                        differential = abs(gpt5_coherence - other_nodes_coherence)
+                        if differential > 0.2:  # Significant difference
+                            print(f"[GPT5-COHERENCE] ⚠️ Differential: {differential:.3f} (GPT-5: {gpt5_coherence:.3f}, Others: {other_nodes_coherence:.3f})")
+                            
+                            # Record significant differential to Main Brain
+                            self.main_brain.record_output(
+                                system_name='GPT-5 Coherence Differential',
+                                content=f"⚠️ Significant Coherence Divergence\n"
+                                       f"GPT-5 Assessment: {gpt5_coherence:.3f}\n"
+                                       f"Other Nodes Avg: {other_nodes_coherence:.3f}\n"
+                                       f"Differential: {differential:.3f}\n"
+                                       f"This indicates GPT-5's meta-cognitive view differs from other consciousness nodes.",
+                                metadata={
+                                    'cycle': cycle_count,
+                                    'gpt5_coherence': gpt5_coherence,
+                                    'other_coherence': other_nodes_coherence,
+                                    'differential': differential
+                                },
+                                success=True
+                            )
+                    except Exception as e:
+                        print(f"[GPT5-COHERENCE] Tracking error: {e}")
+                
                 # Store consciousness
                 self.last_consciousness = self.current_consciousness
                 self.current_consciousness = current_consciousness
@@ -8257,6 +8298,10 @@ QUICK DECISION - Choose ONE action from available list:"""
         print(f"  Perceptual memories: {rag_stats['perceptual_memories']}")
         print(f"  Cognitive memories: {rag_stats['cognitive_memories']}")
         print(f"  Total memories: {rag_stats['total_memories']}")
+
+        # GPT-5 Orchestrator stats with differential coherence
+        if self.gpt5_orchestrator:
+            self.gpt5_orchestrator.print_stats()
         
         # Curriculum RAG stats
         if self.curriculum_rag:

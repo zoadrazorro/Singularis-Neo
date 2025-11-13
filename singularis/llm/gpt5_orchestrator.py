@@ -100,6 +100,10 @@ class GPT5Orchestrator:
         self.total_responses = 0
         self.total_tokens_used = 0
         
+        # Differential coherence tracking
+        self.coherence_samples: List[Dict[str, float]] = []
+        self.max_coherence_samples = 100
+        
         # Console formatting
         self.console_width = 100
         
@@ -280,18 +284,21 @@ Provide:
 
 Be concise but insightful. Focus on coordination and optimization."""
             
-            # Build messages
-            messages = [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": msg.content}
-            ]
-            
-            # Add metadata as context if present
+            # Build user message with metadata embedded
+            user_content = f"[{msg.message_type}] {msg.content}"
             if msg.metadata:
-                messages.append({
+                user_content += f"\n\nContext: {json.dumps(msg.metadata)}"
+            
+            messages = [
+                {
                     "role": "system",
-                    "content": f"Context: {json.dumps(msg.metadata)}"
-                })
+                    "content": system_prompt
+                },
+                {
+                    "role": "user",
+                    "content": user_content
+                }
+            ]
             
             payload = {
                 "model": self.model,
@@ -359,9 +366,70 @@ Be concise but insightful. Focus on coordination and optimization."""
                 confidence=0.0
             )
     
+    def record_coherence_differential(
+        self,
+        gpt5_coherence: float,
+        other_nodes_coherence: float,
+        cycle: int
+    ):
+        """
+        Record differential coherence between GPT-5 and other consciousness nodes.
+        
+        Args:
+            gpt5_coherence: GPT-5's coherence assessment
+            other_nodes_coherence: Average coherence from other nodes
+            cycle: Current cycle number
+        """
+        differential = abs(gpt5_coherence - other_nodes_coherence)
+        
+        sample = {
+            'cycle': cycle,
+            'gpt5_coherence': gpt5_coherence,
+            'other_coherence': other_nodes_coherence,
+            'differential': differential,
+            'timestamp': time.time()
+        }
+        
+        self.coherence_samples.append(sample)
+        
+        # Keep only recent samples
+        if len(self.coherence_samples) > self.max_coherence_samples:
+            self.coherence_samples.pop(0)
+    
+    def get_coherence_stats(self) -> Dict[str, Any]:
+        """Get differential coherence statistics."""
+        if not self.coherence_samples:
+            return {
+                'samples': 0,
+                'avg_differential': 0.0,
+                'max_differential': 0.0,
+                'min_differential': 0.0,
+                'avg_gpt5_coherence': 0.0,
+                'avg_other_coherence': 0.0,
+                'agreement_rate': 0.0
+            }
+        
+        differentials = [s['differential'] for s in self.coherence_samples]
+        gpt5_coherences = [s['gpt5_coherence'] for s in self.coherence_samples]
+        other_coherences = [s['other_coherence'] for s in self.coherence_samples]
+        
+        # Agreement rate: differential < 0.1 (within 10%)
+        agreements = sum(1 for d in differentials if d < 0.1)
+        agreement_rate = agreements / len(differentials)
+        
+        return {
+            'samples': len(self.coherence_samples),
+            'avg_differential': sum(differentials) / len(differentials),
+            'max_differential': max(differentials),
+            'min_differential': min(differentials),
+            'avg_gpt5_coherence': sum(gpt5_coherences) / len(gpt5_coherences),
+            'avg_other_coherence': sum(other_coherences) / len(other_coherences),
+            'agreement_rate': agreement_rate
+        }
+    
     def get_stats(self) -> Dict[str, Any]:
         """Get orchestrator statistics."""
-        return {
+        stats = {
             "registered_systems": len(self.registered_systems),
             "total_messages": self.total_messages,
             "total_responses": self.total_responses,
@@ -370,6 +438,12 @@ Be concise but insightful. Focus on coordination and optimization."""
             "message_history_size": len(self.message_history),
             "response_history_size": len(self.response_history),
         }
+        
+        # Add coherence stats
+        coherence_stats = self.get_coherence_stats()
+        stats['coherence'] = coherence_stats
+        
+        return stats
     
     def print_stats(self):
         """Print statistics to console."""
@@ -377,6 +451,7 @@ Be concise but insightful. Focus on coordination and optimization."""
             return
         
         stats = self.get_stats()
+        coherence = stats['coherence']
         
         print("\n" + "="*self.console_width)
         print("GPT-5 ORCHESTRATOR STATISTICS".center(self.console_width))
@@ -386,4 +461,17 @@ Be concise but insightful. Focus on coordination and optimization."""
         print(f"Total Responses: {stats['total_responses']}")
         print(f"Total Tokens: {stats['total_tokens']:,}")
         print(f"Avg Tokens/Message: {stats['avg_tokens_per_message']:.1f}")
+        
+        # Differential coherence stats
+        if coherence['samples'] > 0:
+            print("\n" + "-"*self.console_width)
+            print("DIFFERENTIAL COHERENCE (GPT-5 vs Other Nodes)".center(self.console_width))
+            print("-"*self.console_width)
+            print(f"Samples Collected: {coherence['samples']}")
+            print(f"GPT-5 Avg Coherence: {coherence['avg_gpt5_coherence']:.3f}")
+            print(f"Other Nodes Avg Coherence: {coherence['avg_other_coherence']:.3f}")
+            print(f"Avg Differential: {coherence['avg_differential']:.3f}")
+            print(f"Max Differential: {coherence['max_differential']:.3f}")
+            print(f"Agreement Rate: {coherence['agreement_rate']:.1%} (within 10%)")
+        
         print("="*self.console_width + "\n")
