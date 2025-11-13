@@ -3915,14 +3915,20 @@ COHERENCE GAIN: <estimate 0.0-1.0 how much this increases understanding>
                 # Track RL usage
                 self.stats['rl_action_count'] += 1
                 
-                # Check if meta-strategist should generate new instruction
+                # Check if meta-strategist should generate new instruction (skip if no LLM)
                 checkpoint_meta_start = time.time()
-                if await self.meta_strategist.should_generate_instruction():
-                    instruction = await self.meta_strategist.generate_instruction(
-                        current_state=state_dict,
-                        q_values=q_values,
-                        motivation=motivation.dominant_drive().value
-                    )
+                if self.huihui_llm and await self.meta_strategist.should_generate_instruction():
+                    try:
+                        instruction = await asyncio.wait_for(
+                            self.meta_strategist.generate_instruction(
+                                current_state=state_dict,
+                                q_values=q_values,
+                                motivation=motivation.dominant_drive().value
+                            ),
+                            timeout=5.0
+                        )
+                    except (asyncio.TimeoutError, Exception) as e:
+                        print(f"[META-STRATEGIST] Skipping - error: {type(e).__name__}")
                 print(f"[PLANNING-CHECKPOINT] Meta-strategist check: {time.time() - checkpoint_meta_start:.3f}s")
                 
                 # Q-values already computed above
@@ -4059,27 +4065,31 @@ Format: ACTION: <action_name>"""
                 else:
                     print("[FALLBACK] Local MoE unavailable, using heuristics")
                 
-                # Also start Huihui in background for strategic reasoning
+                # Also start Huihui in background for strategic reasoning (if available)
                 visual_analysis = perception.get('visual_analysis', '')
                 if visual_analysis:
                     print(f"[QWEN3-VL] Passing visual analysis to Huihui: {visual_analysis[:100]}...")
                 
-                huihui_task = asyncio.create_task(
-                    self.rl_reasoning_neuron.reason_about_q_values(
-                        state=state_dict,
-                        q_values=q_values,
-                        available_actions=available_actions,
-                        context={
-                            'motivation': motivation.dominant_drive().value,
-                            'terrain_type': self.skyrim_world.classify_terrain_from_scene(
-                                scene_type.value,
-                                game_state.in_combat
-                            ),
-                            'meta_strategy': meta_context,
-                            'visual_analysis': visual_analysis
-                        }
+                # Only start Huihui if local LLM is available
+                if self.rl_reasoning_neuron.llm_interface:
+                    huihui_task = asyncio.create_task(
+                        self.rl_reasoning_neuron.reason_about_q_values(
+                            state=state_dict,
+                            q_values=q_values,
+                            available_actions=available_actions,
+                            context={
+                                'motivation': motivation.dominant_drive().value,
+                                'terrain_type': self.skyrim_world.classify_terrain_from_scene(
+                                    scene_type.value,
+                                    game_state.in_combat
+                                ),
+                                'meta_strategy': meta_context,
+                                'visual_analysis': visual_analysis
+                            }
+                        )
                     )
-                )
+                else:
+                    print("[HUIHUI-BG] Local LLM not available, skipping strategic analysis")
                 
                 # Compute fast heuristic immediately (no await needed)
                 print("[HEURISTIC-FAST] Computing quick action for Phi-4...")
