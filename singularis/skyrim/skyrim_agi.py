@@ -1743,17 +1743,17 @@ Connect perception → thought → action into flowing experience.""",
             await self.agi.initialize_llm()
             print("[LEGACY] ✓ Base Singularis AGI initialized")
             
+            # Connect Huihui to AGI orchestrator for dialectical reasoning (cycle 15)
+            self.agi.consciousness_llm = self.huihui_llm
+            self.consciousness_bridge.consciousness_llm = self.huihui_llm
+            print("[LEGACY] ✓ Huihui connected to AGI orchestrator (enables dialectical synthesis)")
+            
             # Connect to components
             self.rl_reasoning_neuron.llm_interface = self.huihui_llm
             self.meta_strategist.llm_interface = self.huihui_llm
             self.strategic_planner.llm_interface = self.huihui_llm
             self.quest_tracker.set_llm_interface(self.huihui_llm)
             self.dialogue_intelligence.set_llm_interface(self.huihui_llm)
-            
-            if hasattr(self.agi, 'consciousness_llm') and self.agi.consciousness_llm:
-                self.consciousness_bridge.consciousness_llm = self.agi.consciousness_llm
-            else:
-                self.consciousness_bridge.consciousness_llm = self.huihui_llm
             
             print("[LEGACY] ✓ Legacy LLM system ready")
             

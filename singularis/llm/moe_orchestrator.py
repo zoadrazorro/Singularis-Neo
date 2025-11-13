@@ -2,9 +2,10 @@
 Mixture of Experts (MoE) Orchestrator for Singularis
 
 Implements a parallel MoE architecture with:
-- 2x Gemini Flash 2.0 experts (vision, perception, spatial reasoning)
+- 1x Gemini Flash 2.0 expert (vision, perception, spatial reasoning)
 - 1x Claude Sonnet 4 expert (strategic planning, tactical reasoning, world modeling)
 - 1x GPT-4o expert (integration synthesis, cross-domain reasoning)
+- 1x GPT-5-mini expert (fast reasoning, cost-effective processing)
 - 1x NVIDIA Nemotron Nano 12B VL expert (visual awareness)
 - 1x Qwen3-235B expert (meta-meta cognition)
 
@@ -22,7 +23,7 @@ from __future__ import annotations
 import asyncio
 import time
 from typing import Any, Dict, List, Optional, Tuple
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 import statistics
 from collections import deque
@@ -132,20 +133,22 @@ class MoEOrchestrator:
     
     def __init__(
         self,
-        num_gemini_experts: int = 2,  # Reduced from 6 (60% reduction)
+        num_gemini_experts: int = 1,  # Reduced from 2 for efficiency
         num_claude_experts: int = 1,  # Reduced from 3 (60% reduction)
         num_openai_experts: int = 1,  # GPT-4o expert for integration synthesis
+        num_openai_mini_experts: int = 1,  # GPT-5-mini expert for fast reasoning
         num_hyperbolic_vision_experts: int = 1,  # NVIDIA Nemotron for visual awareness
         num_hyperbolic_reasoning_experts: int = 1,  # Qwen3-235B for meta-cognition
         gemini_model: str = "gemini-2.5-flash",
         claude_model: str = "claude-sonnet-4-5-20250929",
         openai_model: str = "gpt-4o",
+        openai_mini_model: str = "gpt-5-mini",  # GPT-5-mini for fast, cost-effective reasoning
         hyperbolic_vision_model: str = "nvidia/NVIDIA-Nemotron-Nano-12B-v2-VL-BF16",
         hyperbolic_reasoning_model: str = "Qwen/Qwen2.5-72B-Instruct",  # Must use org/model format
         # Rate limits (requests per minute) - INCREASED for better performance
         gemini_rpm_limit: int = 30,  # Increased from 10 to reduce rate limit issues
         claude_rpm_limit: int = 100,  # Increased from 50 for better throughput
-        openai_rpm_limit: int = 500,  # GPT-4o has higher limits
+        openai_rpm_limit: int = 500,  # GPT-4o and GPT-5-mini have higher limits
         hyperbolic_rpm_limit: int = 100,  # Hyperbolic rate limit
         # Token limits (tokens per minute)
         gemini_tpm_limit: int = 4_000_000,  # Gemini 2.0 Flash limit
@@ -157,11 +160,13 @@ class MoEOrchestrator:
         self.num_gemini_experts = num_gemini_experts
         self.num_claude_experts = num_claude_experts
         self.num_openai_experts = num_openai_experts
+        self.num_openai_mini_experts = num_openai_mini_experts
         self.num_hyperbolic_vision_experts = num_hyperbolic_vision_experts
         self.num_hyperbolic_reasoning_experts = num_hyperbolic_reasoning_experts
         self.gemini_model = gemini_model
         self.claude_model = claude_model
         self.openai_model = openai_model
+        self.openai_mini_model = openai_mini_model
         self.hyperbolic_vision_model = hyperbolic_vision_model
         self.hyperbolic_reasoning_model = hyperbolic_reasoning_model
         
@@ -176,18 +181,18 @@ class MoEOrchestrator:
         self.hyperbolic_tpm_limit = hyperbolic_tpm_limit
         
         # Per-expert rate limits (divide total by number of experts)
-        self.gemini_per_expert_rpm = max(1, gemini_rpm_limit // num_gemini_experts)
-        self.claude_per_expert_rpm = max(1, claude_rpm_limit // num_claude_experts)
-        self.openai_per_expert_rpm = max(1, openai_rpm_limit // num_openai_experts)
+        self.gemini_per_expert_rpm = max(1, gemini_rpm_limit // num_gemini_experts) if num_gemini_experts > 0 else gemini_rpm_limit
+        self.claude_per_expert_rpm = max(1, claude_rpm_limit // num_claude_experts) if num_claude_experts > 0 else claude_rpm_limit
+        total_openai = num_openai_experts + num_openai_mini_experts
+        self.openai_per_expert_rpm = max(1, openai_rpm_limit // total_openai) if total_openai > 0 else openai_rpm_limit
         total_hyperbolic = num_hyperbolic_vision_experts + num_hyperbolic_reasoning_experts
         self.hyperbolic_per_expert_rpm = max(1, hyperbolic_rpm_limit // max(1, total_hyperbolic))
         
         # Expert pools
         self.gemini_experts: List[GeminiClient] = []
-        # Expert pools
-        self.gemini_experts: List[GeminiClient] = []
         self.claude_experts: List[ClaudeClient] = []
-        self.openai_experts: List = []  # Will be OpenAIClient instances
+        self.openai_experts: List = []  # Will be OpenAIClient instances (GPT-4o)
+        self.openai_mini_experts: List = []  # Will be OpenAIClient instances (GPT-5-mini)
         self.hyperbolic_vision_experts: List = []  # Will be HyperbolicClient instances
         self.hyperbolic_reasoning_experts: List = []  # Will be HyperbolicClient instances
         
@@ -351,6 +356,32 @@ class MoEOrchestrator:
             else:
                 logger.warning(f"OpenAI expert {i+1} unavailable (missing OPENAI_API_KEY)")
         
+        # Initialize OpenAI GPT-5-mini experts
+        openai_mini_roles = [
+            ExpertRole.TACTICAL_EXECUTOR,  # Fast reasoning for immediate decisions
+        ]
+        
+        for i in range(self.num_openai_mini_experts):
+            client = OpenAIClient(model=self.openai_mini_model)
+            if client.is_available():
+                self.openai_mini_experts.append(client)
+                
+                # Assign role
+                role = openai_mini_roles[i % len(openai_mini_roles)]
+                self.expert_configs[role] = ExpertConfig(
+                    role=role,
+                    model_type="openai",
+                    model_name=self.openai_mini_model,
+                    temperature=0.5 + (i * 0.1),  # Lower temp for fast, focused reasoning
+                    max_tokens=2048,  # GPT-5-mini optimized for efficiency
+                    specialization_prompt=self._get_specialization_prompt(role),
+                    weight=1.0  # Standard weight for fast reasoning
+                )
+                
+                logger.info(f"✓ OpenAI GPT-5-mini Expert {i+1}: {role.value}")
+            else:
+                logger.warning(f"OpenAI mini expert {i+1} unavailable (missing OPENAI_API_KEY)")
+        
         # Initialize Hyperbolic NVIDIA Nemotron vision experts
         hyperbolic_vision_roles = [
             ExpertRole.VISUAL_AWARENESS,
@@ -404,7 +435,7 @@ class MoEOrchestrator:
                 logger.warning(f"Hyperbolic reasoning expert {i+1} unavailable (missing HYPERBOLIC_API_KEY)")
         
         total_experts = (len(self.gemini_experts) + len(self.claude_experts) + len(self.openai_experts) + 
-                        len(self.hyperbolic_vision_experts) + len(self.hyperbolic_reasoning_experts))
+                        len(self.openai_mini_experts) + len(self.hyperbolic_vision_experts) + len(self.hyperbolic_reasoning_experts))
         logger.info(f"MoE initialization complete: {total_experts} experts ready")
         
         if total_experts == 0:
@@ -1117,6 +1148,14 @@ class MoEOrchestrator:
             await expert.close()
         for expert in self.claude_experts:
             await expert.close()
+        for expert in self.openai_experts:
+            await expert.close()
+        for expert in self.openai_mini_experts:
+            await expert.close()
+        for expert in self.hyperbolic_vision_experts:
+            await expert.close()
+        for expert in self.hyperbolic_reasoning_experts:
+            await expert.close()
         
         logger.info("MoE Orchestrator closed")
     
@@ -1126,5 +1165,10 @@ class MoEOrchestrator:
             **self.stats,
             'num_gemini_experts': len(self.gemini_experts),
             'num_claude_experts': len(self.claude_experts),
-            'total_experts': len(self.gemini_experts) + len(self.claude_experts)
+            'num_openai_experts': len(self.openai_experts),
+            'num_openai_mini_experts': len(self.openai_mini_experts),
+            'num_hyperbolic_vision_experts': len(self.hyperbolic_vision_experts),
+            'num_hyperbolic_reasoning_experts': len(self.hyperbolic_reasoning_experts),
+            'total_experts': (len(self.gemini_experts) + len(self.claude_experts) + len(self.openai_experts) + 
+                            len(self.openai_mini_experts) + len(self.hyperbolic_vision_experts) + len(self.hyperbolic_reasoning_experts))
         }
