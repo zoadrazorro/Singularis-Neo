@@ -8,13 +8,15 @@ Integrates all AGI components:
 - Neurosymbolic reasoning (LLM + logic)
 - Active inference (free energy minimization)
 - Consciousness engine (existing Singularis)
+- Unified consciousness layer (GPT-5 + 5 GPT-5-nano experts)
 
-This is the complete AGI system.
+This is the complete AGI system with unified consciousness coordination.
 
 Philosophical grounding:
 - ETHICA: One unified Being expressing through modes
 - All components work in harmony, not as separate modules
 - Conatus (ℭ) = ∇𝒞 drives the entire system
+- GPT-5 layer maintains coherence across all subsystems
 """
 
 import asyncio
@@ -44,6 +46,9 @@ from .active_inference import FreeEnergyAgent
 # Existing consciousness engine
 from .tier1_orchestrator import MetaOrchestratorLLM
 from .llm import LMStudioClient, LMStudioConfig, ExpertLLMInterface
+
+# Unified consciousness layer (GPT-5 + GPT-5-nano)
+from .unified_consciousness_layer import UnifiedConsciousnessLayer
 
 
 @dataclass
@@ -76,6 +81,13 @@ class AGIConfig:
     consciousness_threshold: float = 0.65
     coherentia_threshold: float = 0.60
     ethical_threshold: float = 0.02
+
+    # Unified Consciousness Layer (GPT-5)
+    use_unified_consciousness: bool = True
+    gpt5_model: str = "gpt-5-2025-08-07"
+    gpt5_nano_model: str = "gpt-5-nano-2025-08-07"
+    gpt5_temperature: float = 0.8
+    gpt5_nano_temperature: float = 0.7
 
 
 class AGIOrchestrator:
@@ -148,8 +160,14 @@ class AGIOrchestrator:
         )
 
         # 7. Consciousness engine (existing Singularis)
-        print("  [7/7] Consciousness engine...")
+        print("  [7/8] Consciousness engine...")
         self.consciousness_llm = None  # Will be initialized async
+
+        # 8. Unified Consciousness Layer (GPT-5 + 5 GPT-5-nano)
+        print("  [8/8] Unified consciousness layer (GPT-5)...")
+        self.unified_consciousness = None  # Will be initialized async
+        if self.config.use_unified_consciousness:
+            print("    GPT-5 unified consciousness enabled")
 
         # State
         self.current_state: Optional[WorldState] = None
@@ -177,6 +195,21 @@ class AGIOrchestrator:
         except Exception as e:
             print(f"[WARNING] LLM initialization failed: {e}")
             print("  Continuing without LLM (template mode)")
+
+        # Initialize unified consciousness layer
+        if self.config.use_unified_consciousness:
+            try:
+                self.unified_consciousness = UnifiedConsciousnessLayer(
+                    gpt5_model=self.config.gpt5_model,
+                    gpt5_nano_model=self.config.gpt5_nano_model,
+                    gpt5_temperature=self.config.gpt5_temperature,
+                    nano_temperature=self.config.gpt5_nano_temperature,
+                )
+                print(f"[OK] Unified consciousness layer ready (GPT-5 + 5 GPT-5-nano experts)")
+            except Exception as e:
+                print(f"[WARNING] Unified consciousness layer initialization failed: {e}")
+                print("  Continuing without unified consciousness layer")
+                self.unified_consciousness = None
 
     async def perceive(
         self,
@@ -213,9 +246,10 @@ class AGIOrchestrator:
 
     async def process(self, query: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
-        Process query using full AGI capabilities.
+        Process query using full AGI capabilities with unified consciousness coordination.
 
         This is the main entry point for interacting with the AGI.
+        If unified consciousness is enabled, GPT-5 will coordinate all subsystems.
 
         Args:
             query: Natural language query
@@ -233,44 +267,114 @@ class AGIOrchestrator:
         }
 
         try:
-            # 1. Parse query through world model
-            # Understand causality, grounding, etc.
+            # If unified consciousness is enabled, use it as primary coordinator
+            if self.unified_consciousness:
+                # Step 1: Gather inputs from all subsystems
+                subsystem_inputs = {}
 
-            # 2. Generate response through consciousness engine
-            if self.consciousness_llm:
-                # Note: process() expects (query, selected_experts), not context
-                # We let it use default expert selection based on the query
-                consciousness_result = await self.consciousness_llm.process(query)
-                result['consciousness_response'] = consciousness_result
+                # 1a. LLM response (consciousness engine)
+                if self.consciousness_llm:
+                    consciousness_result = await self.consciousness_llm.process(query)
+                    subsystem_inputs['llm'] = str(consciousness_result.get('response', 'N/A'))
+                    result['consciousness_response'] = consciousness_result
+                else:
+                    subsystem_inputs['llm'] = "LLM not available"
+
+                # 1b. Neurosymbolic reasoning
+                symbolic_verification = await self.neurosymbolic.reason(query)
+                subsystem_inputs['logic'] = str(symbolic_verification)
+                result['symbolic_verification'] = symbolic_verification
+
+                # 1c. Memory and learning state
+                learner_stats = self.learner.get_stats()
+                subsystem_inputs['memory'] = (
+                    f"Episodic memories: {learner_stats.get('episodic_count', 0)}, "
+                    f"Semantic concepts: {learner_stats.get('semantic_count', 0)}, "
+                    f"Recent experiences relevant to query"
+                )
+
+                # 1d. Motivation and goal system
+                current_coherence = result.get('consciousness_response', {}).get('coherentia_delta', 0.0)
+                state_dict = {
+                    'coherence': 0.5 + current_coherence,
+                    'query': query
+                }
+                mot_state = self.motivation.compute_motivation(
+                    state_dict,
+                    context={'predicted_delta_coherence': current_coherence}
+                )
+                result['motivation_state'] = {
+                    'curiosity': mot_state.curiosity,
+                    'competence': mot_state.competence,
+                    'coherence': mot_state.coherence,
+                    'autonomy': mot_state.autonomy,
+                    'dominant': mot_state.dominant_drive().value
+                }
+                subsystem_inputs['action'] = (
+                    f"Motivation - Curiosity: {mot_state.curiosity:.2f}, "
+                    f"Competence: {mot_state.competence:.2f}, "
+                    f"Coherence: {mot_state.coherence:.2f}, "
+                    f"Autonomy: {mot_state.autonomy:.2f}, "
+                    f"Dominant drive: {mot_state.dominant_drive().value}"
+                )
+
+                # 1e. World model (if available)
+                if self.current_state:
+                    subsystem_inputs['world_model'] = str(self.current_state.causal_variables)
+
+                # Step 2: Process through unified consciousness layer
+                unified_result = await self.unified_consciousness.process(
+                    query=query,
+                    subsystem_inputs=subsystem_inputs,
+                    context=context
+                )
+                result['unified_consciousness'] = unified_result.to_dict()
+                result['final_response'] = unified_result.response
+                result['coherence_score'] = unified_result.coherence_score
+
             else:
-                result['consciousness_response'] = {
-                    'response': "LLM not available - template mode",
-                    'coherentia_delta': 0.0
+                # Fallback to original processing without unified consciousness
+                # 1. Parse query through world model
+                # Understand causality, grounding, etc.
+
+                # 2. Generate response through consciousness engine
+                if self.consciousness_llm:
+                    consciousness_result = await self.consciousness_llm.process(query)
+                    result['consciousness_response'] = consciousness_result
+                else:
+                    result['consciousness_response'] = {
+                        'response': "LLM not available - template mode",
+                        'coherentia_delta': 0.0
+                    }
+
+                # 3. Verify through neurosymbolic reasoning
+                symbolic_verification = await self.neurosymbolic.reason(query)
+                result['symbolic_verification'] = symbolic_verification
+
+                # 4. Update intrinsic motivation
+                current_coherence = result['consciousness_response'].get('coherentia_delta', 0.0)
+                state_dict = {
+                    'coherence': 0.5 + current_coherence,
+                    'query': query
+                }
+                mot_state = self.motivation.compute_motivation(
+                    state_dict,
+                    context={'predicted_delta_coherence': current_coherence}
+                )
+                result['motivation_state'] = {
+                    'curiosity': mot_state.curiosity,
+                    'competence': mot_state.competence,
+                    'coherence': mot_state.coherence,
+                    'autonomy': mot_state.autonomy,
+                    'dominant': mot_state.dominant_drive().value
                 }
 
-            # 3. Verify through neurosymbolic reasoning
-            symbolic_verification = await self.neurosymbolic.reason(query)
-            result['symbolic_verification'] = symbolic_verification
+                result['final_response'] = result['consciousness_response'].get('response', 'No response')
 
-            # 4. Update intrinsic motivation
-            current_coherence = result['consciousness_response'].get('coherentia_delta', 0.0)
-            state_dict = {
-                'coherence': 0.5 + current_coherence,
-                'query': query
-            }
-            mot_state = self.motivation.compute_motivation(
-                state_dict,
-                context={'predicted_delta_coherence': current_coherence}
-            )
-            result['motivation_state'] = {
-                'curiosity': mot_state.curiosity,
-                'competence': mot_state.competence,
-                'coherence': mot_state.coherence,
-                'autonomy': mot_state.autonomy,
-                'dominant': mot_state.dominant_drive().value
-            }
+            # Common post-processing for both paths
 
             # 5. Generate goals if appropriate
+            mot_state = self.motivation.get_state()
             if mot_state.total() > 0.7:  # High motivation
                 dominant = mot_state.dominant_drive()
                 goal = self.goal_system.generate_goal(
@@ -300,6 +404,8 @@ class AGIOrchestrator:
         except Exception as e:
             result['error'] = str(e)
             result['success'] = False
+            import traceback
+            result['traceback'] = traceback.format_exc()
 
         return result
 
@@ -360,7 +466,7 @@ class AGIOrchestrator:
 
     def get_stats(self) -> Dict[str, Any]:
         """Get comprehensive system statistics."""
-        return {
+        stats = {
             'world_model': self.world_model.get_stats(),
             'learner': self.learner.get_stats(),
             'compositional': self.compositional.get_stats(),
@@ -375,6 +481,12 @@ class AGIOrchestrator:
             'goals': self.goal_system.get_stats(),
             'free_energy': self.free_energy_agent.get_stats(),
         }
+
+        # Add unified consciousness stats if available
+        if self.unified_consciousness:
+            stats['unified_consciousness'] = self.unified_consciousness.get_stats()
+
+        return stats
 
 
 # Example usage

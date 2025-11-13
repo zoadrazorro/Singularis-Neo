@@ -17,12 +17,13 @@ Architecture:
 - Tier 3: Swarm Neurons (18 micro-agents)
 - Consciousness Measurement: 8-theory fusion
 - Ethical Validation: Coherentia-based alignment
+- Unified Consciousness Layer: GPT-5 + 5 GPT-5-nano experts
 
-Version: 1.0.0
-Status: Production Implementation
+Version: 1.1.0
+Status: Production Implementation with Unified Consciousness
 """
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 __author__ = "Singularis Project"
 
 from singularis.core.types import (
@@ -38,6 +39,8 @@ from singularis.tier1_orchestrator.orchestrator import MetaOrchestrator
 from singularis.tier2_experts.base import Expert
 from singularis.tier3_neurons.base import Neuron  # Phase 3: Hebbian Learning
 from singularis.tier3_neurons.swarm import NeuronSwarm
+from singularis.unified_consciousness_layer import UnifiedConsciousnessLayer
+from singularis.agi_orchestrator import AGIOrchestrator, AGIConfig
 
 __all__ = [
     "Lumen",
@@ -52,4 +55,7 @@ __all__ = [
     "Expert",
     "Neuron",  # Phase 3
     "NeuronSwarm",  # Phase 3
+    "UnifiedConsciousnessLayer",  # GPT-5 + 5 GPT-5-nano experts
+    "AGIOrchestrator",  # Complete AGI system
+    "AGIConfig",  # AGI configuration
 ]
