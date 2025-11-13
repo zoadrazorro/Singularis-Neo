@@ -50,6 +50,9 @@ from .llm import LMStudioClient, LMStudioConfig, ExpertLLMInterface
 # Unified consciousness layer (GPT-5 + GPT-5-nano)
 from .unified_consciousness_layer import UnifiedConsciousnessLayer
 
+# Emotion system (HuiHui)
+from .emotion import HuiHuiEmotionEngine, EmotionConfig, EmotionState
+
 
 @dataclass
 class AGIConfig:
@@ -88,6 +91,12 @@ class AGIConfig:
     gpt5_nano_model: str = "gpt-5-nano-2025-08-07"
     gpt5_temperature: float = 0.8
     gpt5_nano_temperature: float = 0.7
+
+    # Emotion System (HuiHui)
+    use_emotion_system: bool = True
+    emotion_model: str = "huihui-moe-60b-a38"
+    emotion_temperature: float = 0.8
+    emotion_decay_rate: float = 0.1
 
 
 class AGIOrchestrator:
@@ -164,13 +173,27 @@ class AGIOrchestrator:
         self.consciousness_llm = None  # Will be initialized async
 
         # 8. Unified Consciousness Layer (GPT-5 + 5 GPT-5-nano)
-        print("  [8/8] Unified consciousness layer (GPT-5)...")
+        print("  [8/9] Unified consciousness layer (GPT-5)...")
         self.unified_consciousness = None  # Will be initialized async
         if self.config.use_unified_consciousness:
             print("    GPT-5 unified consciousness enabled")
 
+        # 9. Emotion System (HuiHui)
+        print("  [9/9] Emotion system (HuiHui)...")
+        self.emotion_engine = None  # Will be initialized async
+        if self.config.use_emotion_system:
+            emotion_config = EmotionConfig(
+                lm_studio_url=self.config.lm_studio_url,
+                model_name=self.config.emotion_model,
+                temperature=self.config.emotion_temperature,
+                decay_rate=self.config.emotion_decay_rate
+            )
+            self.emotion_engine = HuiHuiEmotionEngine(emotion_config)
+            print("    HuiHui emotion system enabled")
+
         # State
         self.current_state: Optional[WorldState] = None
+        self.current_emotion: Optional[EmotionState] = None
         self.running = False
 
         print("[OK] AGI system initialized\n")
@@ -210,6 +233,15 @@ class AGIOrchestrator:
                 print(f"[WARNING] Unified consciousness layer initialization failed: {e}")
                 print("  Continuing without unified consciousness layer")
                 self.unified_consciousness = None
+
+        # Initialize emotion system
+        if self.config.use_emotion_system and self.emotion_engine:
+            try:
+                await self.emotion_engine.initialize_llm()
+                print(f"[OK] HuiHui emotion system ready")
+            except Exception as e:
+                print(f"[WARNING] Emotion system initialization failed: {e}")
+                print("  Continuing with rule-based emotion system")
 
     async def perceive(
         self,
@@ -322,6 +354,29 @@ class AGIOrchestrator:
                 if self.current_state:
                     subsystem_inputs['world_model'] = str(self.current_state.causal_variables)
 
+                # 1f. Emotion system (HuiHui) - process in parallel
+                if self.emotion_engine:
+                    emotion_context = {
+                        'state_summary': f"Query: {query}, Coherence: {current_coherence:.3f}",
+                        'motivation': result.get('motivation_state', {})
+                    }
+                    emotion_state = await self.emotion_engine.process_emotion(
+                        context=emotion_context,
+                        stimuli=query,
+                        coherence_delta=current_coherence,
+                        adequacy_score=result.get('consciousness_response', {}).get('adequacy', 0.5)
+                    )
+                    self.current_emotion = emotion_state
+                    result['emotion_state'] = emotion_state.to_dict()
+                    subsystem_inputs['emotion'] = (
+                        f"Emotion: {emotion_state.primary_emotion.value}, "
+                        f"Intensity: {emotion_state.intensity:.2f}, "
+                        f"Valence: {emotion_state.valence.valence:.2f}, "
+                        f"Arousal: {emotion_state.valence.arousal:.2f}"
+                    )
+                else:
+                    subsystem_inputs['emotion'] = "Emotion system not available"
+
                 # Step 2: Process through unified consciousness layer
                 unified_result = await self.unified_consciousness.process(
                     query=query,
@@ -368,6 +423,21 @@ class AGIOrchestrator:
                     'autonomy': mot_state.autonomy,
                     'dominant': mot_state.dominant_drive().value
                 }
+
+                # 4b. Process emotion (HuiHui) - in parallel with other systems
+                if self.emotion_engine:
+                    emotion_context = {
+                        'state_summary': f"Query: {query}, Coherence: {current_coherence:.3f}",
+                        'motivation': result.get('motivation_state', {})
+                    }
+                    emotion_state = await self.emotion_engine.process_emotion(
+                        context=emotion_context,
+                        stimuli=query,
+                        coherence_delta=current_coherence,
+                        adequacy_score=result['consciousness_response'].get('adequacy', 0.5)
+                    )
+                    self.current_emotion = emotion_state
+                    result['emotion_state'] = emotion_state.to_dict()
 
                 result['final_response'] = result['consciousness_response'].get('response', 'No response')
 
@@ -485,6 +555,10 @@ class AGIOrchestrator:
         # Add unified consciousness stats if available
         if self.unified_consciousness:
             stats['unified_consciousness'] = self.unified_consciousness.get_stats()
+
+        # Add emotion system stats if available
+        if self.emotion_engine:
+            stats['emotion_system'] = self.emotion_engine.get_stats()
 
         return stats
 

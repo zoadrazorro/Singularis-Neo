@@ -460,6 +460,9 @@ class Affect:
     # Specific affects (from ETHICA Part IV)
     affect_type: str  # joy, sadness, fear, hope, love, hatred, etc.
 
+    # HuiHui emotion system integration (optional)
+    emotion_state: Optional[Dict[str, Any]] = None  # Full emotion state from HuiHui
+
     @staticmethod
     def classify(
         valence_delta: float,
