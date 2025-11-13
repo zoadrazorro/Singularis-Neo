@@ -41,6 +41,7 @@ from .skyrim_world_model import SkyrimWorldModel
 from .skyrim_cognition import SkyrimCognitiveState, SkyrimMotivation, SkyrimActionEvaluator
 from .strategic_planner import StrategicPlannerNeuron
 from .menu_learner import MenuLearner
+from .action_affordances import ActionAffordanceSystem
 from .memory_rag import MemoryRAG
 from .curriculum_rag import CurriculumRAG, CATEGORY_MAPPINGS
 from .smart_context import SmartContextManager
@@ -292,6 +293,10 @@ class SkyrimAGI:
         # 8. Menu Learner
         print("  [8/11] Menu interaction learner...")
         self.menu_learner = MenuLearner()
+        
+        # 8b. Action Affordances System
+        print("  [8b/11] Action affordances system...")
+        self.action_affordances = ActionAffordanceSystem()
 
         # 9. Memory RAG System
         print("  [9/11] Memory RAG system...")
