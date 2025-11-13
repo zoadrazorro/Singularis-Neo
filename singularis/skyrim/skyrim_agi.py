@@ -6057,14 +6057,7 @@ QUICK DECISION - Choose ONE action from available list:"""
                 },
                 
                 # Game state
-                'game_state': {
-                    'health': self.current_perception.get('game_state', {}).get('health', 100) if self.current_perception else 100,
-                    'magicka': self.current_perception.get('game_state', {}).get('magicka', 100) if self.current_perception else 100,
-                    'stamina': self.current_perception.get('game_state', {}).get('stamina', 100) if self.current_perception else 100,
-                    'in_combat': self.current_perception.get('game_state', {}).get('in_combat', False) if self.current_perception else False,
-                    'in_menu': self.current_perception.get('game_state', {}).get('in_menu', False) if self.current_perception else False,
-                    'location': 'Skyrim'  # TODO: Extract from perception
-                },
+                'game_state': self._extract_game_state(),
                 
                 # Consciousness
                 'consciousness': {
@@ -6117,6 +6110,52 @@ QUICK DECISION - Choose ONE action from available list:"""
         except Exception as e:
             # Don't crash the AGI if dashboard fails
             print(f"[DASHBOARD] Warning: Update failed: {e}")
+    
+    def _extract_game_state(self) -> Dict[str, Any]:
+        """Extract game state from perception, handling both dict and GameState object."""
+        if not self.current_perception:
+            return {
+                'health': 100,
+                'magicka': 100,
+                'stamina': 100,
+                'in_combat': False,
+                'in_menu': False,
+                'location': 'Unknown'
+            }
+        
+        game_state = self.current_perception.get('game_state')
+        
+        # Handle GameState object (dataclass)
+        if game_state and hasattr(game_state, 'health'):
+            return {
+                'health': getattr(game_state, 'health', 100),
+                'magicka': getattr(game_state, 'magicka', 100),
+                'stamina': getattr(game_state, 'stamina', 100),
+                'in_combat': getattr(game_state, 'in_combat', False),
+                'in_menu': getattr(game_state, 'in_menu', False),
+                'location': getattr(game_state, 'location_name', 'Unknown')
+            }
+        
+        # Handle dictionary
+        if isinstance(game_state, dict):
+            return {
+                'health': game_state.get('health', 100),
+                'magicka': game_state.get('magicka', 100),
+                'stamina': game_state.get('stamina', 100),
+                'in_combat': game_state.get('in_combat', False),
+                'in_menu': game_state.get('in_menu', False),
+                'location': game_state.get('location', 'Unknown')
+            }
+        
+        # Fallback
+        return {
+            'health': 100,
+            'magicka': 100,
+            'stamina': 100,
+            'in_combat': False,
+            'in_menu': False,
+            'location': 'Unknown'
+        }
     
     def _get_active_models(self) -> list:
         """Get list of currently active LLM models."""

@@ -28,27 +28,10 @@ import numpy as np
 
 from loguru import logger
 
-# Try ChromaDB first
+# ChromaDB disabled - using simple fallback
 CHROMADB_AVAILABLE = False
 FAISS_AVAILABLE = False
-
-try:
-    import chromadb
-    from chromadb.config import Settings
-    CHROMADB_AVAILABLE = True
-    logger.info("ChromaDB available for RAG")
-except (ImportError, Exception) as e:
-    logger.warning(f"ChromaDB not available: {e}")
-    
-    # Try FAISS as alternative
-    try:
-        import faiss
-        from sentence_transformers import SentenceTransformer
-        FAISS_AVAILABLE = True
-        logger.info("Using FAISS for RAG (ChromaDB unavailable)")
-    except ImportError:
-        logger.warning("FAISS not available either. Install with: pip install faiss-cpu sentence-transformers")
-        logger.info("RAG features will be disabled.")
+logger.info("RAG features disabled (ChromaDB/FAISS not used)")
 
 
 @dataclass
