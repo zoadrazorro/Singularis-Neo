@@ -2659,6 +2659,23 @@ Connect perception → thought → action into flowing experience.""",
         self.action_executing = False  # Flag to prevent auxiliary exploration during main actions
         start_time = time.time()
         
+        # ═══════════════════════════════════════════════════════════
+        # START LIVE AUDIO STREAM (if enabled)
+        # ═══════════════════════════════════════════════════════════
+        if self.live_audio and self.config.enable_live_audio:
+            try:
+                await self.live_audio.start_stream()
+                print("[LIVE AUDIO] 🎙️ Real-time commentary started")
+                
+                self.main_brain.record_output(
+                    system_name='Live Audio Stream',
+                    content="Real-time audio commentary activated",
+                    metadata={'cycle': 0},
+                    success=True
+                )
+            except Exception as e:
+                print(f"[LIVE AUDIO] Failed to start: {e}")
+        
         # Stuck detection tracking
         self.cloud_llm_failures = 0
         self.local_moe_failures = 0
@@ -3271,6 +3288,28 @@ Based on this visual and contextual data, provide:
                     }
                 )
                 
+                # ═══════════════════════════════════════════════════════════
+                # VIDEO INTERPRETER - Real-time video analysis
+                # ═══════════════════════════════════════════════════════════
+                if self.video_interpreter and self.config.enable_video_interpreter and cycle_count % 10 == 0:  # Every 10 cycles
+                    try:
+                        screenshot = perception.get('screenshot')
+                        if screenshot is not None:
+                            interpretation = await self.interpret_video_frame(
+                                frame=screenshot,
+                                cycle=cycle_count
+                            )
+                            
+                            if interpretation:
+                                self.main_brain.record_output(
+                                    system_name='Video Interpreter',
+                                    content=f"Real-time Analysis:\n{interpretation[:400]}",
+                                    metadata={'cycle': cycle_count, 'mode': 'COMPREHENSIVE'},
+                                    success=True
+                                )
+                    except Exception as e:
+                        print(f"[VIDEO] Interpretation error: {e}")
+                
                 # STATE COORDINATOR: Update from perception subsystem
                 self.state_coordinator.update(
                     subsystem='perception',
@@ -3309,6 +3348,41 @@ Based on this visual and contextual data, provide:
                         )
                         if dialogue_choice:
                             print(f"[DIALOGUE-INTELLIGENCE] Recommended: {dialogue_choice}")
+                
+                # ═══════════════════════════════════════════════════════════
+                # TEMPORAL BINDING - Track perception→action→outcome loops
+                # ═══════════════════════════════════════════════════════════
+                binding_id = None
+                if self.temporal_tracker and self.config.enable_temporal_binding:
+                    try:
+                        # Calculate visual similarity
+                        similarity = perception.get('visual_similarity', 0.0)
+                        
+                        # Start new temporal binding
+                        binding_id = await self.temporal_tracker.start_binding(
+                            perception={
+                                'visual_similarity': similarity,
+                                'scene': scene_type.value,
+                                'location': game_state.location_name
+                            },
+                            cycle=cycle_count
+                        )
+                        
+                        # Check for stuck loops
+                        if similarity > 0.95:
+                            stuck_loops = self.temporal_tracker.detect_stuck_loops(threshold=0.95)
+                            if stuck_loops:
+                                print(f"[TEMPORAL] ⚠️ STUCK LOOP DETECTED! {len(stuck_loops)} loops, similarity={similarity:.3f}")
+                                
+                                # Record to Main Brain
+                                self.main_brain.record_output(
+                                    system_name='Temporal Binding',
+                                    content=f"🚨 Stuck Loop Detected\nSimilarity: {similarity:.3f}\nLoops: {len(stuck_loops)}\nForcing exploration...",
+                                    metadata={'cycle': cycle_count, 'stuck_count': len(stuck_loops), 'similarity': similarity},
+                                    success=True
+                                )
+                    except Exception as e:
+                        print(f"[TEMPORAL] Binding start error: {e}")
                 
                 # Compute world state and consciousness (consciousness runs in parallel, no semaphore)
                 world_state = await self.agi.perceive({
@@ -3353,6 +3427,36 @@ Based on this visual and contextual data, provide:
                     )
                     self.current_goal = goal.description
                     print(f"[REASONING] New goal: {self.current_goal}")
+                
+                # ═══════════════════════════════════════════════════════════
+                # LUMEN BALANCE - Philosophical grounding check
+                # ═══════════════════════════════════════════════════════════
+                if self.lumen_integration and self.config.enable_lumen_balance and cycle_count % 15 == 0:  # Every 15 cycles
+                    try:
+                        # Measure balance across active systems
+                        system_activations = {
+                            'sensorimotor': 1.0 if perception else 0.0,
+                            'action_planning': 1.0 if action else 0.0,
+                            'consciousness': 1.0 if current_consciousness else 0.0,
+                            'emotion': 1.0 if self.emotion_integration else 0.0,
+                            'spiritual': 1.0 if self.spiritual else 0.0,
+                        }
+                        
+                        balance = self.lumen_integration.measure_balance(system_activations)
+                        balance_score = balance.get('balance_score', 0.0)
+                        
+                        if balance_score < 0.7:
+                            print(f"[LUMEN] ⚠️ Philosophical imbalance detected: {balance_score:.2%}")
+                        
+                        # Record to Main Brain
+                        self.main_brain.record_output(
+                            system_name='Lumen Integration',
+                            content=f"Balance Score: {balance_score:.2%}\nOnticum: {balance.get('onticum', 0):.2f}\nStructurale: {balance.get('structurale', 0):.2f}\nParticipatum: {balance.get('participatum', 0):.2f}",
+                            metadata={'cycle': cycle_count, 'balance': balance_score},
+                            success=True
+                        )
+                    except Exception as e:
+                        print(f"[LUMEN] Balance check error: {e}")
                 
                 # 💭 BROWNIAN MOTION RANDOM ACADEMIC THOUGHT (4% occurrence)
                 # Simulates spontaneous memory recall from academic knowledge
@@ -3618,6 +3722,28 @@ EXTENDED THINKING PROCESS:
                             },
                             success=True
                         )
+                        
+                        # ═══════════════════════════════════════════════════════════
+                        # GPT-5 ORCHESTRATOR - Meta-cognitive coordination
+                        # ═══════════════════════════════════════════════════════════
+                        if self.gpt5_orchestrator and cycle_count % 5 == 0:  # Every 5 cycles
+                            try:
+                                gpt5_guidance = await self.send_gpt5_message(
+                                    system_id="sensorimotor",
+                                    message_type="perception_analysis",
+                                    content=f"Visual: {visual_analysis[:300]}\nSpatial: {analysis[:300]}",
+                                    metadata={'cycle': cycle_count, 'scene': scene_type.value}
+                                )
+                                
+                                if gpt5_guidance:
+                                    self.main_brain.record_output(
+                                        system_name='GPT-5 Orchestrator',
+                                        content=f"Sensorimotor Guidance:\n{gpt5_guidance.get('guidance', 'N/A')[:400]}",
+                                        metadata={'cycle': cycle_count, 'subsystem': 'sensorimotor'},
+                                        success=True
+                                    )
+                            except Exception as e:
+                                print(f"[GPT-5] Sensorimotor guidance error: {e}")
                         
                         # If Gemini provided visual, record its contribution
                         if gemini_visual:
@@ -4313,6 +4439,30 @@ Top Predicates:
                 
                 print(f"[REASONING] Planned action: {action} ({planning_duration:.3f}s)")
                 
+                # ═══════════════════════════════════════════════════════════
+                # VOICE SYSTEM - Vocalize decision
+                # ═══════════════════════════════════════════════════════════
+                if self.voice_system and self.config.enable_voice:
+                    try:
+                        reasoning_text = reasoning[:200] if reasoning else "Acting on intuition"
+                        await self.speak_decision(
+                            decision=action,
+                            reasoning=reasoning_text,
+                            confidence=current_consciousness.coherence if current_consciousness else 0.5,
+                            cycle=cycle_count
+                        )
+                        
+                        # Record to Main Brain (every 10 cycles to avoid spam)
+                        if cycle_count % 10 == 0:
+                            self.main_brain.record_output(
+                                system_name='Voice System',
+                                content=f"Vocalized: '{action}'\nReasoning: {reasoning_text}",
+                                metadata={'cycle': cycle_count, 'confidence': current_consciousness.coherence if current_consciousness else 0.5},
+                                success=True
+                            )
+                    except Exception as e:
+                        print(f"[VOICE] Error: {e}")
+                
                 # LIVE AUDIO: Stream decision announcement
                 if self.live_audio and hasattr(self, 'last_reasoning'):
                     try:
@@ -4361,6 +4511,82 @@ Applicable Rules: {len(logic_analysis_brief['applicable_rules'])}"""
                         },
                         success=True
                     )
+                    
+                    # ═══════════════════════════════════════════════════════════
+                    # GPT-5 ORCHESTRATOR - Action planning coordination
+                    # ═══════════════════════════════════════════════════════════
+                    if self.gpt5_orchestrator and cycle_count % 10 == 0:  # Every 10 cycles
+                        try:
+                            gpt5_guidance = await self.send_gpt5_message(
+                                system_id="action_planning",
+                                message_type="action_decision",
+                                content=f"Action: {action}\nReasoning: {reasoning[:300] if reasoning else 'N/A'}\nCoherence: {current_consciousness.coherence if current_consciousness else 0:.3f}",
+                                metadata={'cycle': cycle_count, 'scene': scene_type.value}
+                            )
+                            
+                            if gpt5_guidance:
+                                self.main_brain.record_output(
+                                    system_name='GPT-5 Orchestrator',
+                                    content=f"Action Planning Guidance:\n{gpt5_guidance.get('guidance', 'N/A')[:400]}",
+                                    metadata={'cycle': cycle_count, 'subsystem': 'action_planning'},
+                                    success=True
+                                )
+                        except Exception as e:
+                            print(f"[GPT-5] Action planning guidance error: {e}")
+                
+                # ═══════════════════════════════════════════════════════════
+                # COMPLETE TEMPORAL BINDING - Close the loop
+                # ═══════════════════════════════════════════════════════════
+                if binding_id and self.temporal_tracker:
+                    try:
+                        await self.temporal_tracker.complete_binding(
+                            binding_id=binding_id,
+                            action=action,
+                            outcome={'coherence': current_consciousness.coherence if current_consciousness else 0.0}
+                        )
+                    except Exception as e:
+                        print(f"[TEMPORAL] Binding complete error: {e}")
+                
+                # ═══════════════════════════════════════════════════════════
+                # ADAPTIVE MEMORY - Learn from experience
+                # ═══════════════════════════════════════════════════════════
+                if self.hierarchical_memory and self.config.enable_adaptive_memory:
+                    try:
+                        # Record episode
+                        episode = {
+                            'perception': {
+                                'scene': scene_type.value,
+                                'visual_similarity': perception.get('visual_similarity', 0.0),
+                                'location': game_state.location_name
+                            },
+                            'action': action,
+                            'outcome': {
+                                'coherence': current_consciousness.coherence if current_consciousness else 0.0,
+                                'success': True
+                            },
+                            'context': {
+                                'cycle': cycle_count,
+                                'health': game_state.health,
+                                'in_combat': game_state.in_combat
+                            }
+                        }
+                        
+                        await self.hierarchical_memory.add_episode(episode)
+                        
+                        # Check for new semantic patterns every 10 cycles
+                        if cycle_count % 10 == 0:
+                            patterns = self.hierarchical_memory.get_semantic_patterns()
+                            if patterns:
+                                latest_pattern = patterns[-1] if patterns else None
+                                if latest_pattern:
+                                    self.main_brain.record_output(
+                                        system_name='Adaptive Memory',
+                                        content=f"Learned Patterns: {len(patterns)}\nLatest: {latest_pattern.pattern_type}\nConfidence: {latest_pattern.confidence:.2%}",
+                                        metadata={'cycle': cycle_count, 'pattern_count': len(patterns)},
+                                        success=True
+                                    )
+                    except Exception as e:
+                        print(f"[MEMORY] Adaptive memory error: {e}")
                 
                 # Queue action for execution (non-blocking)
                 try:
@@ -4370,7 +4596,8 @@ Applicable Rules: {len(logic_analysis_brief['applicable_rules'])}"""
                         'game_state': game_state,
                         'motivation': mot_state,
                         'cycle': cycle_count,
-                        'consciousness': current_consciousness
+                        'consciousness': current_consciousness,
+                        'binding_id': binding_id  # Pass for later completion
                     })
                 except asyncio.QueueFull:
                     print(f"[REASONING] Action queue full, action {action} dropped")
