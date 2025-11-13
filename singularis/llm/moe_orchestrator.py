@@ -79,6 +79,7 @@ class ExpertResponse:
     reasoning: str
     execution_time: float
     tokens_used: int = 0
+    model_type: str = "unknown"  # "gemini", "claude", "openai", or "hyperbolic"
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary."""
@@ -88,7 +89,8 @@ class ExpertResponse:
             'confidence': self.confidence,
             'reasoning': self.reasoning,
             'execution_time': self.execution_time,
-            'tokens_used': self.tokens_used
+            'tokens_used': self.tokens_used,
+            'model_type': self.model_type
         }
 
 
@@ -654,7 +656,7 @@ class MoEOrchestrator:
         context: Optional[Dict[str, Any]] = None
     ) -> MoEResponse:
         """
-        Query all Gemini vision experts in parallel.
+        Query all vision experts (Gemini + Hyperbolic Nemotron) in parallel.
         
         Args:
             prompt: Analysis prompt
@@ -674,7 +676,13 @@ class MoEOrchestrator:
                 task = self._query_gemini_expert(expert, role, prompt, image, context)
                 tasks.append(task)
         
-        # Execute in parallel
+        # Query Hyperbolic Nemotron vision experts in parallel
+        for i, expert in enumerate(self.hyperbolic_vision_experts):
+            role = ExpertRole.VISUAL_AWARENESS
+            task = self._query_hyperbolic_expert(expert, role, prompt, image, context, is_vision=True)
+            tasks.append(task)
+        
+        # Execute ALL experts in parallel
         expert_responses = await asyncio.gather(*tasks, return_exceptions=True)
         
         # Filter out exceptions
@@ -692,7 +700,11 @@ class MoEOrchestrator:
         
         # Update stats
         self.stats['total_queries'] += 1
-        self.stats['gemini_calls'] += len(valid_responses)
+        # Count Gemini and Hyperbolic vision calls
+        gemini_count = sum(1 for r in valid_responses if r.model_type == 'gemini')
+        hyperbolic_count = sum(1 for r in valid_responses if r.model_type == 'hyperbolic')
+        self.stats['gemini_calls'] += gemini_count
+        self.stats['hyperbolic_calls'] = self.stats.get('hyperbolic_calls', 0) + hyperbolic_count
         self.stats['avg_coherence'] = (
             (self.stats['avg_coherence'] * (self.stats['total_queries'] - 1) + coherence) /
             self.stats['total_queries']
@@ -721,7 +733,7 @@ class MoEOrchestrator:
         context: Optional[Dict[str, Any]] = None
     ) -> MoEResponse:
         """
-        Query all Claude reasoning experts in parallel.
+        Query all reasoning experts (Claude + Hyperbolic Qwen3) in parallel.
         
         Args:
             prompt: Reasoning prompt
@@ -740,7 +752,13 @@ class MoEOrchestrator:
             task = self._query_claude_expert(expert, role, prompt, system_prompt, context)
             tasks.append(task)
         
-        # Execute in parallel
+        # Query Hyperbolic Qwen3 meta-cognition experts in parallel
+        for i, expert in enumerate(self.hyperbolic_reasoning_experts):
+            role = ExpertRole.META_COGNITION
+            task = self._query_hyperbolic_expert(expert, role, prompt, None, context, is_vision=False)
+            tasks.append(task)
+        
+        # Execute ALL experts in parallel
         expert_responses = await asyncio.gather(*tasks, return_exceptions=True)
         
         # Filter out exceptions
@@ -758,7 +776,11 @@ class MoEOrchestrator:
         
         # Update stats
         self.stats['total_queries'] += 1
-        self.stats['claude_calls'] += len(valid_responses)
+        # Count Claude and Hyperbolic reasoning calls
+        claude_count = sum(1 for r in valid_responses if r.model_type == 'claude')
+        hyperbolic_count = sum(1 for r in valid_responses if r.model_type == 'hyperbolic')
+        self.stats['claude_calls'] += claude_count
+        self.stats['hyperbolic_calls'] = self.stats.get('hyperbolic_calls', 0) + hyperbolic_count
         self.stats['avg_coherence'] = (
             (self.stats['avg_coherence'] * (self.stats['total_queries'] - 1) + coherence) /
             self.stats['total_queries']
@@ -845,7 +867,8 @@ class MoEOrchestrator:
                 confidence=confidence,
                 reasoning=f"Gemini {role.value} analysis",
                 execution_time=execution_time,
-                tokens_used=int(tokens_used)
+                tokens_used=int(tokens_used),
+                model_type="gemini"
             )
             
         except Exception as e:
@@ -908,11 +931,83 @@ class MoEOrchestrator:
                 confidence=confidence,
                 reasoning=f"Claude {role.value} analysis",
                 execution_time=execution_time,
-                tokens_used=int(tokens_used)
+                tokens_used=int(tokens_used),
+                model_type="claude"
             )
             
         except Exception as e:
             logger.error(f"Claude expert {role.value} failed: {e}")
+            raise
+    
+    async def _query_hyperbolic_expert(
+        self,
+        expert: HyperbolicClient,
+        role: ExpertRole,
+        prompt: str,
+        image,
+        context: Optional[Dict[str, Any]],
+        is_vision: bool = False
+    ) -> ExpertResponse:
+        """Query a single Hyperbolic expert (Nemotron vision or Qwen3 reasoning) with rate limiting."""
+        config = self.expert_configs[role]
+        
+        # Build specialized prompt
+        full_prompt = config.specialization_prompt + "\n\n" + prompt
+        if context:
+            full_prompt += f"\n\nContext: {context}"
+        
+        # Estimate tokens
+        estimated_tokens = (len(full_prompt.split()) * 1.3) + config.max_tokens
+        
+        # Wait for rate limit if necessary
+        await self._wait_for_hyperbolic_rate_limit()
+        
+        start_time = time.time()
+        
+        try:
+            if is_vision and image:
+                # Vision query (Nemotron with image)
+                result = await asyncio.wait_for(
+                    expert.generate_with_image(
+                        prompt=full_prompt,
+                        image=image,
+                        temperature=config.temperature,
+                        max_tokens=config.max_tokens
+                    ),
+                    timeout=30.0
+                )
+            else:
+                # Text-only query (Qwen3 reasoning)
+                result = await asyncio.wait_for(
+                    expert.generate_text(
+                        prompt=full_prompt,
+                        temperature=config.temperature,
+                        max_tokens=config.max_tokens
+                    ),
+                    timeout=30.0
+                )
+            
+            execution_time = time.time() - start_time
+            
+            # Parse confidence from response
+            confidence = self._extract_confidence(result)
+            
+            # Record token usage
+            tokens_used = len(result.split()) * 1.3  # Rough estimate
+            self._record_token_usage("hyperbolic", int(tokens_used))
+            
+            return ExpertResponse(
+                role=role,
+                content=result,
+                confidence=confidence,
+                reasoning=f"Hyperbolic {role.value} analysis",
+                execution_time=execution_time,
+                tokens_used=int(tokens_used),
+                model_type="hyperbolic"
+            )
+            
+        except Exception as e:
+            logger.error(f"Hyperbolic expert {role.value} failed: {e}")
             raise
     
     def _extract_confidence(self, text: str) -> float:
