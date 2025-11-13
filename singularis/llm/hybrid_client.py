@@ -54,7 +54,7 @@ class HybridConfig:
     local_action_model: str = "microsoft/phi-4"  # Phi-4 for fast action
     
     # Performance settings
-    timeout: int = 30
+    timeout: int = 60  # Increased from 30s for Claude reasoning
     max_retries: int = 2
     fallback_on_error: bool = True
     
