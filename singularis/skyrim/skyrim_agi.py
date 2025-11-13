@@ -150,7 +150,7 @@ class SkyrimConfig:
     gemini_model: str = "gemini-2.5-flash"
     use_claude_reasoning: bool = True
     claude_model: str = "claude-3-5-haiku-20241022"  # Fast Haiku for background reasoning
-    claude_sensorimotor_model: str = "claude-sonnet-4-5-20250929"  # Sonnet for critical sensorimotor
+    claude_sensorimotor_model: str = "claude-3-5-haiku-20241022"  # Fast Haiku for sensorimotor
     use_local_fallback: bool = False  # Optional local LLMs as fallback
     
     # Mixture of Experts (MoE) Architecture
@@ -2715,13 +2715,13 @@ Connect perception → thought → action into flowing experience.""",
         self.max_consecutive_failures = 5
         self.max_repeated_actions = 10
         
-        # Initialize sensorimotor reasoning (Claude Sonnet 4.5 with extended thinking)
+        # Initialize sensorimotor reasoning (Claude Haiku for speed)
         self.sensorimotor_llm = None
         if hasattr(self, 'hybrid_llm') and self.hybrid_llm:
             from singularis.llm.claude_client import ClaudeClient
             self.sensorimotor_llm = ClaudeClient(
                 model=self.config.claude_sensorimotor_model,
-                timeout=120
+                timeout=30  # Haiku is much faster
             )
             if self.sensorimotor_llm.is_available():
                 print(f"[SENSORIMOTOR] ✓ {self.config.claude_sensorimotor_model} initialized for geospatial reasoning")
@@ -3506,10 +3506,10 @@ Based on this visual and contextual data, provide:
                     
                     print("~" * 70 + "\n")
                 
-                # Sensorimotor & Geospatial Reasoning every 5 cycles (Claude Sonnet 4.5 with thinking)
+                # Sensorimotor & Geospatial Reasoning every 5 cycles (Claude Haiku - Fast)
                 if cycle_count % 5 == 0 and self.sensorimotor_llm:
                     print("\n" + "="*70)
-                    print("SENSORIMOTOR & GEOSPATIAL REASONING (Claude Sonnet 4.5)")
+                    print("SENSORIMOTOR & GEOSPATIAL REASONING (Claude Haiku)")
                     print("="*70)
                     
                     # First, get visual analysis from Gemini/Local vision models
@@ -3676,27 +3676,22 @@ Local Vision Model Analysis:
                     analysis = ""
                     thinking = ""
                     try:
-                        print("[SENSORIMOTOR] Invoking Claude Sonnet 4.5 with extended thinking...")
+                        print("[SENSORIMOTOR] Invoking Claude Haiku (fast reasoning)...")
                         sensorimotor_result = await asyncio.wait_for(
                             self.sensorimotor_llm.generate(
                                 prompt=sensorimotor_query,
-                                system_prompt="You are a sensorimotor and geospatial reasoning expert for a Skyrim AI agent. You receive visual analysis from Gemini and local vision models. Use extended thinking to deeply analyze spatial relationships, movement patterns, and navigation strategies based on the visual information provided.",
-                                max_tokens=2048,
-                                temperature=0.3,
-                                thinking={"type": "enabled", "budget_tokens": 10000}
+                                system_prompt="You are a sensorimotor and geospatial reasoning expert for a Skyrim AI agent. You receive visual analysis from Gemini and local vision models. Analyze spatial relationships, movement patterns, and navigation strategies concisely.",
+                                max_tokens=1024,  # Reduced for speed
+                                temperature=0.3
+                                # No extended thinking - Haiku is fast enough without it
                             ),
-                            timeout=90.0
+                            timeout=30.0  # Much faster timeout for Haiku
                         )
                         
                         analysis = sensorimotor_result.get('content', '')
-                        thinking = sensorimotor_result.get('thinking', '')
                         
                         print(f"\n[SENSORIMOTOR] Analysis ({len(analysis)} chars):")
                         print(f"[SENSORIMOTOR] {analysis[:500]}...")
-                        
-                        if thinking:
-                            print(f"\n[SENSORIMOTOR] Extended Thinking ({len(thinking)} chars):")
-                            print(f"[SENSORIMOTOR] {thinking[:300]}...")
                         
                         # STATE COORDINATOR: Update from sensorimotor subsystem
                         # Extract key facts from analysis
@@ -3732,44 +3727,39 @@ Local Vision Model Analysis:
                                 'repeated_action': self.last_successful_action,
                                 'repeat_count': self.repeated_action_count,
                                 'has_gemini_visual': bool(gemini_visual),
-                                'has_claude_analysis': bool(analysis),
-                                'has_extended_thinking': bool(thinking)
+                                'has_claude_analysis': bool(analysis)
                             },
                             action_taken='sensorimotor_analysis',
-                            outcome={'analysis_length': len(analysis), 'thinking_length': len(thinking) if thinking else 0},
+                            outcome={'analysis_length': len(analysis)},
                             success=True,
                             reasoning=f"""SENSORIMOTOR & GEOSPATIAL ANALYSIS:
 
 VISUAL LEARNING (from Gemini & Local Models):
 {visual_analysis}
 
-CLAUDE SONNET 4.5 ANALYSIS:
+CLAUDE HAIKU ANALYSIS:
 {analysis}
-
-EXTENDED THINKING PROCESS:
-{thinking}
 """
                         )
                         
                         print("[SENSORIMOTOR] ✓ Stored in RAG memory (with visual learning from Gemini & Local)")
                         
                         # Hebbian: Record successful sensorimotor reasoning
-                        contribution = 1.0 if (gemini_visual and local_visual and thinking) else 0.7
+                        contribution = 1.0 if (gemini_visual and local_visual) else 0.7
                         self.hebbian.record_activation(
-                            system_name='sensorimotor_claude45',
+                            system_name='sensorimotor_haiku',
                             success=True,
                             contribution_strength=contribution,
-                            context={'has_visual': bool(visual_analysis), 'has_thinking': bool(thinking)}
+                            context={'has_visual': bool(visual_analysis)}
                         )
                         
                         # Main Brain: Record sensorimotor output
                         self.main_brain.record_output(
-                            system_name='Sensorimotor Claude 4.5',
+                            system_name='Sensorimotor Haiku',
                             content=f"Visual Analysis:\n{visual_analysis[:200]}...\n\nSpatial Reasoning:\n{analysis[:300]}...",
                             metadata={
                                 'has_gemini': bool(gemini_visual),
                                 'has_local': bool(local_visual),
-                                'has_thinking': bool(thinking),
                                 'cycle': cycle_count
                             },
                             success=True
