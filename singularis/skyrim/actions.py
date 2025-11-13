@@ -63,6 +63,7 @@ class ActionType(Enum):
     OPEN_MAP = "open_map"
     OPEN_MAGIC = "open_magic"
     OPEN_SKILLS = "open_skills"
+    BACK = "back"  # ESC/Tab - exit menus/dialogues
 
     # Camera
     LOOK_UP = "look_up"
@@ -122,6 +123,7 @@ class SkyrimActions:
         ActionType.OPEN_MAP: 'm',
         ActionType.OPEN_MAGIC: 'p',
         ActionType.OPEN_SKILLS: 'k',
+        ActionType.BACK: 'tab',  # Tab exits menus/dialogues in Skyrim
         ActionType.QUICK_SAVE: 'f5',
         ActionType.QUICK_LOAD: 'f9',
     }
@@ -186,6 +188,7 @@ class SkyrimActions:
             ActionType.OPEN_MAP: "map",  # Needs custom binding
             ActionType.OPEN_MAGIC: "magic",  # Needs custom binding
             ActionType.OPEN_SKILLS: "skills",  # Needs custom binding
+            ActionType.BACK: "back",  # Exit menus/dialogues
             ActionType.LOOK_UP: "look_up",
             ActionType.LOOK_DOWN: "look_down",
             ActionType.LOOK_LEFT: "look_left",
