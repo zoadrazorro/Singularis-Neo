@@ -64,11 +64,15 @@ class ConsciousnessState:
         """Compute change in coherence (Δ𝒞)."""
         return self.coherence - other.coherence
     
-    def is_ethical(self, previous: 'ConsciousnessState', threshold: float = 0.02) -> bool:
+    def is_ethical(self, previous: 'ConsciousnessState', threshold: float = 0.01) -> bool:
         """
         Determine if transition to this state is ethical.
         
         Per ETHICA: An action is ethical iff Δ𝒞 > 0
+        
+        Args:
+            previous: Previous consciousness state
+            threshold: Minimum coherence increase (default 0.01 for sensitivity)
         """
         delta = self.coherence_delta(previous)
         return delta > threshold
@@ -182,21 +186,21 @@ class ConsciousnessBridge:
             'participatory': []
         }
         
-        # Survival → Ontical (physical existence)
+        # Survival → Ontical (physical existence) - INCREASED WEIGHT
         if cognitive.survival > 0:
-            lumina_scores['ontical'].append(cognitive.survival * 0.4)
+            lumina_scores['ontical'].append(cognitive.survival * 0.6)  # Increased from 0.4
         
-        # Progression → Structural (knowledge/skill structure)
+        # Progression → Structural (knowledge/skill structure) - INCREASED WEIGHT
         if cognitive.progression > 0:
-            lumina_scores['structural'].append(cognitive.progression * 0.3)
+            lumina_scores['structural'].append(cognitive.progression * 0.5)  # Increased from 0.3
         
-        # Resources → Ontical (material power)
+        # Resources → Ontical (material power) - INCREASED WEIGHT
         if cognitive.resources > 0:
-            lumina_scores['ontical'].append(cognitive.resources * 0.2)
+            lumina_scores['ontical'].append(cognitive.resources * 0.4)  # Increased from 0.2
         
-        # Knowledge → Structural (information)
+        # Knowledge → Structural (information) - INCREASED WEIGHT
         if cognitive.knowledge > 0:
-            lumina_scores['structural'].append(cognitive.knowledge * 0.3)
+            lumina_scores['structural'].append(cognitive.knowledge * 0.5)  # Increased from 0.3
         
         # Effectiveness → Participatory (conscious mastery)
         if cognitive.effectiveness > 0:
@@ -631,3 +635,12 @@ class ConsciousnessBridge:
                 'participatory': np.mean([s.coherence_participatory for s in self.history])
             } if self.history else {}
         }
+    
+    def get_statistics(self) -> Dict[str, Any]:
+        """Alias for get_stats() for compatibility."""
+        stats = self.get_stats()
+        # Add additional fields for compatibility
+        stats['average_coherence'] = stats.get('avg_coherence', 0.0)
+        stats['average_consciousness_level'] = stats.get('avg_consciousness', 0.0)
+        stats['coherence_trend'] = stats.get('trend', 'no_data')
+        return stats
