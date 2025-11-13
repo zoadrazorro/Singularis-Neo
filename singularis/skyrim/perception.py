@@ -552,11 +552,17 @@ class SkyrimPerception:
         """Detect if currently in dialogue with an NPC."""
         # TODO: Implement actual dialogue detection using screen analysis
         # Would look for dialogue UI, conversation options, NPC portraits
-        # For now, infer from recent scene classification
-        if len(self.perception_history) > 0:
+        
+        # Check recent scene history - must be consistently DIALOGUE
+        if len(self.perception_history) >= 2:
             last_scene = self.perception_history[-1].get('scene_type', SceneType.UNKNOWN)
-            if last_scene == SceneType.DIALOGUE:
+            prev_scene = self.perception_history[-2].get('scene_type', SceneType.UNKNOWN)
+            
+            # Only return True if BOTH recent frames show dialogue scene
+            # This prevents false positives from transient detections
+            if last_scene == SceneType.DIALOGUE and prev_scene == SceneType.DIALOGUE:
                 return True
+        
         return False
 
     def _detect_combat_state(self) -> bool:

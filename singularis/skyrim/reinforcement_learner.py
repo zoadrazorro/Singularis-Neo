@@ -636,20 +636,32 @@ class ReinforcementLearner:
         in_dialogue_before = state_before.get('in_dialogue', False)
         in_dialogue_after = state_after.get('in_dialogue', False)
         
-        # Reward entering dialogue
+        # Track dialogue duration to prevent reward spam
+        if not hasattr(self, '_dialogue_cycle_count'):
+            self._dialogue_cycle_count = 0
+        
+        # Reward entering dialogue (only first time)
         if in_dialogue_after and not in_dialogue_before:
             reward += 1.2  # MAJOR REWARD for talking to NPCs
             print("[RL-REWARD] ✓ Started dialogue with NPC! +1.2")
+            self._dialogue_cycle_count = 1
+        # Penalize being stuck in dialogue too long
+        elif in_dialogue_after and in_dialogue_before:
+            self._dialogue_cycle_count += 1
+            if self._dialogue_cycle_count > 5:
+                reward -= 0.3  # Penalize stuck in dialogue
+                print(f"[RL-REWARD] ✗ Stuck in dialogue (cycle {self._dialogue_cycle_count})! -0.3")
+            elif self._dialogue_cycle_count <= 3:
+                reward += 0.2  # Small reward for short conversations
+                print("[RL-REWARD] ✓ Continuing dialogue! +0.2")
+        else:
+            self._dialogue_cycle_count = 0
         
-        # Reward staying in dialogue (listening/conversing)
-        if in_dialogue_after and in_dialogue_before:
-            reward += 0.4  # Reward for continuing conversation
-            print("[RL-REWARD] ✓ Continuing dialogue! +0.4")
-        
-        # Reward dialogue actions
+        # Reward dialogue actions (but only if not stuck)
         if action in ['select_dialogue_option', 'talk', 'activate'] and (npcs_after > 0 or in_dialogue_after):
-            reward += 0.8  # Strong reward for dialogue interaction
-            print(f"[RL-REWARD] ✓ Dialogue action with NPC! +0.8")
+            if self._dialogue_cycle_count <= 3:
+                reward += 0.8  # Strong reward for dialogue interaction
+                print(f"[RL-REWARD] ✓ Dialogue action with NPC! +0.8")
         
         # Reward relationship building
         relationship_change = state_after.get('npc_relationship_delta', 0)

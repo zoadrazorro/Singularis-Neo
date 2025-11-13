@@ -608,6 +608,24 @@ class SkyrimActions:
         for _ in range(steps):
             pyautogui.moveRel(0, -step_size, duration=0.02)  # Negative because screen Y is inverted
             await asyncio.sleep(0.01)
+    
+    async def look_up(self, degrees: float = 30.0):
+        """
+        Look up by specified degrees (convenience method).
+        
+        Args:
+            degrees: How many degrees to look up (default: 30)
+        """
+        await self.look_vertical(degrees)
+    
+    async def look_down(self, degrees: float = 30.0):
+        """
+        Look down by specified degrees (convenience method).
+        
+        Args:
+            degrees: How many degrees to look down (default: 30)
+        """
+        await self.look_vertical(-degrees)
 
     async def look_around(self):
         """Look around (move camera randomly)."""
