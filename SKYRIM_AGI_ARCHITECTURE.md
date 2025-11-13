@@ -540,7 +540,7 @@ parallel_consensus_weight_hybrid=0.4
 
 # Local Models
 qwen3_vl_perception_model="qwen/qwen3-vl-8b"
-huihui_cognition_model="huihui-moe-60b-a3b-abliterated-i1"
+huihui_cognition_model="mistralai/mistral-7b-instruct-v0.3"
 phi4_action_model="mistralai/mistral-nemo-instruct-2407"
 ```
 
@@ -570,7 +570,7 @@ phi4_action_model="mistralai/mistral-nemo-instruct-2407"
 
 ### Optional (1 model):
 
-7. **huihui-moe-60b-a3b-abliterated-i1**
+7. **mistralai/mistral-7b-instruct-v0.3**
    - Dialectical reasoning
    - Consciousness LLM
    - Strategic planning fallback

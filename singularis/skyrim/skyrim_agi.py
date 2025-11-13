@@ -116,7 +116,7 @@ class SkyrimConfig:
 
     # Core models
     phi4_action_model: str = "mistralai/mistral-nemo-instruct-2407"  # Action planning
-    huihui_cognition_model: str = "huihui-moe-60b-a3b-abliterated-i1"  # Main cognition, reasoning, strategy
+    huihui_cognition_model: str = "mistralai/mistral-7b-instruct-v0.3"  # Main cognition, reasoning, strategy
     qwen3_vl_perception_model: str = "qwen/qwen3-vl-8b"  # Perception and spatial awareness
 
     # Learning
@@ -758,7 +758,7 @@ class SkyrimAGI:
         Optional Fallback (if enabled):
         - Local LLMs via LM Studio
           * Vision: qwen3-vl-8b
-          * Reasoning: huihui-moe-60b
+          * Reasoning: mistral-7b-instruct-v0.3
           * Action: mistral-nemo
         
         This hybrid approach leverages cloud AI for primary intelligence with

@@ -31,8 +31,8 @@ The system uses **3 local models + 2 cloud APIs** running in parallel:
    - Latency: ~2-5s per decision
    - VRAM: ~7GB
 
-2. **Huihui-MoE-60B (60B MoE)** - Main Cognition
-   - Model: `huihui-moe-60b-a3b-abliterated-i1`
+2. **Mistral-7B-Instruct-v0.3** - Main Cognition
+   - Model: `mistralai/mistral-7b-instruct-v0.3`
    - Roles:
      - Consciousness engine
      - Strategic reasoning
@@ -344,9 +344,9 @@ GEMINI_API_KEY=your_gemini_key_here
    - Temperature: 0.6
    - Max tokens: 512
 
-2. **Huihui-MoE-60B** (Main Cognition)
+2. **Mistral-7B-Instruct-v0.3** (Main Cognition)
    ```
-   huihui-moe-60b-a3b-abliterated-i1
+   mistralai/mistral-7b-instruct-v0.3
    ```
    - Port: 1235
    - VRAM: ~40-50GB (MoE sparse)
@@ -386,7 +386,7 @@ config = SkyrimConfig(
     
     # LLM models (LM Studio)
     phi4_action_model="mistralai/mistral-nemo-instruct-2407",
-    huihui_cognition_model="huihui-moe-60b-a3b-abliterated-i1",
+    huihui_cognition_model="mistralai/mistral-7b-instruct-v0.3",
     qwen3_vl_perception_model="qwen/qwen3-vl-8b",
     
     # External API augmentation (optional)
@@ -443,7 +443,7 @@ class SkyrimConfig:
     
     # Local LLM Models (LM Studio)
     phi4_action_model: str = "mistralai/mistral-nemo-instruct-2407"
-    huihui_cognition_model: str = "huihui-moe-60b-a3b-abliterated-i1"
+    huihui_cognition_model: str = "mistralai/mistral-7b-instruct-v0.3"
     qwen3_vl_perception_model: str = "qwen/qwen3-vl-8b"
     
     # External API Augmentation (optional)
@@ -546,7 +546,7 @@ class SkyrimConfig:
     
     # Models
     phi4_action_model: str = "mistralai/mistral-nemo-instruct-2407"
-    huihui_cognition_model: str = "huihui-moe-60b-a3b-abliterated-i1"
+    huihui_cognition_model: str = "mistralai/mistral-7b-instruct-v0.3"
     qwen3_vl_perception_model: str = "qwen/qwen3-vl-8b"
     
     # Learning

@@ -128,7 +128,7 @@ async def main():
             # Local fallback models (LM Studio) - models are always loaded
             # These are used when cloud LLMs fail or hit rate limits
             qwen3_vl_perception_model="qwen/qwen3-4b-thinking-2507",
-            huihui_cognition_model="microsoft/phi-4-mini-reasoning",
+            huihui_cognition_model="mistralai/mistral-7b-instruct-v0.3",
             phi4_action_model="microsoft/phi-4",
             
             # Consensus weights
@@ -195,7 +195,7 @@ async def main():
             
             # Local models (used only if fallback enabled)
             phi4_action_model="microsoft/phi-4",
-            huihui_cognition_model="microsoft/phi-4-mini-reasoning",
+            huihui_cognition_model="mistralai/mistral-7b-instruct-v0.3",
             qwen3_vl_perception_model="qwen/qwen3-4b-thinking-2507",
             
             # Disable legacy augmentation
@@ -220,7 +220,7 @@ async def main():
             
             # Local models only
             phi4_action_model="microsoft/phi-4",
-            huihui_cognition_model="microsoft/phi-4-mini-reasoning",
+            huihui_cognition_model="mistralai/mistral-7b-instruct-v0.3",
             qwen3_vl_perception_model="qwen/qwen3-4b-thinking-2507",
             
             # Disable legacy augmentation

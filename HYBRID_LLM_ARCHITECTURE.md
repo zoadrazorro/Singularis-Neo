@@ -99,7 +99,7 @@ config = SkyrimConfig(
 - LM Studio running on `localhost:1234`
 - Local models loaded:
   - `qwen/qwen3-vl-8b` (vision)
-  - `huihui-moe-60b-a3b-abliterated-i1` (reasoning)
+  - `mistralai/mistral-7b-instruct-v0.3` (reasoning)
   - `mistralai/mistral-nemo-instruct-2407` (action)
 
 ## Interactive Setup

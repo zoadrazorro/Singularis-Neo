@@ -287,7 +287,7 @@ setx GEMINI_API_KEY "your-gemini-key"
 **Load these 3 models:**
 
 1. **Mistral-Nemo 12B** - `mistralai/mistral-nemo-instruct-2407` (Action Planning)
-2. **Huihui-MoE-60B** - `huihui-moe-60b-a3b-abliterated-i1` (Main Cognition)
+2. **Mistral-7B-Instruct-v0.3** - `mistralai/mistral-7b-instruct-v0.3` (Main Cognition)
 3. **Qwen3-VL-8B** - `qwen/qwen3-vl-8b` (Visual Perception)
 
 Start LM Studio server on all 3 models. See [SKYRIM_AGI.md](SKYRIM_AGI.md) for detailed setup.
@@ -409,7 +409,7 @@ from singularis.tier2_experts.reasoning_expert_llm import ReasoningExpertLLM
 # Initialize LM Studio client
 config = LMStudioConfig(
     base_url="http://localhost:1234/v1",
-    model_name="huihui-moe-60b-a38",  # Recommended: Huihui MoE 60B
+    model_name="mistralai/mistral-7b-instruct-v0.3",  # Recommended: Mistral-7B-Instruct
 )
 
 async with LMStudioClient(config) as client:
