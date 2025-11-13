@@ -26,6 +26,7 @@ Design principles:
 import asyncio
 import time
 import random
+import numpy as np
 from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass
 import numpy as np
@@ -248,6 +249,15 @@ class SkyrimAGI:
         )
         print("[BRIDGE] Consciousness bridge initialized")
         print("[BRIDGE] This unifies game quality and philosophical coherence 𝒞")
+        
+        # 6. Quantum Superposition Explorer (4D Fractal RNG)
+        print("  [6/11] Quantum superposition (4D fractal RNG)...")
+        from ..core.fractal_rng import QuantumSuperpositionExplorer
+        self.quantum_explorer = QuantumSuperpositionExplorer(
+            seed=int(time.time() * 1000) % 2**32
+        )
+        print("[QUANTUM] 4D Fractal RNG initialized")
+        print("[QUANTUM] Variance: 0.01-0.09% | Fibonacci φ ≈ 1.618")
         
         # 6. Reinforcement Learning System (with consciousness)
         if self.config.use_rl:
@@ -1414,6 +1424,67 @@ Connect perception → thought → action into flowing experience.""",
         
         return "\n".join(combined)
     
+    def _build_action_context(self, game_state: Any, scene_type: Any) -> Dict[str, Any]:
+        """
+        PRAGMATIC FIX: Minimal context for fast action selection.
+        
+        Philosophy: LLMs are overwhelmed by rich phenomenological context.
+        For ACTION, we need: What scene? Am I stuck? What can I do? What did I just try?
+        
+        This is the sensorimotor context - grounded, immediate, actionable.
+        """
+        stuck_status = self._detect_stuck()
+        
+        # Scene-based action constraints
+        available_actions = self._get_scene_constrained_actions(scene_type, game_state)
+        
+        return {
+            'scene': scene_type.value if hasattr(scene_type, 'value') else str(scene_type),
+            'health': game_state.health if game_state else 100,
+            'in_combat': game_state.in_combat if game_state else False,
+            'enemies_nearby': game_state.enemies_nearby if game_state else 0,
+            'stuck_status': stuck_status,
+            'available_actions': available_actions,
+            'last_3_actions': self.action_history[-3:] if hasattr(self, 'action_history') and len(self.action_history) >= 3 else [],
+            'last_action_success': self.stats.get('action_success_count', 0) > 0,
+        }
+    
+    def _build_reflection_context(self, vision_prompt: str, reasoning_prompt: str, game_state: Any) -> str:
+        """
+        PRAGMATIC FIX: Full context for meta-reasoning and learning.
+        
+        Philosophy: For REFLECTION, we want rich phenomenological detail.
+        This is for consciousness measurement, learning, and strategic planning.
+        
+        Use this for: World model updates, consciousness measurement, long-term planning.
+        """
+        return self._build_integration_context(vision_prompt, reasoning_prompt, game_state)
+    
+    def _build_action_context(self, game_state: Any, scene_type: Any) -> Dict[str, Any]:
+        """
+        PRAGMATIC FIX: Minimal context for fast action selection.
+        
+        Philosophy: LLMs are overwhelmed by rich phenomenological context.
+        For ACTION, we need: What scene? Am I stuck? What can I do? What did I just try?
+        
+        This is the sensorimotor context - grounded, immediate, actionable.
+        """
+        stuck_status = self._detect_stuck()
+        
+        # Scene-based action constraints
+        available_actions = self._get_scene_constrained_actions(scene_type, game_state)
+        
+        return {
+            'scene': scene_type.value if hasattr(scene_type, 'value') else str(scene_type),
+            'health': game_state.health if game_state else 100,
+            'in_combat': game_state.in_combat if game_state else False,
+            'enemies_nearby': game_state.enemies_nearby if game_state else 0,
+            'stuck_status': stuck_status,
+            'available_actions': available_actions,
+            'last_3_actions': self.action_history[-3:] if hasattr(self, 'action_history') and len(self.action_history) >= 3 else [],
+            'last_action_success': self.stats.get('action_success_count', 0) > 0,
+        }
+    
     def _build_integration_context(self, vision_prompt: str, reasoning_prompt: str, game_state: Any) -> str:
         """
         Build comprehensive integration context from all available sources.
@@ -1426,6 +1497,8 @@ Connect perception → thought → action into flowing experience.""",
         - Available expert perspectives
         
         Returns rich context for GPT-5-thinking to synthesize.
+        
+        NOTE: Use _build_action_context() for fast decisions!
         """
         context_parts = []
         
@@ -1497,6 +1570,49 @@ Connect perception → thought → action into flowing experience.""",
         context_parts.append(f"Reasoning Focus: {reasoning_prompt[:200]}...")
         
         return "\n".join(context_parts)
+    
+    def _get_scene_constrained_actions(self, scene_type: Any, game_state: Any) -> List[str]:
+        """
+        PRAGMATIC FIX: Constrain available actions based on scene type.
+        
+        Philosophy: Don't ask LLM to choose from 20 actions when only 5 make sense.
+        This is sensorimotor grounding - actions must be contextually appropriate.
+        """
+        from .perception import SceneType
+        
+        # Base actions available everywhere
+        base_actions = ['look_around', 'wait']
+        
+        # Scene-specific actions
+        if scene_type == SceneType.COMBAT:
+            combat_actions = ['attack', 'power_attack', 'block', 'dodge']
+            if game_state and game_state.magicka > 30:
+                combat_actions.append('heal')
+            if game_state and game_state.health < 30:
+                combat_actions.append('retreat')
+            return base_actions + combat_actions
+        
+        elif scene_type == SceneType.DIALOGUE:
+            return base_actions + ['respond', 'ask_question', 'goodbye', 'activate']
+        
+        elif scene_type == SceneType.INVENTORY:
+            return base_actions + ['equip_weapon', 'equip_armor', 'use_item', 'drop_item', 'close_menu']
+        
+        elif scene_type == SceneType.MAP:
+            return base_actions + ['set_waypoint', 'fast_travel', 'close_menu']
+        
+        elif scene_type in [SceneType.INDOOR, SceneType.OUTDOOR]:
+            exploration_actions = ['move_forward', 'move_backward', 'turn_left', 'turn_right', 'jump', 'sneak', 'activate']
+            if game_state and not game_state.in_combat:
+                exploration_actions.extend(['inventory', 'map'])
+            return base_actions + exploration_actions
+        
+        # Default: all actions
+        return base_actions + [
+            'move_forward', 'move_backward', 'turn_left', 'turn_right',
+            'attack', 'block', 'jump', 'sneak', 'activate',
+            'inventory', 'map'
+        ]
     
     async def _initialize_cloud_rl(self):
         """Initialize cloud-enhanced RL system with RAG and LLM integration."""
@@ -4968,12 +5084,18 @@ Format: ACTION: <action_name>"""
                 print(f"[HEURISTIC] → navigate (careful indoor movement)")
                 return 'navigate'  # Careful indoor movement
             
-            # STUCK DETECTION: Check if we're repeating the same action without progress
-            is_stuck = self._detect_stuck()
+            # STUCK DETECTION: Use deterministic recovery actions
+            stuck_status = self._detect_stuck()
             
-            if is_stuck:
+            if stuck_status['is_stuck']:
+                # Use the recommended recovery action directly
+                if stuck_status['recovery_action'] and stuck_status['recovery_action'] in available_actions:
+                    print(f"[STUCK-{stuck_status['severity'].upper()}] {stuck_status['reason']} → {stuck_status['recovery_action']}")
+                    self.consecutive_same_action = 0  # Reset counter
+                    return stuck_status['recovery_action']
+                
+                # Fallback if recommended action not available
                 print(f"[STUCK] Detected stuck state! Forcing recovery action...")
-                # Force recovery actions when stuck
                 recovery_actions = []
                 if 'jump' in available_actions:
                     recovery_actions.append('jump')
@@ -5011,6 +5133,40 @@ Format: ACTION: <action_name>"""
                 key=lambda x: x[1],
                 reverse=True
             )[:5]
+            
+            # QUANTUM SUPERPOSITION: Apply 4D fractal variance to Q-values
+            # This adds 0.01-0.09% deterministic exploration variance
+            if hasattr(self, 'quantum_explorer') and len(sorted_q_actions) > 0:
+                action_names = [a for a, _ in sorted_q_actions]
+                q_value_array = np.array([q for _, q in sorted_q_actions])
+                
+                # Check if stuck - use quantum tunneling for escape
+                stuck_status = self._detect_stuck()
+                if stuck_status['is_stuck']:
+                    tunnel_prob = self.quantum_explorer.quantum_tunnel(stuck_status['severity'])
+                    if random.random() < tunnel_prob:
+                        print(f"[QUANTUM-TUNNEL] Severity: {stuck_status['severity']} | Prob: {tunnel_prob:.3f}")
+                        # Use quantum exploration vector instead of Q-values
+                        exploration_vector = self.quantum_explorer.get_exploration_vector()
+                        # Map 4D exploration to available actions
+                        quantum_action_idx = int(exploration_vector[0] * len(action_names))
+                        quantum_action = action_names[quantum_action_idx]
+                        print(f"[QUANTUM-TUNNEL] → {quantum_action} (4D fractal escape)")
+                        return quantum_action
+                
+                # Normal quantum superposition collapse
+                quantum_action, confidence = self.quantum_explorer.collapse_superposition(
+                    action_weights=q_value_array,
+                    action_names=action_names,
+                    temperature=1.0  # Higher = more exploration
+                )
+                
+                fractal_stats = self.quantum_explorer.get_fractal_stats()
+                print(f"[QUANTUM] Collapsed superposition → {quantum_action} (conf: {confidence:.3f}, fib: {fractal_stats['fibonacci_phase']}, depth: {fractal_stats['iteration_depth']})")
+                
+                # Use quantum action with high confidence, otherwise continue to motivation-based
+                if confidence > 0.15:  # Threshold for quantum decision
+                    return quantum_action
             
             # Motivation-based selection with Q-value guidance
             if dominant_drive == 'curiosity':
@@ -5601,18 +5757,37 @@ QUICK DECISION - Choose ONE action from available list:"""
             print(f"[ACTION] Unknown action '{action}', falling back to exploration")
             await self.actions.explore_with_waypoints(duration=2.0)
 
-    def _detect_stuck(self) -> bool:
+    def _detect_stuck(self) -> Dict[str, Any]:
         """
-        Detect if the AGI is stuck (repeating same action without progress).
+        PRAGMATIC FIX: Multi-tier stuck detection with severity levels.
+        
+        Philosophy: Don't wait for LLM to realize we're stuck.
+        Detect it deterministically and return actionable status.
         
         Returns:
-            True if stuck, False otherwise
+            Dict with 'is_stuck', 'severity' (low/medium/high), 'reason', 'recovery_action'
         """
+        stuck_info = {
+            'is_stuck': False,
+            'severity': 'none',
+            'reason': '',
+            'recovery_action': None
+        }
+        
         # Need at least a few actions to detect stuck
         if len(self.action_history) < self.stuck_detection_window:
-            return False
+            return stuck_info
         
-        # Check if we're repeating the same action
+        # 1. CRITICAL: Action repetition >8 times
+        if self.consecutive_same_action >= 8:
+            stuck_info['is_stuck'] = True
+            stuck_info['severity'] = 'high'
+            stuck_info['reason'] = f'Critical repetition: {self.last_executed_action} x{self.consecutive_same_action}'
+            stuck_info['recovery_action'] = 'jump' if self.last_executed_action != 'jump' else 'turn_right'
+            print(f"[STUCK-HIGH] {stuck_info['reason']} → {stuck_info['recovery_action']}")
+            return stuck_info
+        
+        # 2. Check if we're repeating the same action in window
         recent_actions = self.action_history[-self.stuck_detection_window:]
         if len(set(recent_actions)) == 1:  # All same action
             same_action = recent_actions[0]
@@ -5623,15 +5798,32 @@ QUICK DECISION - Choose ONE action from available list:"""
                 coherence_change = max(recent_coherence) - min(recent_coherence)
                 
                 if coherence_change < self.stuck_threshold:
-                    print(f"[STUCK] Repeating '{same_action}' {self.stuck_detection_window}x with minimal progress (Δ𝒞={coherence_change:.3f})")
-                    return True
+                    stuck_info['is_stuck'] = True
+                    stuck_info['severity'] = 'medium'
+                    stuck_info['reason'] = f'Repeating {same_action} {self.stuck_detection_window}x, Δ𝒞={coherence_change:.3f}'
+                    stuck_info['recovery_action'] = 'turn_left' if 'turn' not in same_action else 'move_backward'
+                    print(f"[STUCK-MEDIUM] {stuck_info['reason']} → {stuck_info['recovery_action']}")
+                    return stuck_info
         
-        # Check consecutive same action count
-        if self.consecutive_same_action >= 8:  # 8+ same actions in a row
-            print(f"[STUCK] Executed '{self.last_executed_action}' {self.consecutive_same_action} times consecutively")
-            return True
+        # 3. MEDIUM: Visual similarity (seeing same thing)
+        if len(self.visual_embedding_history) >= 3:
+            import numpy as np
+            recent_embeddings = self.visual_embedding_history[-3:]
+            if all(isinstance(e, (list, np.ndarray)) for e in recent_embeddings) and len(recent_embeddings) >= 2:
+                # Cosine similarity between last two
+                last = np.array(recent_embeddings[-1]).flatten()
+                prev = np.array(recent_embeddings[-2]).flatten()
+                similarity = np.dot(last, prev) / (np.linalg.norm(last) * np.linalg.norm(prev) + 1e-8)
+                
+                if similarity > 0.98:  # 98% similar = visually stuck
+                    stuck_info['is_stuck'] = True
+                    stuck_info['severity'] = 'low'
+                    stuck_info['reason'] = f'Visual stuckness: {similarity:.3f} similarity'
+                    stuck_info['recovery_action'] = 'turn_around'
+                    print(f"[STUCK-LOW] {stuck_info['reason']} → {stuck_info['recovery_action']}")
+                    return stuck_info
         
-        return False
+        return stuck_info
     
     def _update_stuck_tracking(self, action: str, coherence: float, visual_embedding=None):
         """Update stuck detection tracking."""
@@ -5803,6 +5995,23 @@ QUICK DECISION - Choose ONE action from available list:"""
             print(f"  Timeout: {self.stats.get('action_source_timeout', 0)} ({100*self.stats.get('action_source_timeout', 0)/total_actions:.1f}%)")
             if self.last_action_source:
                 print(f"  Last successful: {self.last_action_source}")
+        
+        # Quantum Superposition stats
+        if hasattr(self, 'quantum_explorer'):
+            fractal_stats = self.quantum_explorer.get_fractal_stats()
+            print(f"\n🌀 Quantum Superposition (4D Fractal RNG):")
+            print(f"  Fractal iterations: {fractal_stats['iteration_depth']}")
+            print(f"  Fibonacci phase: {fractal_stats['fibonacci_phase']}/50")
+            print(f"  Golden ratio φ: {fractal_stats['phi']:.6f}")
+            print(f"  Variance range: {fractal_stats['variance_range']}")
+            state = fractal_stats['state']
+            print(f"  4D state: [{state['x']:.3f}, {state['y']:.3f}, {state['z']:.3f}, {state['w']:.3f}]")
+            
+            # Show exploration vector
+            exploration = self.quantum_explorer.get_exploration_vector()
+            print(f"  Exploration vector:")
+            print(f"    Spatial: {exploration[0]:.3f} | Social: {exploration[1]:.3f}")
+            print(f"    Cognitive: {exploration[2]:.3f} | Consciousness: {exploration[3]:.3f}")
         
         # Timing metrics
         if self.stats['planning_times']:
