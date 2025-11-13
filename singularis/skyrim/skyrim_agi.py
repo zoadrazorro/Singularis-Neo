@@ -42,6 +42,7 @@ from .strategic_planner import StrategicPlannerNeuron
 from .menu_learner import MenuLearner
 from .memory_rag import MemoryRAG
 from .curriculum_rag import CurriculumRAG, CATEGORY_MAPPINGS
+from .smart_context import SmartContextManager
 from .reinforcement_learner import ReinforcementLearner
 from .rl_reasoning_neuron import RLReasoningNeuron
 from .meta_strategist import MetaStrategist
@@ -305,6 +306,15 @@ class SkyrimAGI:
                 self.curriculum_rag = None
         else:
             self.curriculum_rag = None
+        
+        # 9c. Smart Context Manager
+        print("  [9c/11] Smart context management...")
+        self.smart_context = SmartContextManager(
+            max_tokens_per_call=2000,
+            cache_size=100,
+            enable_compression=True
+        )
+        print("    ✓ Context optimization enabled")
         
         # 10. RL Reasoning Neuron (LLM thinks about RL)
         print("  [10/11] RL reasoning neuron (LLM-enhanced RL)...")
@@ -2910,6 +2920,14 @@ Strongest System: {stats['strongest_system']} ({stats['strongest_weight']:.2f})"
                         consciousness_after=after_consciousness
                     )
                     
+                    # Update smart context history
+                    if hasattr(self, 'smart_context'):
+                        self.smart_context.update_history(
+                            state={'coherence': after_consciousness},
+                            action=str(action),
+                            outcome={'success': True}
+                        )
+                    
                     # Train periodically
                     if cycle_count % self.config.rl_train_freq == 0:
                         print(f"[LEARNING] Training RL at cycle {cycle_count}...")
@@ -3676,43 +3694,68 @@ REASONING: <explanation>"""
                 elif self.hybrid_llm:
                     print("[CLOUD-LLM] Using Hybrid (fast mode)")
                     
-                    # Augment prompt with curriculum knowledge for strategic thinking
-                    augmented_prompt = reasoning_prompt
+                    # Get curriculum knowledge
+                    curriculum_knowledge = None
                     if self.curriculum_rag:
                         categories = CATEGORY_MAPPINGS.get('strategy', []) + CATEGORY_MAPPINGS.get('psychology', [])
-                        augmented_prompt = self.curriculum_rag.augment_prompt_with_knowledge(
-                            base_prompt=reasoning_prompt,
+                        knowledge_results = self.curriculum_rag.retrieve_knowledge(
+                            query=reasoning_prompt,
                             top_k=1,
                             categories=categories
                         )
-                        if augmented_prompt != reasoning_prompt:
-                            print("[CURRICULUM] Strategic knowledge augmentation applied")
+                        if knowledge_results:
+                            curriculum_knowledge = knowledge_results[0].excerpt
+                            print("[CURRICULUM] Strategic knowledge retrieved")
+                    
+                    # Build smart context
+                    smart_prompt = self.smart_context.build_prompt_with_context(
+                        base_prompt=reasoning_prompt,
+                        task_type='reasoning',
+                        perception=perception,
+                        state_dict=state_dict,
+                        q_values=q_values,
+                        available_actions=available_actions,
+                        curriculum_knowledge=curriculum_knowledge
+                    )
+                    print(f"[SMART-CONTEXT] Optimized context ({len(smart_prompt)} chars)")
                     
                     # Run reasoning and world model in parallel
                     parallel_tasks = [
                         self.hybrid_llm.generate_reasoning(
-                            prompt=augmented_prompt,
-                            system_prompt="You are an expert Skyrim player providing tactical advice. Use academic knowledge to inform decisions."
+                            prompt=smart_prompt,
+                            system_prompt="You are an expert Skyrim player providing tactical advice."
                         )
                     ]
                     
                     # Add world model if available (GPT-5-thinking)
                     if hasattr(self.hybrid_llm, 'openai') and self.hybrid_llm.openai:
-                        world_model_prompt = f"{reasoning_prompt}\n\nAnalyze causal dynamics and long-term consequences."
-                        
-                        # Augment world model with science and philosophy
+                        # Get scientific knowledge
+                        science_knowledge = None
                         if self.curriculum_rag:
                             categories = CATEGORY_MAPPINGS.get('science', []) + ['Philosophy Of Science']
-                            world_model_prompt = self.curriculum_rag.augment_prompt_with_knowledge(
-                                base_prompt=world_model_prompt,
+                            knowledge_results = self.curriculum_rag.retrieve_knowledge(
+                                query="causal relationships and system dynamics",
                                 top_k=1,
                                 categories=categories
                             )
+                            if knowledge_results:
+                                science_knowledge = knowledge_results[0].excerpt
+                        
+                        # Build smart context for world modeling
+                        world_model_prompt = self.smart_context.build_prompt_with_context(
+                            base_prompt="Analyze causal dynamics and long-term consequences of this situation.",
+                            task_type='world_model',
+                            perception=perception,
+                            state_dict=state_dict,
+                            q_values=q_values,
+                            available_actions=available_actions,
+                            curriculum_knowledge=science_knowledge
+                        )
                         
                         parallel_tasks.append(
                             self.hybrid_llm.generate_world_model(
                                 prompt=world_model_prompt,
-                                system_prompt="Analyze causal relationships using scientific and philosophical principles.",
+                                system_prompt="Analyze causal relationships using scientific principles.",
                                 temperature=0.8,
                                 max_tokens=1024
                             )
@@ -5390,6 +5433,14 @@ QUICK DECISION - Choose ONE action from available list:"""
             print(f"  Documents indexed: {curr_stats['documents_indexed']}")
             print(f"  Knowledge retrievals: {curr_stats['retrievals_performed']}")
             print(f"  Categories: {len(curr_stats['categories'])}")
+        
+        # Smart Context stats
+        if hasattr(self, 'smart_context'):
+            ctx_stats = self.smart_context.get_stats()
+            print(f"\nSmart Context Management:")
+            print(f"  Cache size: {ctx_stats['cache_size']}")
+            print(f"  Cache hit rate: {ctx_stats['hit_rate']:.1%}")
+            print(f"  Recent actions tracked: {ctx_stats['recent_actions']}")
 
         # RL stats
         if self.rl_learner is not None:

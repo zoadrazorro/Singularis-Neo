@@ -353,9 +353,21 @@ class HybridLLMClient:
                     logger.debug(f"Claude reasoning: {len(result)} chars")
                     return result
                     
-                except Exception as e:
-                    logger.warning(f"Claude reasoning failed: {e}")
+                except asyncio.TimeoutError:
+                    logger.warning(f"Claude reasoning timed out after {self.config.timeout}s")
                     self.stats['errors'] += 1
+                    
+                    if not self.config.fallback_on_error:
+                        raise
+                        
+                except Exception as e:
+                    error_msg = str(e) if str(e) else type(e).__name__
+                    logger.warning(f"Claude reasoning failed: {error_msg}")
+                    self.stats['errors'] += 1
+                    
+                    # Check if it's a rate limit error
+                    if 'rate_limit' in error_msg.lower() or '429' in error_msg:
+                        logger.error("⚠️ Claude rate limit exceeded - consider increasing delays")
                     
                     if not self.config.fallback_on_error:
                         raise
