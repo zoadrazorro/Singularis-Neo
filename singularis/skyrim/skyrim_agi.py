@@ -3899,9 +3899,13 @@ COHERENCE GAIN: <estimate 0.0-1.0 how much this increases understanding>
                 q_values = self.rl_learner.get_q_values(state_dict)
             print(f"[PLANNING-CHECKPOINT] Q-value computation: {time.time() - checkpoint_rl_start:.3f}s")
             
-            # Initialize task variables
+            # Initialize task variables - CRITICAL: Must initialize before any conditional branches
             cloud_task = None
             local_moe_task = None
+            gemini_moe_task = None
+            claude_reasoning_task = None
+            huihui_task = None
+            phi4_task = None
             
             # Use RL-based action selection if enabled (but not if forcing variety)
             if self.rl_learner is not None and use_rl:
@@ -3911,14 +3915,20 @@ COHERENCE GAIN: <estimate 0.0-1.0 how much this increases understanding>
                 # Track RL usage
                 self.stats['rl_action_count'] += 1
                 
-                # Check if meta-strategist should generate new instruction
+                # Check if meta-strategist should generate new instruction (skip if no LLM)
                 checkpoint_meta_start = time.time()
-                if await self.meta_strategist.should_generate_instruction():
-                    instruction = await self.meta_strategist.generate_instruction(
-                        current_state=state_dict,
-                        q_values=q_values,
-                        motivation=motivation.dominant_drive().value
-                    )
+                if self.huihui_llm and await self.meta_strategist.should_generate_instruction():
+                    try:
+                        instruction = await asyncio.wait_for(
+                            self.meta_strategist.generate_instruction(
+                                current_state=state_dict,
+                                q_values=q_values,
+                                motivation=motivation.dominant_drive().value
+                            ),
+                            timeout=5.0
+                        )
+                    except (asyncio.TimeoutError, Exception) as e:
+                        print(f"[META-STRATEGIST] Skipping - error: {type(e).__name__}")
                 print(f"[PLANNING-CHECKPOINT] Meta-strategist check: {time.time() - checkpoint_meta_start:.3f}s")
                 
                 # Q-values already computed above
@@ -4055,27 +4065,31 @@ Format: ACTION: <action_name>"""
                 else:
                     print("[FALLBACK] Local MoE unavailable, using heuristics")
                 
-                # Also start Huihui in background for strategic reasoning
+                # Also start Huihui in background for strategic reasoning (if available)
                 visual_analysis = perception.get('visual_analysis', '')
                 if visual_analysis:
                     print(f"[QWEN3-VL] Passing visual analysis to Huihui: {visual_analysis[:100]}...")
                 
-                huihui_task = asyncio.create_task(
-                    self.rl_reasoning_neuron.reason_about_q_values(
-                        state=state_dict,
-                        q_values=q_values,
-                        available_actions=available_actions,
-                        context={
-                            'motivation': motivation.dominant_drive().value,
-                            'terrain_type': self.skyrim_world.classify_terrain_from_scene(
-                                scene_type.value,
-                                game_state.in_combat
-                            ),
-                            'meta_strategy': meta_context,
-                            'visual_analysis': visual_analysis
-                        }
+                # Only start Huihui if local LLM is available
+                if self.rl_reasoning_neuron.llm_interface:
+                    huihui_task = asyncio.create_task(
+                        self.rl_reasoning_neuron.reason_about_q_values(
+                            state=state_dict,
+                            q_values=q_values,
+                            available_actions=available_actions,
+                            context={
+                                'motivation': motivation.dominant_drive().value,
+                                'terrain_type': self.skyrim_world.classify_terrain_from_scene(
+                                    scene_type.value,
+                                    game_state.in_combat
+                                ),
+                                'meta_strategy': meta_context,
+                                'visual_analysis': visual_analysis
+                            }
+                        )
                     )
-                )
+                else:
+                    print("[HUIHUI-BG] Local LLM not available, skipping strategic analysis")
                 
                 # Compute fast heuristic immediately (no await needed)
                 print("[HEURISTIC-FAST] Computing quick action for Phi-4...")
@@ -4895,6 +4909,25 @@ QUICK DECISION - Choose ONE action from available list:"""
                                'navigate_inventory', 'navigate_map', 'use_item', 'equip_item', 
                                'consume_item', 'favorite_item', 'exit_menu', 'exit']
         
+        # CRITICAL FIX: Auto-exit dialogue/menus when trying non-menu actions
+        # This prevents getting stuck in dialogue with ineffective movement attempts
+        if scene_type in [SceneType.DIALOGUE, SceneType.INVENTORY, SceneType.MAP]:
+            if action not in menu_related_actions:
+                # Agent wants to do non-menu action but is in menu/dialogue
+                print(f"[AUTO-EXIT] Detected {scene_type.value} scene but action '{action}' is not menu-related")
+                print(f"[AUTO-EXIT] Exiting {scene_type.value} first to enable game control")
+                
+                # Exit dialogue/menu by pressing Tab (or ESC on some systems)
+                # Tab works for both inventory and dialogue in Skyrim
+                await self.actions.execute(Action(ActionType.BACK, duration=0.2))
+                await asyncio.sleep(0.5)  # Wait for menu/dialogue to close
+                
+                # Press again if needed (sometimes takes 2 presses)
+                await self.actions.execute(Action(ActionType.BACK, duration=0.2))
+                await asyncio.sleep(0.5)
+                
+                print(f"[AUTO-EXIT] Dialogue/menu exit complete, now executing: {action}")
+        
         if scene_type in [SceneType.INVENTORY, SceneType.MAP, SceneType.DIALOGUE] and action in menu_related_actions:
             # We're in a menu AND trying to do menu actions - use menu learner
             if not self.menu_learner.current_menu:
@@ -4949,10 +4982,26 @@ QUICK DECISION - Choose ONE action from available list:"""
         elif action == 'combat':
             await self.actions.combat_sequence("Enemy")
         elif action in ('interact', 'activate'):
-            # Look at target briefly before activating
-            print(f"[ACTION] Interacting with object/NPC")
-            await self.actions.execute(Action(ActionType.ACTIVATE, duration=0.3))
-            await asyncio.sleep(0.5)  # Brief pause after activation
+            # Special handling for activate in dialogue scenes
+            if scene_type == SceneType.DIALOGUE:
+                # Check if we've been stuck in dialogue too long
+                dialogue_action_count = sum(1 for a in self.action_history[-5:] if 'activate' in str(a).lower())
+                if dialogue_action_count >= 3:
+                    print(f"[ACTION] Stuck in dialogue after {dialogue_action_count} activates - exiting dialogue")
+                    # Exit dialogue instead of activating again
+                    await self.actions.execute(Action(ActionType.BACK, duration=0.2))
+                    await asyncio.sleep(0.5)
+                    print(f"[ACTION] Exited dialogue, returning to game")
+                else:
+                    # Continue dialogue (select option or advance)
+                    print(f"[ACTION] Progressing dialogue ({dialogue_action_count+1}/3 activates)")
+                    await self.actions.execute(Action(ActionType.ACTIVATE, duration=0.3))
+                    await asyncio.sleep(0.5)
+            else:
+                # Normal activation outside dialogue
+                print(f"[ACTION] Interacting with object/NPC")
+                await self.actions.execute(Action(ActionType.ACTIVATE, duration=0.3))
+                await asyncio.sleep(0.5)  # Brief pause after activation
         elif action == 'navigate':
             await self.actions.move_forward(duration=2.0)
         elif action == 'rest':
