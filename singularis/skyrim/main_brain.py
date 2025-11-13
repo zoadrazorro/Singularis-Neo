@@ -47,7 +47,7 @@ class MainBrain:
     def __init__(self, openai_client, session_id: Optional[str] = None):
         """
         Initialize Main Brain.
-        
+
         Args:
             openai_client: OpenAI client for GPT-4o
             session_id: Optional session ID (generated if not provided)
@@ -55,14 +55,20 @@ class MainBrain:
         self.openai_client = openai_client
         self.session_id = session_id or self._generate_session_id()
         self.session_start = time.time()
-        
+
         # Collect outputs from all subsystems
         self.outputs: List[SystemOutput] = []
-        
+
         # Statistics
         self.total_cycles = 0
         self.system_activations: Dict[str, int] = {}
-        
+
+        # Affective tracking (emotional valence over session)
+        self.valence_history: List[float] = []
+        self.affect_history: List[str] = []
+        self.active_affect_count: int = 0
+        self.passive_affect_count: int = 0
+
         print(f"[MAIN BRAIN] 🧠 Initialized - Session ID: {self.session_id}")
         
     def _generate_session_id(self) -> str:
@@ -97,6 +103,74 @@ class MainBrain:
     def increment_cycle(self) -> None:
         """Increment cycle counter."""
         self.total_cycles += 1
+
+    def record_affective_state(
+        self,
+        valence: float,
+        affect_type: str,
+        is_active: bool
+    ) -> None:
+        """
+        Record affective state for this cycle.
+
+        Args:
+            valence: Emotional valence value
+            affect_type: Type of affect (joy, fear, etc.)
+            is_active: True if active affect, False if passive
+        """
+        self.valence_history.append(valence)
+        self.affect_history.append(affect_type)
+
+        if is_active:
+            self.active_affect_count += 1
+        else:
+            self.passive_affect_count += 1
+
+    def get_affective_statistics(self) -> Dict[str, Any]:
+        """
+        Get affective statistics for the session.
+
+        Returns:
+            Dictionary with affective metrics
+        """
+        if not self.valence_history:
+            return {
+                'avg_valence': 0.0,
+                'valence_range': (0.0, 0.0),
+                'dominant_affects': [],
+                'active_ratio': 0.0,
+                'affective_volatility': 0.0
+            }
+
+        import numpy as np
+
+        # Compute statistics
+        avg_valence = float(np.mean(self.valence_history))
+        min_valence = float(np.min(self.valence_history))
+        max_valence = float(np.max(self.valence_history))
+        valence_std = float(np.std(self.valence_history))
+
+        # Dominant affects (top 3)
+        affect_counts = {}
+        for affect in self.affect_history:
+            affect_counts[affect] = affect_counts.get(affect, 0) + 1
+
+        sorted_affects = sorted(affect_counts.items(), key=lambda x: x[1], reverse=True)
+        dominant_affects = [affect for affect, _ in sorted_affects[:3]]
+
+        # Active affect ratio
+        total_affects = self.active_affect_count + self.passive_affect_count
+        active_ratio = self.active_affect_count / total_affects if total_affects > 0 else 0.0
+
+        return {
+            'avg_valence': avg_valence,
+            'valence_range': (min_valence, max_valence),
+            'valence_std': valence_std,
+            'dominant_affects': dominant_affects,
+            'active_ratio': active_ratio,
+            'affective_volatility': valence_std,
+            'total_measurements': len(self.valence_history)
+        }
         
     async def synthesize_report(self) -> str:
         """
@@ -143,6 +217,9 @@ Write in a clear, technical style suitable for AI researchers. Be specific and r
         duration = time.time() - self.session_start
         duration_str = f"{duration/60:.1f} minutes"
         
+        # Get affective statistics
+        affective_stats = self.get_affective_statistics()
+
         prompt = f"""# Skyrim AGI Session Synthesis
 
 ## Session Information
@@ -150,6 +227,14 @@ Write in a clear, technical style suitable for AI researchers. Be specific and r
 - Duration: {duration_str}
 - Total Cycles: {self.total_cycles}
 - Systems Active: {len(self.system_activations)}
+
+## Affective State (Emotional Valence)
+- Average Valence: {affective_stats['avg_valence']:.3f}
+- Valence Range: [{affective_stats['valence_range'][0]:.2f}, {affective_stats['valence_range'][1]:.2f}]
+- Affective Volatility (σ): {affective_stats['affective_volatility']:.3f}
+- Dominant Affects: {', '.join(affective_stats['dominant_affects']) if affective_stats['dominant_affects'] else 'None'}
+- Active Affect Ratio: {affective_stats['active_ratio']:.1%}
+- Total Affective Measurements: {affective_stats['total_measurements']}
 
 ## System Activations
 """

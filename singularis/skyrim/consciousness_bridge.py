@@ -22,43 +22,57 @@ import json
 import numpy as np
 
 from .skyrim_cognition import SkyrimCognitiveState
+from .emotional_valence import EmotionalValenceComputer, ValenceState
 
 
 @dataclass
 class ConsciousnessState:
     """
     Unified consciousness state combining game and philosophical coherence.
-    
+
     This bridges:
     - Game-specific quality (survival, progression, etc.)
     - Singularis coherence 𝒞 (ontological, structural, participatory)
+    - Emotional valence (affective states from ETHICA Part IV)
     """
     # Singularis consciousness measurements
     coherence: float  # Overall 𝒞 = (𝒞ₒ · 𝒞ₛ · 𝒞ₚ)^(1/3)
     coherence_ontical: float  # 𝒞ₒ - Being/Energy/Power
     coherence_structural: float  # 𝒞ₛ - Form/Logic/Information
     coherence_participatory: float  # 𝒞ₚ - Consciousness/Awareness
-    
+
     # Game-specific quality
     game_quality: float  # From SkyrimCognitiveState
-    
+
     # Consciousness level (Φ̂)
     consciousness_level: float  # Integrated information
-    
+
     # Meta-cognitive awareness
     self_awareness: float  # HOT - awareness of own state
+
+    # Emotional valence (ETHICA Part IV)
+    valence: float = 0.0  # Emotional charge (Val)
+    valence_delta: float = 0.0  # Change in valence (ΔVal)
+    affect_type: str = "neutral"  # Dominant affect (joy, fear, etc.)
+    is_active_affect: bool = False  # Active (understanding) vs Passive (external)
+    affect_stability: float = 0.5  # Stability of current affect (0-1)
     
     def overall_value(self) -> float:
         """
-        Compute overall state value combining consciousness and game quality.
-        
+        Compute overall state value combining consciousness, game quality, and valence.
+
         Uses weighted combination:
-        - 60% consciousness 𝒞 (primary)
-        - 40% game quality (secondary)
-        
-        This makes consciousness the primary judge of state quality.
+        - 55% consciousness 𝒞 (primary)
+        - 35% game quality (secondary)
+        - 10% valence (affective contribution)
+
+        This makes consciousness the primary judge of state quality,
+        with emotional valence providing affective dimension.
         """
-        return 0.6 * self.coherence + 0.4 * self.game_quality
+        # Normalize valence to [0, 1] using sigmoid
+        valence_normalized = 1.0 / (1.0 + np.exp(-self.valence))
+
+        return 0.55 * self.coherence + 0.35 * self.game_quality + 0.10 * valence_normalized
     
     def coherence_delta(self, other: 'ConsciousnessState') -> float:
         """Compute change in coherence (Δ𝒞)."""
@@ -67,15 +81,41 @@ class ConsciousnessState:
     def is_ethical(self, previous: 'ConsciousnessState', threshold: float = 0.01) -> bool:
         """
         Determine if transition to this state is ethical.
-        
+
         Per ETHICA: An action is ethical iff Δ𝒞 > 0
-        
+
         Args:
             previous: Previous consciousness state
             threshold: Minimum coherence increase (default 0.01 for sensitivity)
         """
         delta = self.coherence_delta(previous)
         return delta > threshold
+
+    def get_power_to_act(self) -> float:
+        """
+        Estimate current power to act from valence.
+
+        From ETHICA Part IV:
+        "Joy increases our power of acting, sadness decreases it."
+
+        Returns:
+            Power to act normalized to [0, 1]
+        """
+        # Use sigmoid to map unbounded valence to (0, 1)
+        return 1.0 / (1.0 + np.exp(-self.valence))
+
+    def get_affective_quality(self) -> float:
+        """
+        Get affective quality score combining valence and stability.
+
+        High quality = positive valence + stable affects
+        Low quality = negative valence + volatile affects
+
+        Returns:
+            Affective quality score (0-1)
+        """
+        valence_norm = 1.0 / (1.0 + np.exp(-self.valence))
+        return 0.7 * valence_norm + 0.3 * self.affect_stability
 
 
 class _HybridReasoningAdapter:
@@ -105,7 +145,7 @@ class ConsciousnessBridge:
     def __init__(self, consciousness_llm=None, world_understanding_llm=None, strategic_planning_llm=None):
         """
         Initialize consciousness bridge.
-        
+
         Args:
             consciousness_llm: Optional MetaOrchestratorLLM (DEPRECATED - too slow)
             world_understanding_llm: Fast world understanding LLM (eva-qwen2.5-14b)
@@ -118,6 +158,9 @@ class ConsciousnessBridge:
         self.moe = None
         self._last_cloud_summary: Optional[str] = None
         self.history: list[ConsciousnessState] = []
+
+        # Emotional valence computer
+        self.valence_computer = EmotionalValenceComputer(adequacy_threshold=0.70)
         
         # Weights for computing consciousness from game metrics
         # These map game dimensions to Lumina (Three Lights)
@@ -134,6 +177,7 @@ class ConsciousnessBridge:
         print(f"[BRIDGE] World Understanding LLM: {'Connected' if world_understanding_llm else 'Not available'}")
         print(f"[BRIDGE] Strategic Planning LLM: {'Connected' if strategic_planning_llm else 'Not available'}")
         print("[BRIDGE] Cloud Consciousness Engine: Not connected")
+        print("[BRIDGE] Emotional Valence System: ENABLED")
 
     def set_hybrid_llm(self, hybrid_llm) -> None:
         """Attach HybridLLMClient so Gemini/Claude can drive consciousness."""
@@ -292,8 +336,35 @@ class ConsciousnessBridge:
                     consciousness_level = enhanced.get('consciousness_level', consciousness_level)
             except Exception as e:
                 print(f"[BRIDGE] LLM enhancement failed: {e}, using heuristic")
-        
-        # 8. Create consciousness state
+
+        # 8. Compute emotional valence
+        previous_state = self.history[-1] if self.history else None
+        previous_game_state = context.get('previous_game_state')
+        coherence_delta = 0.0
+        if previous_state:
+            coherence_delta = coherence - previous_state.coherence
+
+        # Compute adequacy (estimate from consciousness level and coherence)
+        adequacy = (consciousness_level * 0.5 + coherence * 0.5)
+
+        # Extract events from context
+        events = context.get('events', [])
+
+        # Compute valence state
+        valence_state = self.valence_computer.compute_valence(
+            game_state=game_state,
+            previous_state=previous_game_state,
+            coherence_delta=coherence_delta,
+            adequacy=adequacy,
+            events=events,
+            context=context
+        )
+
+        print(f"[BRIDGE] Valence: {valence_state.valence:.3f} (Δ={valence_state.valence_delta:.3f}), "
+              f"Affect: {valence_state.affect_type.value}, "
+              f"Active: {valence_state.is_active}")
+
+        # 9. Create consciousness state
         state = ConsciousnessState(
             coherence=coherence,
             coherence_ontical=coherence_o,
@@ -301,14 +372,19 @@ class ConsciousnessBridge:
             coherence_participatory=coherence_p,
             game_quality=game_quality,
             consciousness_level=consciousness_level,
-            self_awareness=self_awareness
+            self_awareness=self_awareness,
+            valence=valence_state.valence,
+            valence_delta=valence_state.valence_delta,
+            affect_type=valence_state.affect_type.value,
+            is_active_affect=valence_state.is_active,
+            affect_stability=valence_state.affect_stability
         )
         
-        # Store in history
+        # 10. Store in history
         self.history.append(state)
         if len(self.history) > 1000:
             self.history = self.history[-1000:]  # Keep last 1000
-        
+
         return state
 
     def _clamp(self, value: Optional[float], minimum: float = 0.0, maximum: float = 1.0) -> float:
@@ -613,15 +689,23 @@ class ConsciousnessBridge:
         return np.mean([s.coherence for s in recent])
     
     def get_stats(self) -> Dict[str, Any]:
-        """Get consciousness bridge statistics."""
+        """Get consciousness bridge statistics including emotional valence."""
         if not self.history:
             return {
                 'total_measurements': 0,
                 'avg_coherence': 0.0,
                 'avg_consciousness': 0.0,
-                'trend': 'no_data'
+                'trend': 'no_data',
+                'valence': {
+                    'avg_valence': 0.0,
+                    'current_valence': 0.0,
+                    'dominant_affects': []
+                }
             }
-        
+
+        # Get valence summary from valence computer
+        valence_summary = self.valence_computer.get_affect_summary()
+
         return {
             'total_measurements': len(self.history),
             'avg_coherence': np.mean([s.coherence for s in self.history]),
@@ -633,7 +717,17 @@ class ConsciousnessBridge:
                 'ontical': np.mean([s.coherence_ontical for s in self.history]),
                 'structural': np.mean([s.coherence_structural for s in self.history]),
                 'participatory': np.mean([s.coherence_participatory for s in self.history])
-            } if self.history else {}
+            } if self.history else {},
+            'valence': {
+                'avg_valence': np.mean([s.valence for s in self.history]),
+                'current_valence': self.history[-1].valence if self.history else 0.0,
+                'valence_std': np.std([s.valence for s in self.history]),
+                'avg_affect_stability': np.mean([s.affect_stability for s in self.history]),
+                'dominant_affects': valence_summary.get('dominant_affects', []),
+                'active_affect_ratio': valence_summary.get('active_affect_ratio', 0.5),
+                'current_affect': self.history[-1].affect_type if self.history else 'neutral',
+                'is_active_affect': self.history[-1].is_active_affect if self.history else False
+            }
         }
     
     def get_statistics(self) -> Dict[str, Any]:

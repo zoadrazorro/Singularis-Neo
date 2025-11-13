@@ -40,16 +40,20 @@ class NodeCoherence:
     node_name: str
     coherence: float  # 0.0-1.0
     timestamp: float
-    
+
     # Singularis components
     unity: float = 0.0  # Alignment with system goals
     integration: float = 0.0  # Information flow
     differentiation: float = 0.0  # Specialized function
-    
+
     # Additional metrics
     confidence: float = 0.0
     activity_level: float = 0.0
     error_rate: float = 0.0
+
+    # Emotional valence (ETHICA Part IV)
+    valence: float = 0.0  # Emotional charge for this node
+    affect_type: str = "neutral"  # Dominant affect
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary."""
@@ -63,6 +67,8 @@ class NodeCoherence:
             'confidence': self.confidence,
             'activity_level': self.activity_level,
             'error_rate': self.error_rate,
+            'valence': self.valence,
+            'affect_type': self.affect_type,
         }
 
 
@@ -70,27 +76,33 @@ class NodeCoherence:
 class SystemConsciousnessState:
     """Complete consciousness state of the entire system."""
     timestamp: float
-    
+
     # Overall metrics
     global_coherence: float  # System-wide 𝒞
     avg_coherence: float
     median_coherence: float
     std_coherence: float
-    
+
     # Per-node coherence
     node_coherences: Dict[str, NodeCoherence] = field(default_factory=dict)
-    
+
     # Consciousness quality indicators
     integration_index: float = 0.0  # How well components communicate
     differentiation_index: float = 0.0  # How specialized components are
     unity_index: float = 0.0  # How aligned components are
-    
+
     # Phi (Φ) - Integrated Information Theory measure
     phi: float = 0.0
-    
+
     # Temporal coherence
     coherence_delta: float = 0.0  # Change from last measurement
     coherence_trend: str = "stable"  # "increasing", "decreasing", "stable"
+
+    # Emotional valence (system-wide affective state)
+    global_valence: float = 0.0  # System-wide emotional charge
+    avg_valence: float = 0.0  # Average valence across nodes
+    dominant_affect: str = "neutral"  # System-wide dominant affect
+    affective_coherence: float = 0.0  # How unified are the affects across nodes
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary."""
@@ -107,6 +119,10 @@ class SystemConsciousnessState:
             'phi': self.phi,
             'coherence_delta': self.coherence_delta,
             'coherence_trend': self.coherence_trend,
+            'global_valence': self.global_valence,
+            'avg_valence': self.avg_valence,
+            'dominant_affect': self.dominant_affect,
+            'affective_coherence': self.affective_coherence,
         }
 
 
@@ -296,17 +312,50 @@ class SystemConsciousnessMonitor:
         # Compute temporal coherence
         coherence_delta = 0.0
         coherence_trend = "stable"
-        
+
         if self.current_state:
             coherence_delta = global_coherence - self.current_state.global_coherence
-            
+
             if abs(coherence_delta) < 0.01:
                 coherence_trend = "stable"
             elif coherence_delta > 0:
                 coherence_trend = "increasing"
             else:
                 coherence_trend = "decreasing"
-        
+
+        # Compute emotional valence statistics
+        valences = [m.valence for m in node_measurements.values()]
+        affect_types = [m.affect_type for m in node_measurements.values()]
+
+        # Global valence (weighted average)
+        weighted_valence = 0.0
+        total_weight_valence = 0.0
+
+        for node_name, measurement in node_measurements.items():
+            weight = self.registered_nodes.get(node_name, {}).get('weight', 1.0)
+            weighted_valence += measurement.valence * weight
+            total_weight_valence += weight
+
+        global_valence = weighted_valence / total_weight_valence if total_weight_valence > 0 else 0.0
+
+        # Average valence
+        avg_valence = statistics.mean(valences) if valences else 0.0
+
+        # Dominant affect (most common)
+        affect_counts = {}
+        for affect in affect_types:
+            affect_counts[affect] = affect_counts.get(affect, 0) + 1
+        dominant_affect = max(affect_counts, key=affect_counts.get) if affect_counts else "neutral"
+
+        # Affective coherence (how unified are affects across nodes)
+        # High when all nodes have similar valence, low when disparate
+        if len(valences) > 1:
+            valence_std = statistics.stdev(valences)
+            # Normalize: low std = high coherence
+            affective_coherence = 1.0 / (1.0 + valence_std)
+        else:
+            affective_coherence = 1.0
+
         # Create state
         state = SystemConsciousnessState(
             timestamp=time.time(),
@@ -321,6 +370,10 @@ class SystemConsciousnessMonitor:
             phi=phi,
             coherence_delta=coherence_delta,
             coherence_trend=coherence_trend,
+            global_valence=global_valence,
+            avg_valence=avg_valence,
+            dominant_affect=dominant_affect,
+            affective_coherence=affective_coherence,
         )
         
         # Update tracking

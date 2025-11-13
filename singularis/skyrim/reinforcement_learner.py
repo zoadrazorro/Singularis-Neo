@@ -499,16 +499,17 @@ class ReinforcementLearner:
         consciousness_after: Optional['ConsciousnessState'] = None
     ) -> float:
         """
-        Compute reward for transition using consciousness-guided evaluation.
+        Compute reward for transition using consciousness-guided evaluation with emotional valence.
 
         This is CRITICAL for learning! Rewards guide the agent.
-        
-        NEW APPROACH:
-        - PRIMARY: Consciousness coherence change (Δ𝒞)
-        - SECONDARY: Game-specific rewards (health, progress, etc.)
-        - Weight: 70% consciousness, 30% game metrics
-        
+
+        ENHANCED APPROACH:
+        - PRIMARY: Consciousness coherence change (Δ𝒞) - 60%
+        - SECONDARY: Emotional valence change (ΔVal) - 15%
+        - TERTIARY: Game-specific rewards (health, progress, etc.) - 25%
+
         Per ETHICA: Actions that increase coherence (Δ𝒞 > 0) are ethical and rewarded.
+        Per ETHICA Part IV: Joy (positive valence) increases power to act.
 
         Args:
             state_before: State before action
@@ -521,36 +522,50 @@ class ReinforcementLearner:
             Reward value (higher is better)
         """
         reward = 0.0
-        
+
         # PRIMARY REWARD: Consciousness coherence change (Δ𝒞)
         if self.use_consciousness_rewards and consciousness_before and consciousness_after:
             # Coherence delta is the PRIMARY reward signal
             coherence_delta = consciousness_after.coherence_delta(consciousness_before)
-            
+
             # Scale coherence change: Δ𝒞 ∈ [-1, 1] → reward contribution
             consciousness_reward = coherence_delta * 5.0  # Strong weight on coherence
-            reward += consciousness_reward * 0.7  # 70% of total reward
-            
-            print(f"[RL-REWARD] Δ𝒞 = {coherence_delta:+.3f} → reward = {consciousness_reward * 0.7:+.2f}")
-            
+            reward += consciousness_reward * 0.6  # 60% of total reward
+
+            print(f"[RL-REWARD] Δ𝒞 = {coherence_delta:+.3f} → reward = {consciousness_reward * 0.6:+.2f}")
+
+            # SECONDARY REWARD: Emotional valence change (ΔVal)
+            valence_delta = consciousness_after.valence_delta
+            valence_reward = valence_delta * 2.0  # Moderate weight on valence
+            reward += valence_reward * 0.15  # 15% of total reward
+
+            print(f"[RL-REWARD] ΔVal = {valence_delta:+.3f} → reward = {valence_reward * 0.15:+.2f}, "
+                  f"Affect: {consciousness_after.affect_type}")
+
             # Bonus for ethical actions (Δ𝒞 > threshold)
             if consciousness_after.is_ethical(consciousness_before, threshold=0.02):
                 reward += 0.5  # Ethical bonus
                 print(f"[RL-REWARD] ✓ Ethical action (Δ𝒞 > 0.02)")
+
+            # Bonus for active affects (understanding-based emotions)
+            if consciousness_after.is_active_affect:
+                reward += 0.2  # Active affect bonus
+                print(f"[RL-REWARD] ✓ Active affect (understanding-based emotion)")
+
         else:
             # Fallback: Use game-specific cognitive quality
             try:
                 cognitive_before = SkyrimCognitiveState.from_game_state(state_before)
                 cognitive_after = SkyrimCognitiveState.from_game_state(state_after)
                 quality_delta = cognitive_after.quality_change(cognitive_before)
-                reward += quality_delta * 3.5  # 70% weight equivalent
+                reward += quality_delta * 3.5  # 60% weight equivalent
                 print(f"[RL-REWARD] Quality Δ = {quality_delta:+.3f} (no consciousness)")
             except Exception:
                 pass
-        
-        # SECONDARY REWARD: Game-specific shaping (30% of total)
+
+        # TERTIARY REWARD: Game-specific shaping (25% of total)
         game_reward = self._compute_game_reward(state_before, action, state_after)
-        reward += game_reward * 0.3  # 30% of total reward
+        reward += game_reward * 0.25  # 25% of total reward
 
         # Base survival reward
         reward += 0.1
