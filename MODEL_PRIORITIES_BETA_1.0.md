@@ -75,8 +75,12 @@
 
 ```python
 config = SkyrimConfig(
-    # Primary: Claude
+    # PRIMARY: Gemini Flash 2.5 Lite (UNLIMITED)
     use_hybrid_llm=True,
+    use_gemini_vision=True,
+    gemini_model="gemini-2.5-flash-lite",  # UNLIMITED
+    
+    # Secondary: Claude
     use_claude_reasoning=True,
     claude_model="claude-3-5-haiku-20241022",
     claude_sensorimotor_model="claude-sonnet-4-5-20250929",
@@ -87,10 +91,9 @@ config = SkyrimConfig(
     # Fallback: Local
     use_local_fallback=True,
     
-    # DISABLED: Gemini (rate limits)
-    use_gemini_vision=False,
-    enable_voice=False,
-    enable_video_interpreter=False,
+    # Optional: Voice/Video (check your rate limits)
+    enable_voice=False,  # Optional
+    enable_video_interpreter=False,  # Optional
 )
 ```
 
@@ -168,27 +171,28 @@ gemini_model="gemini-2.5-flash",
 
 ## 🎯 Current Model Priorities (Summary)
 
-**Tier 1 (Primary):**
-- ✅ Claude Haiku/Sonnet (Anthropic)
-- ✅ GPT-5 (OpenAI)
+**Tier 1 (PRIMARY - UNLIMITED):**
+- ⭐ Gemini Flash 2.5 Lite (Google) - UNLIMITED
+- ✅ GPT-5 (OpenAI) - Orchestration
 
-**Tier 2 (Fallback):**
+**Tier 2 (Secondary):**
+- ✅ Claude Haiku/Sonnet (Anthropic)
 - ✅ Phi-4 (Local)
 - ✅ Qwen3-VL (Local)
-- ✅ Hyperbolic (if available)
 
-**Tier 3 (Disabled):**
-- ❌ Gemini (rate limits)
+**Tier 3 (Optional):**
+- ⚠️ Gemini Voice/Video (check limits)
 
 ---
 
 ## 📝 Notes
 
-### Why Claude is Primary
-1. **Fast**: Haiku is extremely fast
-2. **Reliable**: 100 RPM limit (very high)
-3. **Quality**: Sonnet 4.5 for critical tasks
-4. **Cost**: Haiku is very cheap
+### Why Gemini Flash 2.5 Lite is Primary
+1. **UNLIMITED**: No rate limits at all
+2. **Fast**: Fastest Gemini model
+3. **Optimized**: Built for high throughput
+4. **Vision**: Excellent vision capabilities
+5. **Cost**: Very cost-effective
 
 ### Why Local is Important
 1. **Unlimited**: No rate limits
@@ -196,11 +200,11 @@ gemini_model="gemini-2.5-flash",
 3. **Privacy**: No API calls
 4. **Fallback**: Always available
 
-### Why Gemini is Disabled
-1. **Rate Limits**: 30 RPM too low
-2. **System Needs**: 120+ RPM required
-3. **429 Errors**: Constant failures
-4. **Stability**: Causes cascading failures
+### Voice/Video Optional
+1. **Main Vision**: Uses Flash 2.5 Lite (unlimited)
+2. **Voice/Video**: Uses different Gemini models (may have limits)
+3. **Optional**: Can enable if your tier supports it
+4. **Not Critical**: Core system works without them
 
 ---
 
@@ -214,16 +218,17 @@ python run_beta_skyrim_agi.py
 ```
 Core Systems:
   LLM:               ✓
+  Gemini Flash Lite: ✓ (PRIMARY - UNLIMITED)
   GPT-5 Orchestrator: ✓ (OpenAI)
-  Claude Reasoning:  ✓ (Anthropic - primary)
+  Claude Reasoning:  ✓ (Anthropic - secondary)
   Local Fallback:    ✓ (Qwen3-VL, Phi-4)
-  Voice System:      ✗ (Disabled - Gemini rate limits)
-  Video Interpreter: ✗ (Disabled - Gemini rate limits)
+  Voice System:      ✗ (Optional - disabled by default)
+  Video Interpreter: ✗ (Optional - disabled by default)
   Double Helix:      ✓
 ```
 
-**Result**: Stable, fast, no rate limit issues! ✅
+**Result**: UNLIMITED primary model, stable, fast, no rate limit issues! ✅
 
 ---
 
-**Singularis Neo Beta 1.0 - Optimized for Stability** 🚀
+**Singularis Neo Beta 1.0 - Powered by UNLIMITED Gemini Flash 2.5 Lite** 🚀⚡
