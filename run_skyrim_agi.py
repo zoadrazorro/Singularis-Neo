@@ -141,6 +141,9 @@ async def main():
             rl_cloud_reward_shaping=True,
             rl_moe_evaluation=True,
             
+            # University Curriculum RAG for enhanced intelligence
+            use_curriculum_rag=True,
+            
             # Disable legacy
             enable_claude_meta=False,
             enable_gemini_vision=False,
@@ -163,6 +166,9 @@ async def main():
             claude_model="claude-sonnet-4-5-20250929",
             gemini_rpm_limit=10,  # Conservative rate limit
             claude_rpm_limit=50,  # Conservative rate limit
+            
+            # University Curriculum RAG
+            use_curriculum_rag=True,
             
             # Disable other LLM modes
             use_hybrid_llm=False,
@@ -189,6 +195,9 @@ async def main():
             use_claude_reasoning=True,
             claude_model="claude-sonnet-4-5-20250929",
             use_local_fallback=use_local_fallback,
+            
+            # University Curriculum RAG
+            use_curriculum_rag=True,
             
             # MoE disabled
             use_moe=False,

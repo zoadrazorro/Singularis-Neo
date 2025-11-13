@@ -21,6 +21,7 @@ from loguru import logger
 
 from .gemini_client import GeminiClient
 from .claude_client import ClaudeClient
+from .openai_client import OpenAIClient
 from .lmstudio_client import LMStudioClient, LMStudioConfig, ExpertLLMInterface
 
 
@@ -42,13 +43,15 @@ class HybridConfig:
     use_claude_reasoning: bool = True
     claude_model: str = "claude-sonnet-4-5-20250929"
     
+    use_openai_world_model: bool = True
+    openai_model: str = "gpt-5-thinking"  # GPT-5-thinking for world modeling
+    
     # Fallback models (local - optional)
     use_local_fallback: bool = False
     local_base_url: str = "http://localhost:1234/v1"
-    # Note: LM Studio typically loads ONE model - use whatever is loaded
-    local_vision_model: str = "local-model"  # Use whatever model is loaded
-    local_reasoning_model: str = "local-model"  # Use whatever model is loaded
-    local_action_model: str = "local-model"  # Use whatever model is loaded
+    local_vision_model: str = "qwen/qwen3-vl-8b"  # Qwen3-VL for vision
+    local_reasoning_model: str = "qwen/qwen3-4b-thinking-2507"  # Qwen3 thinking for reasoning
+    local_action_model: str = "microsoft/phi-4"  # Phi-4 for fast action
     
     # Performance settings
     timeout: int = 30
@@ -75,6 +78,7 @@ class HybridLLMClient:
         # Primary clients
         self.gemini: Optional[GeminiClient] = None
         self.claude: Optional[ClaudeClient] = None
+        self.openai: Optional[OpenAIClient] = None
         
         # Fallback clients (optional)
         self.local_vision: Optional[ExpertLLMInterface] = None
@@ -85,6 +89,7 @@ class HybridLLMClient:
         self.stats = {
             'gemini_calls': 0,
             'claude_calls': 0,
+            'openai_calls': 0,
             'local_calls': 0,
             'fallback_activations': 0,
             'errors': 0,
@@ -98,6 +103,7 @@ class HybridLLMClient:
         logger.info("Hybrid LLM client initialized", extra={
             "gemini_enabled": self.config.use_gemini_vision,
             "claude_enabled": self.config.use_claude_reasoning,
+            "openai_enabled": self.config.use_openai_world_model,
             "local_fallback": self.config.use_local_fallback
         })
     
@@ -130,6 +136,19 @@ class HybridLLMClient:
             except Exception as e:
                 logger.error(f"Failed to initialize Claude: {e}")
                 self.claude = None
+        
+        # Initialize OpenAI (world modeling)
+        if self.config.use_openai_world_model:
+            try:
+                self.openai = OpenAIClient(model=self.config.openai_model)
+                if self.openai.is_available():
+                    logger.info(f"✓ OpenAI world modeling initialized: {self.config.openai_model}")
+                else:
+                    logger.warning("OpenAI API key not found (OPENAI_API_KEY)")
+                    self.openai = None
+            except Exception as e:
+                logger.error(f"Failed to initialize OpenAI: {e}")
+                self.openai = None
         
         # Initialize local fallbacks (optional)
         if self.config.use_local_fallback:
@@ -445,6 +464,91 @@ class HybridLLMClient:
             # No action model available
             raise RuntimeError("No action model available")
     
+    async def generate_world_model(
+        self,
+        prompt: str,
+        system_prompt: Optional[str] = None,
+        temperature: float = 0.8,
+        max_tokens: int = 4096
+    ) -> str:
+        """
+        Generate world model reasoning using GPT-5-thinking.
+        
+        This model specializes in:
+        - Causal reasoning and counterfactual thinking
+        - Long-term consequence prediction
+        - Complex system dynamics understanding
+        
+        Args:
+            prompt: World modeling prompt
+            system_prompt: Optional system prompt
+            temperature: Sampling temperature (higher for exploration)
+            max_tokens: Maximum output tokens
+            
+        Returns:
+            World model analysis
+        """
+        start_time = time.time()
+        
+        async with self.semaphore:
+            # Rate limiting
+            await self._rate_limit()
+            
+            # Try GPT-5-thinking first
+            if self.openai:
+                try:
+                    result = await asyncio.wait_for(
+                        self.openai.generate_text(
+                            prompt=prompt,
+                            system_prompt=system_prompt,
+                            temperature=temperature,
+                            max_tokens=max_tokens
+                        ),
+                        timeout=self.config.timeout
+                    )
+                    
+                    self.stats['openai_calls'] += 1
+                    self.stats['total_time'] += time.time() - start_time
+                    
+                    logger.debug(f"GPT-5-thinking world model: {len(result)} chars")
+                    return result
+                    
+                except Exception as e:
+                    logger.warning(f"GPT-5-thinking world model failed: {e}")
+                    self.stats['errors'] += 1
+                    
+                    if not self.config.fallback_on_error:
+                        raise
+            
+            # Fallback to Claude for world modeling
+            if self.claude:
+                try:
+                    logger.info("Using Claude fallback for world modeling")
+                    self.stats['fallback_activations'] += 1
+                    
+                    result = await asyncio.wait_for(
+                        self.claude.generate_text(
+                            prompt=prompt,
+                            system_prompt=system_prompt,
+                            temperature=temperature,
+                            max_tokens=max_tokens
+                        ),
+                        timeout=self.config.timeout
+                    )
+                    
+                    self.stats['claude_calls'] += 1
+                    self.stats['total_time'] += time.time() - start_time
+                    
+                    return result
+                    
+                except Exception as e:
+                    logger.error(f"Claude world model fallback failed: {e}")
+                    self.stats['errors'] += 1
+                    raise
+            
+            # No world modeling available
+            raise RuntimeError("No world modeling available (GPT-5-thinking and Claude both unavailable)")
+    
     async def _rate_limit(self):
         """Apply rate limiting between requests."""
         now = time.time()
@@ -461,6 +565,8 @@ class HybridLLMClient:
             await self.gemini.close()
         if self.claude:
             await self.claude.close()
+        if self.openai:
+            await self.openai.close()
         
         logger.info("Hybrid LLM client closed")
     
@@ -469,6 +575,7 @@ class HybridLLMClient:
         total_calls = (
             self.stats['gemini_calls'] + 
             self.stats['claude_calls'] + 
+            self.stats['openai_calls'] + 
             self.stats['local_calls']
         )
         
@@ -477,7 +584,7 @@ class HybridLLMClient:
             'total_calls': total_calls,
             'avg_time': self.stats['total_time'] / max(1, total_calls),
             'primary_success_rate': (
-                (self.stats['gemini_calls'] + self.stats['claude_calls']) / 
+                (self.stats['gemini_calls'] + self.stats['claude_calls'] + self.stats['openai_calls']) / 
                 max(1, total_calls)
             ),
             'fallback_rate': self.stats['fallback_activations'] / max(1, total_calls)
