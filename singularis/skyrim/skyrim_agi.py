@@ -2831,9 +2831,11 @@ EXTENDED THINKING PROCESS:
                 
                 # FULL SINGULARIS ORCHESTRATOR - Run periodically for deep strategic reasoning
                 # Uses Huihui for dialectical synthesis, expert consultation, meta-cognition
+                # This invokes the full MetaOrchestratorLLM with thesis-antithesis-synthesis dialectic
                 if cycle_count % 15 == 0 and self.huihui_llm:
                     print("\n" + "="*70)
-                    print("FULL SINGULARIS AGI PROCESS - DIALECTICAL REASONING")
+                    print("FULL SINGULARIS AGI PROCESS - DIALECTICAL REASONING (CYCLE 15)")
+                    print("Invoking Huihui + 6 Experts + Dialectical Synthesis")
                     print("="*70)
                     
                     # Build strategic query for the orchestrator
