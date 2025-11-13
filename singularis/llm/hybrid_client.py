@@ -46,7 +46,7 @@ class HybridConfig:
     use_local_fallback: bool = False
     local_base_url: str = "http://localhost:1234/v1"
     local_vision_model: str = "qwen/qwen3-4b-thinking-2507"
-    local_reasoning_model: str = "microsoft/phi-4-mini-reasoning"
+    local_reasoning_model: str = "microsoft/phi-4-mini-reasoning:3"
     local_action_model: str = "microsoft/phi-4"
     
     # Performance settings

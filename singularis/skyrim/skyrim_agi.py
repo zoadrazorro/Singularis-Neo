@@ -115,8 +115,8 @@ class SkyrimConfig:
     fast_danger_threshold: int = 3  # Number of enemies to trigger defensive actions
 
     # Core models
-    phi4_action_model: str = "mistralai/mistral-nemo-instruct-2407"  # Action planning
-    huihui_cognition_model: str = "mistralai/mistral-7b-instruct-v0.3"  # Main cognition, reasoning, strategy
+    phi4_action_model: str = "microsoft/phi-4-mini-reasoning"  # Action planning (fast, reliable)
+    huihui_cognition_model: str = "microsoft/phi-4-mini-reasoning:2"  # Main cognition, reasoning, strategy (fast, reliable)
     qwen3_vl_perception_model: str = "qwen/qwen3-vl-8b"  # Perception and spatial awareness
 
     # Learning
@@ -372,6 +372,7 @@ class SkyrimAGI:
         # 2x big models for high-level strategic planning
         self.strategic_planning_llm: Optional[Any] = None  # Big model: Long-term strategy
         self.world_understanding_llm: Optional[Any] = None  # Big model: Deep world understanding
+        self.state_printer_llm: Optional[Any] = None  # Phi-4: Internal state printing and analysis
 
         # Statistics
         self.stats = {
@@ -839,7 +840,19 @@ class SkyrimAGI:
                     # This enables full Singularis dialectical reasoning
                     self.agi.consciousness_llm = self.huihui_llm
                     self.consciousness_bridge.consciousness_llm = self.huihui_llm
+                    
+                    # Initialize state printer LLM (microsoft/phi-4)
+                    state_printer_config = LMStudioConfig(
+                        base_url="http://localhost:1234/v1",
+                        model_name="microsoft/phi-4",
+                        temperature=0.5,
+                        max_tokens=1024
+                    )
+                    state_printer_client = LMStudioClient(state_printer_config)
+                    self.state_printer_llm = ExpertLLMInterface(state_printer_client)
+                    
                     print("[PARALLEL] ✓ Huihui connected to AGI orchestrator (enables dialectical synthesis)")
+                    print("[PARALLEL] ✓ State printer LLM connected (microsoft/phi-4)")
                     print("[PARALLEL] ✓ Local LLMs connected to components")
                     
             except Exception as e:

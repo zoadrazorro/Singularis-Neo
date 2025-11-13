@@ -62,7 +62,7 @@ class LocalMoEOrchestrator:
             "qwen/qwen3-4b-thinking-2507",      # Instance 1
             "microsoft/phi-4-mini-reasoning",    # Instance 2
             "microsoft/phi-4-mini-reasoning:2",  # Instance 3
-            "microsoft/phi-4"                    # Instance 4 (synthesizer)
+            "microsoft/phi-4-mini-reasoning:3"   # Instance 4
         ]
         
         # Initialize experts with different model instances
