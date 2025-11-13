@@ -3517,13 +3517,19 @@ Based on this visual and contextual data, provide:
                     gemini_visual = ""
                     local_visual = ""
                     
-                    # Get Gemini visual analysis
-                    if hasattr(self, 'hybrid_llm') and self.hybrid_llm:
-                        try:
-                            print("[SENSORIMOTOR] Getting Gemini visual analysis...")
-                            screenshot = perception.get('screenshot')
-                            if screenshot is not None:
-                                gemini_visual = await asyncio.wait_for(
+                    # ═══════════════════════════════════════════════════════════
+                    # PARALLEL MULTI-MODAL VISUAL ANALYSIS
+                    # ═══════════════════════════════════════════════════════════
+                    print("[SENSORIMOTOR] 🚀 Starting parallel multi-modal visual analysis...")
+                    
+                    screenshot = perception.get('screenshot')
+                    visual_tasks = []
+                    
+                    # Task 1: Gemini visual analysis
+                    async def get_gemini_visual():
+                        if hasattr(self, 'hybrid_llm') and self.hybrid_llm and screenshot is not None:
+                            try:
+                                result = await asyncio.wait_for(
                                     self.hybrid_llm.analyze_image(
                                         image=screenshot,
                                         prompt="""Describe the visual scene focusing on: spatial layout, obstacles, pathways, terrain features, landmarks, and any navigational cues. Be specific about what's visible in each direction.
@@ -3540,26 +3546,66 @@ Also check for combat:
                                     ),
                                     timeout=15.0
                                 )
-                                print(f"[SENSORIMOTOR] ✓ Gemini visual: {len(gemini_visual)} chars")
-                            else:
-                                print("[SENSORIMOTOR] No screenshot available")
-                        except Exception as e:
-                            print(f"[SENSORIMOTOR] Gemini visual failed: {e}")                    # Get Local vision model analysis (Qwen3-VL) as backup/supplement
-                    if hasattr(self, 'perception_llm') and self.perception_llm:
-                        try:
-                            print("[SENSORIMOTOR] Getting local visual analysis...")
-                            local_visual = await asyncio.wait_for(
-                                self.perception_llm.generate(
-                                    prompt="Analyze this Skyrim scene for navigation: describe obstacles, open paths, terrain type, and spatial features.",
-                                    max_tokens=256
-                                ),
-                                timeout=10.0
-                            )
-                            if isinstance(local_visual, dict):
-                                local_visual = local_visual.get('content', '')
-                            print(f"[SENSORIMOTOR] ✓ Local visual: {len(local_visual)} chars")
-                        except Exception as e:
-                            print(f"[SENSORIMOTOR] Local visual failed: {e}")
+                                print(f"[GEMINI-VISUAL] ✓ Complete: {len(result)} chars")
+                                return result
+                            except Exception as e:
+                                print(f"[GEMINI-VISUAL] ✗ Failed: {e}")
+                                return None
+                        return None
+                    
+                    # Task 2: Local vision analysis
+                    async def get_local_visual():
+                        if hasattr(self, 'perception_llm') and self.perception_llm:
+                            try:
+                                result = await asyncio.wait_for(
+                                    self.perception_llm.generate(
+                                        prompt="Analyze this Skyrim scene for navigation: describe obstacles, open paths, terrain type, and spatial features.",
+                                        max_tokens=256
+                                    ),
+                                    timeout=10.0
+                                )
+                                if isinstance(result, dict):
+                                    result = result.get('content', '')
+                                print(f"[LOCAL-VISUAL] ✓ Complete: {len(result)} chars")
+                                return result
+                            except Exception as e:
+                                print(f"[LOCAL-VISUAL] ✗ Failed: {e}")
+                                return None
+                        return None
+                    
+                    # Task 3: Video interpreter (if available)
+                    async def get_video_interpretation():
+                        if self.video_interpreter and screenshot is not None:
+                            try:
+                                result = self.video_interpreter.get_latest_interpretation()
+                                if result:
+                                    print(f"[VIDEO-INTERP] ✓ Latest: {len(result)} chars")
+                                return result
+                            except Exception as e:
+                                print(f"[VIDEO-INTERP] ✗ Failed: {e}")
+                                return None
+                        return None
+                    
+                    # Run all visual analyses in parallel
+                    gemini_visual, local_visual, video_interp = await asyncio.gather(
+                        get_gemini_visual(),
+                        get_local_visual(),
+                        get_video_interpretation(),
+                        return_exceptions=True
+                    )
+                    
+                    # Handle exceptions from gather
+                    if isinstance(gemini_visual, Exception):
+                        print(f"[GEMINI-VISUAL] Exception: {gemini_visual}")
+                        gemini_visual = None
+                    if isinstance(local_visual, Exception):
+                        print(f"[LOCAL-VISUAL] Exception: {local_visual}")
+                        local_visual = None
+                    if isinstance(video_interp, Exception):
+                        print(f"[VIDEO-INTERP] Exception: {video_interp}")
+                        video_interp = None
+                    
+                    print(f"[SENSORIMOTOR] ✓ Parallel analysis complete (Gemini: {bool(gemini_visual)}, Local: {bool(local_visual)}, Video: {bool(video_interp)})")
                     
                     # Combine visual analyses
                     if gemini_visual or local_visual:
