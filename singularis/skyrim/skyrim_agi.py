@@ -177,6 +177,24 @@ class SkyrimConfig:
     use_reward_tuning: bool = False  # Enable reward-guided heuristic fine-tuning
     reward_tuning_frequency: int = 10  # Tune heuristics every N outcomes
     
+    # GPT-5 Central Orchestrator (NEW)
+    use_gpt5_orchestrator: bool = True  # Enable GPT-5 meta-cognitive coordination
+    gpt5_verbose: bool = True  # Verbose console logging of all system messages
+    
+    # Voice System (NEW - Gemini 2.5 Pro TTS)
+    enable_voice: bool = True  # Enable voice system for thought vocalization
+    voice_type: str = "NOVA"  # Voice type (NOVA, ALLOY, ECHO, FABLE, ONYX, SHIMMER)
+    voice_min_priority: str = "HIGH"  # Minimum priority to vocalize (LOW, MEDIUM, HIGH, CRITICAL)
+    
+    # Streaming Video Interpreter (NEW - Gemini 2.5 Flash Native Audio)
+    enable_video_interpreter: bool = True  # Enable real-time video analysis with spoken commentary
+    video_interpretation_mode: str = "COMPREHENSIVE"  # Mode (TACTICAL, SPATIAL, NARRATIVE, STRATEGIC, COMPREHENSIVE)
+    video_frame_rate: float = 0.5  # Frames per second to analyze (0.5 = 1 frame every 2 seconds)
+    
+    # Double Helix Architecture (NEW - 15-System Integration)
+    use_double_helix: bool = True  # Enable double helix integration
+    self_improvement_gating: bool = True  # Enable self-improvement gating based on integration scores
+    
     # Legacy external augmentation (deprecated in favor of hybrid)
     enable_claude_meta: bool = False
     enable_gemini_vision: bool = False
@@ -446,8 +464,99 @@ class SkyrimAGI:
         else:
             print("    ⚠️ Reward-guided tuning disabled")
         
-        # 17. Skyrim-specific Motivation System
-        print("  [17/17] Skyrim-specific motivation system...")
+        # 17. GPT-5 Central Orchestrator (NEW - Meta-Cognitive Coordination)
+        print("  [17/22] GPT-5 central orchestrator...")
+        from ..llm import GPT5Orchestrator, SystemType
+        
+        self.gpt5_orchestrator = None
+        if self.config.use_gpt5_orchestrator:
+            try:
+                self.gpt5_orchestrator = GPT5Orchestrator(
+                    model="gpt-5",
+                    verbose=self.config.gpt5_verbose
+                )
+                print("    ✓ GPT-5 meta-cognitive coordinator initialized")
+                print("    ✓ All subsystems will communicate through GPT-5")
+            except Exception as e:
+                print(f"    ⚠️ GPT-5 orchestrator initialization failed: {e}")
+                self.gpt5_orchestrator = None
+        else:
+            print("    ⚠️ GPT-5 orchestrator disabled")
+        
+        # 18. Voice System (NEW - Gemini 2.5 Pro TTS)
+        print("  [18/22] Voice system (Gemini 2.5 Pro TTS)...")
+        from ..consciousness import VoiceSystem, VoiceType, ThoughtPriority
+        
+        self.voice_system = None
+        if self.config.enable_voice:
+            try:
+                self.voice_system = VoiceSystem(
+                    voice=VoiceType.NOVA,
+                    enabled=True,
+                    min_priority=ThoughtPriority.HIGH
+                )
+                print("    ✓ Voice system initialized with NOVA voice")
+                print("    ✓ AGI can now speak its thoughts aloud")
+            except Exception as e:
+                print(f"    ⚠️ Voice system initialization failed: {e}")
+                self.voice_system = None
+        else:
+            print("    ⚠️ Voice system disabled")
+        
+        # 19. Streaming Video Interpreter (NEW - Gemini 2.5 Flash Native Audio)
+        print("  [19/22] Streaming video interpreter (Gemini 2.5 Flash)...")
+        from ..perception import StreamingVideoInterpreter, InterpretationMode
+        
+        self.video_interpreter = None
+        if self.config.enable_video_interpreter:
+            try:
+                self.video_interpreter = StreamingVideoInterpreter(
+                    mode=InterpretationMode.COMPREHENSIVE,
+                    frame_rate=self.config.video_frame_rate,
+                    audio_enabled=True
+                )
+                print("    ✓ Video interpreter initialized in COMPREHENSIVE mode")
+                print("    ✓ Real-time video analysis with spoken commentary")
+            except Exception as e:
+                print(f"    ⚠️ Video interpreter initialization failed: {e}")
+                self.video_interpreter = None
+        else:
+            print("    ⚠️ Video interpreter disabled")
+        
+        # 20. Double Helix Architecture (NEW - 15-System Integration)
+        print("  [20/22] Double helix architecture...")
+        from ..evolution import DoubleHelixArchitecture
+        
+        self.double_helix = None
+        if self.config.use_double_helix:
+            try:
+                self.double_helix = DoubleHelixArchitecture()
+                self.double_helix.initialize_systems()
+                stats = self.double_helix.get_stats()
+                print(f"    ✓ Double helix initialized: {stats['total_nodes']} systems")
+                print(f"    ✓ Analytical strand: {stats['analytical_nodes']} nodes")
+                print(f"    ✓ Intuitive strand: {stats['intuitive_nodes']} nodes")
+                print(f"    ✓ Integration score: {stats['average_integration']:.3f}")
+            except Exception as e:
+                print(f"    ⚠️ Double helix initialization failed: {e}")
+                self.double_helix = None
+        else:
+            print("    ⚠️ Double helix disabled")
+        
+        # 21. Unified Metrics Aggregator (NEW)
+        print("  [21/22] Unified metrics aggregator...")
+        self.unified_metrics = {
+            'consciousness': {},
+            'double_helix': {},
+            'gpt5': {},
+            'voice': {},
+            'video': {},
+            'performance': {}
+        }
+        print("    ✓ Unified metrics tracking enabled")
+        
+        # 22. Skyrim-specific Motivation System
+        print("  [22/22] Skyrim-specific motivation system...")
         self.skyrim_motivation = SkyrimMotivation(
             survival_weight=0.35,  # Prioritize staying alive
             progression_weight=0.25,  # Character growth important
@@ -1370,6 +1479,134 @@ class SkyrimAGI:
             print("[HYBRID] ✓ Connected to dialogue intelligence")
         
         print("[HYBRID] Component connection complete\n")
+        
+        # Register all systems with GPT-5 orchestrator
+        await self._register_systems_with_gpt5()
+        
+        # Start video interpreter streaming
+        if self.video_interpreter:
+            await self.video_interpreter.start_streaming()
+            print("[VIDEO] Streaming started\n")
+    
+    async def _register_systems_with_gpt5(self):
+        """Register all subsystems with GPT-5 orchestrator."""
+        if not self.gpt5_orchestrator:
+            return
+        
+        print("\n[GPT-5] Registering subsystems...")
+        from ..llm import SystemType
+        
+        # Register all major subsystems
+        self.gpt5_orchestrator.register_system("perception", SystemType.PERCEPTION)
+        self.gpt5_orchestrator.register_system("sensorimotor", SystemType.PERCEPTION)
+        self.gpt5_orchestrator.register_system("action_planning", SystemType.ACTION)
+        self.gpt5_orchestrator.register_system("action_execution", SystemType.ACTION)
+        self.gpt5_orchestrator.register_system("world_model", SystemType.COGNITION)
+        self.gpt5_orchestrator.register_system("consciousness_bridge", SystemType.CONSCIOUSNESS)
+        self.gpt5_orchestrator.register_system("emotion_system", SystemType.EMOTION)
+        self.gpt5_orchestrator.register_system("rl_system", SystemType.LEARNING)
+        self.gpt5_orchestrator.register_system("reward_tuning", SystemType.LEARNING)
+        self.gpt5_orchestrator.register_system("strategic_planner", SystemType.COGNITION)
+        self.gpt5_orchestrator.register_system("meta_strategist", SystemType.COGNITION)
+        
+        if self.voice_system:
+            self.gpt5_orchestrator.register_system("voice_system", SystemType.VOICE)
+        
+        if self.video_interpreter:
+            self.gpt5_orchestrator.register_system("video_interpreter", SystemType.VIDEO)
+        
+        if self.self_reflection:
+            self.gpt5_orchestrator.register_system("self_reflection", SystemType.CONSCIOUSNESS)
+        
+        if self.realtime_coordinator:
+            self.gpt5_orchestrator.register_system("realtime_coordinator", SystemType.ACTION)
+        
+        print(f"[GPT-5] Registered {len(self.gpt5_orchestrator.registered_systems)} subsystems")
+        print("[GPT-5] Meta-cognitive coordination ready\n")
+    
+    async def aggregate_unified_metrics(self) -> Dict[str, Any]:
+        """Aggregate metrics from all systems."""
+        metrics = {}
+        
+        # Consciousness metrics
+        if self.consciousness_monitor:
+            metrics['consciousness'] = self.consciousness_monitor.get_statistics()
+        
+        # Double helix metrics
+        if self.double_helix:
+            metrics['double_helix'] = self.double_helix.get_stats()
+        
+        # GPT-5 metrics
+        if self.gpt5_orchestrator:
+            metrics['gpt5'] = self.gpt5_orchestrator.get_stats()
+        
+        # Voice metrics
+        if self.voice_system:
+            metrics['voice'] = self.voice_system.get_stats()
+        
+        # Video interpreter metrics
+        if self.video_interpreter:
+            metrics['video'] = self.video_interpreter.get_stats()
+        
+        # Performance metrics
+        metrics['performance'] = {
+            'cycle_count': self.cycle_count,
+            'uptime': time.time() - self.start_time if hasattr(self, 'start_time') else 0,
+        }
+        
+        self.unified_metrics = metrics
+        return metrics
+    
+    async def send_gpt5_message(self, system_id: str, message_type: str, content: str, metadata: Optional[Dict] = None):
+        """Send message to GPT-5 orchestrator."""
+        if not self.gpt5_orchestrator:
+            return None
+        
+        try:
+            response = await self.gpt5_orchestrator.send_message(
+                system_id=system_id,
+                message_type=message_type,
+                content=content,
+                metadata=metadata or {}
+            )
+            return response
+        except Exception as e:
+            logger.error(f"[GPT-5] Message failed: {e}")
+            return None
+    
+    async def speak_decision(self, action: str, reason: str):
+        """Voice system speaks a decision."""
+        if not self.voice_system:
+            return
+        
+        try:
+            await self.voice_system.speak_decision(action, reason)
+            
+            # Record activation in double helix
+            if self.double_helix:
+                self.double_helix.record_voice_activation(True, "HIGH")
+        except Exception as e:
+            logger.error(f"[VOICE] Speech failed: {e}")
+    
+    async def interpret_video_frame(self, image, scene_type: str):
+        """Video interpreter analyzes frame."""
+        if not self.video_interpreter:
+            return None
+        
+        try:
+            await self.video_interpreter.add_frame(image, scene_type)
+            
+            # Get latest interpretation
+            interpretation = self.video_interpreter.get_latest_interpretation()
+            
+            # Record activation in double helix
+            if self.double_helix and interpretation:
+                self.double_helix.record_video_interpretation(True, "COMPREHENSIVE")
+            
+            return interpretation
+        except Exception as e:
+            logger.error(f"[VIDEO] Interpretation failed: {e}")
+            return None
     
     async def query_parallel_llm(
         self,
