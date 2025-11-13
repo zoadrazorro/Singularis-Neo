@@ -15,6 +15,12 @@ from .moe_orchestrator import (
     ExpertResponse,
     MoEResponse,
 )
+from .gpt_realtime_client import (
+    GPTRealtimeClient,
+    RealtimeConfig,
+    RealtimeDecision,
+    SubsystemType,
+)
 
 __all__ = [
     "LMStudioClient",
@@ -30,4 +36,8 @@ __all__ = [
     "ExpertConfig",
     "ExpertResponse",
     "MoEResponse",
+    "GPTRealtimeClient",
+    "RealtimeConfig",
+    "RealtimeDecision",
+    "SubsystemType",
 ]

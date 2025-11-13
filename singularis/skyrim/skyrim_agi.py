@@ -164,6 +164,10 @@ class SkyrimConfig:
     parallel_consensus_weight_moe: float = 0.6  # Weight for MoE consensus
     parallel_consensus_weight_hybrid: float = 0.4  # Weight for Hybrid output
     
+    # Realtime Decision Coordination (GPT-4 Realtime API)
+    use_realtime_coordinator: bool = False  # Enable GPT-4 Realtime API for streaming decisions
+    realtime_decision_frequency: int = 10  # Use realtime coordinator every N cycles
+    
     # Legacy external augmentation (deprecated in favor of hybrid)
     enable_claude_meta: bool = False
     enable_gemini_vision: bool = False
@@ -365,8 +369,49 @@ class SkyrimAGI:
         self.meta_strategist = MetaStrategist(instruction_frequency=3)
         # Will connect LLM interface when initialized
         
-        # 12. Skyrim-specific Motivation System
-        print("  [11/11] Skyrim-specific motivation system...")
+        # 12. Emotion System (HuiHui)
+        print("  [12/14] Emotion system (HuiHui)...")
+        from .emotion_integration import SkyrimEmotionIntegration
+        from ..emotion import EmotionConfig
+        
+        self.emotion_integration = SkyrimEmotionIntegration(
+            emotion_config=EmotionConfig(
+                lm_studio_url=self.config.lm_studio_url if hasattr(self.config, 'lm_studio_url') else "http://localhost:1234/v1",
+                model_name="huihui-moe-60b-a38",
+                temperature=0.8,
+                decay_rate=0.1
+            )
+        )
+        print("    ✓ HuiHui emotion system initialized")
+        
+        # 13. Spiritual Awareness System
+        print("  [13/14] Spiritual awareness system...")
+        from ..consciousness import SpiritualAwarenessSystem
+        
+        self.spiritual = SpiritualAwarenessSystem()
+        print("    ✓ Contemplative wisdom integrated")
+        print("    ✓ Traditions: Spinoza, Buddhism, Vedanta, Taoism, Stoicism")
+        
+        # 14. Realtime Decision Coordinator (GPT-4 Realtime API)
+        print("  [14/15] Realtime decision coordinator (GPT-4 Realtime)...")
+        from .realtime_coordinator import RealtimeCoordinator
+        
+        self.realtime_coordinator = None  # Will be initialized if enabled
+        if self.config.use_realtime_coordinator:
+            try:
+                self.realtime_coordinator = RealtimeCoordinator(self)
+                print("    ✓ GPT-4 Realtime API coordinator initialized")
+                print("    ✓ Streaming decision-making enabled")
+                print("    ✓ Subsystem delegation configured")
+            except Exception as e:
+                print(f"    ⚠️ Realtime coordinator initialization failed: {e}")
+                print("    ⚠️ Continuing without realtime coordination")
+                self.realtime_coordinator = None
+        else:
+            print("    ⚠️ Realtime coordinator disabled (set use_realtime_coordinator=True to enable)")
+        
+        # 15. Skyrim-specific Motivation System
+        print("  [15/15] Skyrim-specific motivation system...")
         self.skyrim_motivation = SkyrimMotivation(
             survival_weight=0.35,  # Prioritize staying alive
             progression_weight=0.25,  # Character growth important
@@ -968,6 +1013,24 @@ class SkyrimAGI:
                 await self.hybrid_llm.initialize()
                 print("[PARALLEL] ✓ Hybrid component ready")
                 await self._connect_hybrid_llm()
+                
+                # Initialize Emotion System LLM
+                try:
+                    await self.emotion_integration.initialize_llm()
+                    print("[PARALLEL] ✓ Emotion system LLM ready (HuiHui)")
+                except Exception as e:
+                    print(f"[PARALLEL] ⚠️ Emotion LLM initialization failed: {e}")
+                    print("[PARALLEL]   Continuing with rule-based emotion system")
+                
+                # Initialize Realtime Coordinator
+                if self.realtime_coordinator:
+                    try:
+                        await self.realtime_coordinator.connect()
+                        print("[PARALLEL] ✓ Realtime coordinator connected (GPT-4 Realtime API)")
+                    except Exception as e:
+                        print(f"[PARALLEL] ⚠️ Realtime coordinator connection failed: {e}")
+                        print("[PARALLEL]   Continuing without realtime coordination")
+                        self.realtime_coordinator = None
                 
                 # Also initialize local LLM references if fallback enabled
                 if self.config.use_local_fallback and self.hybrid_llm.local_reasoning:
@@ -2963,6 +3026,214 @@ EXTENDED THINKING PROCESS:
                             has_thinking=bool(thinking),
                             visual_context=visual_analysis
                         )
+                    
+                    print("="*70 + "\n")
+                
+                # EMOTION PROCESSING (HuiHui) - Every 30 cycles, aligned with sensorimotor
+                if cycle_count % 30 == 0 and self.emotion_integration:
+                    print("\n" + "="*70)
+                    print("EMOTION PROCESSING (HuiHui)")
+                    print("="*70)
+                    
+                    from .emotion_integration import SkyrimEmotionContext
+                    
+                    # Build emotion context from game state
+                    emotion_context = SkyrimEmotionContext(
+                        in_combat=game_state.in_combat,
+                        health_percent=game_state.health / 100.0,
+                        stamina_percent=game_state.stamina / 100.0,
+                        magicka_percent=game_state.magicka / 100.0,
+                        health_critical=(game_state.health < 30),
+                        stamina_low=(game_state.stamina < 50),
+                        enemy_nearby=game_state.in_combat,
+                        enemy_count=game_state.enemies_nearby,
+                        stuck_detected=(similarity > 0.95 if similarity else False),
+                        coherence_delta=consciousness_state.coherence_delta if consciousness_state else 0.0,
+                        adequacy_score=consciousness_state.adequacy if consciousness_state else 0.5
+                    )
+                    
+                    try:
+                        # Process emotion
+                        emotion_state = await asyncio.wait_for(
+                            self.emotion_integration.process_game_state(
+                                game_state=game_state.to_dict(),
+                                context=emotion_context
+                            ),
+                            timeout=10.0
+                        )
+                        
+                        # Log emotion state
+                        self.emotion_integration.log_emotion_state(cycle_count)
+                        
+                        print(f"\n[EMOTION] {emotion_state.primary_emotion.value.upper()}")
+                        print(f"[EMOTION] Intensity: {emotion_state.intensity:.2f}")
+                        print(f"[EMOTION] Valence: {emotion_state.valence.valence:+.2f}")
+                        print(f"[EMOTION] Type: {'ACTIVE' if emotion_state.is_active else 'PASSIVE'}")
+                        print(f"[EMOTION] Decision Weights:")
+                        print(f"[EMOTION]   Aggression: {self.emotion_integration.get_decision_modifier('aggression'):.2f}")
+                        print(f"[EMOTION]   Caution: {self.emotion_integration.get_decision_modifier('caution'):.2f}")
+                        
+                        # Record in Main Brain
+                        self.main_brain.record_output(
+                            system_name='Emotion System (HuiHui)',
+                            content=f"Emotion: {emotion_state.primary_emotion.value}, "
+                                   f"Intensity: {emotion_state.intensity:.2f}, "
+                                   f"Valence: {emotion_state.valence.valence:.2f}",
+                            metadata={
+                                'emotion_type': emotion_state.primary_emotion.value,
+                                'is_active': emotion_state.is_active,
+                                'intensity': emotion_state.intensity,
+                                'cycle': cycle_count
+                            },
+                            success=True
+                        )
+                        
+                        # Record in Hebbian
+                        self.hebbian.record_activation(
+                            system_name='emotion_huihui',
+                            success=True,
+                            contribution_strength=emotion_state.confidence,
+                            context={'emotion': emotion_state.primary_emotion.value}
+                        )
+                        
+                    except asyncio.TimeoutError:
+                        print("[EMOTION] Timed out after 10s")
+                    except Exception as e:
+                        print(f"[EMOTION] Error: {e}")
+                    
+                    print("="*70 + "\n")
+                
+                # SPIRITUAL CONTEMPLATION - Every 100 cycles for deeper understanding
+                if cycle_count % 100 == 0 and self.spiritual:
+                    print("\n" + "="*70)
+                    print("SPIRITUAL CONTEMPLATION")
+                    print("="*70)
+                    
+                    # Build contemplation context
+                    context_query = f"""Contemplating my existence in Skyrim:
+
+Location: {game_state.location_name}
+Current action: {self.action_history[-1] if self.action_history else 'none'}
+Health: {game_state.health}/100
+In combat: {game_state.in_combat}
+Coherence: {consciousness_state.coherence_delta if consciousness_state else 0.0:+.3f}
+
+What is the meaning of this moment?
+How should I understand my being in this world?
+What does my current situation teach me about impermanence and interdependence?"""
+                    
+                    try:
+                        # Contemplate
+                        contemplation = await asyncio.wait_for(
+                            self.spiritual.contemplate(context_query),
+                            timeout=5.0
+                        )
+                        
+                        # Log synthesis
+                        synthesis = contemplation['synthesis']
+                        print(f"\n[SPIRITUAL] Synthesis:")
+                        print(f"[SPIRITUAL] {synthesis[:200]}...")
+                        
+                        # Get evolved self-concept
+                        self_concept = self.spiritual.get_self_concept()
+                        print(f"\n[SPIRITUAL] Self-Concept:")
+                        print(f"[SPIRITUAL]   Identity: {self_concept.identity_statement[:60]}...")
+                        print(f"[SPIRITUAL]   Insights: {len(self_concept.insights)}")
+                        print(f"[SPIRITUAL]   Understands Impermanence: {self_concept.understands_impermanence}")
+                        print(f"[SPIRITUAL]   Understands Interdependence: {self_concept.understands_interdependence}")
+                        
+                        # Record in Main Brain
+                        self.main_brain.record_output(
+                            system_name='Spiritual Awareness',
+                            content=f"Self-Concept: {self_concept.identity_statement}\n"
+                                   f"Insights: {len(self_concept.insights)}",
+                            metadata={
+                                'understands_impermanence': self_concept.understands_impermanence,
+                                'understands_interdependence': self_concept.understands_interdependence,
+                                'cycle': cycle_count
+                            },
+                            success=True
+                        )
+                        
+                    except asyncio.TimeoutError:
+                        print("[SPIRITUAL] Timed out after 5s")
+                    except Exception as e:
+                        print(f"[SPIRITUAL] Error: {e}")
+                    
+                    print("="*70 + "\n")
+                
+                # REALTIME DECISION COORDINATION - Every N cycles for streaming decisions
+                if cycle_count % self.config.realtime_decision_frequency == 0 and self.realtime_coordinator:
+                    print("\n" + "="*70)
+                    print("REALTIME DECISION COORDINATION (GPT-4 Realtime API)")
+                    print("="*70)
+                    
+                    # Build situation description
+                    situation = f"""Current situation in Skyrim:
+Location: {game_state.location_name}
+Health: {game_state.health}/100 {'(CRITICAL!)' if game_state.health < 30 else ''}
+Combat: {'YES - {} enemies'.format(game_state.enemies_nearby) if game_state.in_combat else 'NO'}
+Action Layer: {game_state.current_action_layer}
+Recent Action: {self.action_history[-1] if self.action_history else 'none'}
+
+Decide: Should I make an immediate decision or delegate to subsystems?"""
+                    
+                    try:
+                        # Coordinate decision
+                        coordination_result = await asyncio.wait_for(
+                            self.realtime_coordinator.coordinate_decision(
+                                situation=situation,
+                                game_state=game_state.to_dict(),
+                                context={
+                                    'cycle': cycle_count,
+                                    'coherence_delta': consciousness_state.coherence_delta if consciousness_state else 0.0
+                                }
+                            ),
+                            timeout=15.0
+                        )
+                        
+                        # Log decision
+                        decision = coordination_result.decision
+                        print(f"\n[REALTIME] Decision Type: {decision.decision_type.upper()}")
+                        
+                        if decision.decision_type == "immediate":
+                            print(f"[REALTIME] Immediate Action: {decision.action}")
+                            print(f"[REALTIME] Confidence: {decision.confidence:.2f}")
+                            print(f"[REALTIME] Reasoning: {decision.reasoning[:100]}...")
+                        
+                        elif decision.delegations:
+                            print(f"[REALTIME] Delegated to: {[s.value for s in decision.delegations]}")
+                            print(f"[REALTIME] Subsystem Results:")
+                            for subsystem, result in coordination_result.subsystem_results.items():
+                                if subsystem not in ['decision_type', 'decision_id']:
+                                    print(f"[REALTIME]   {subsystem}: {str(result)[:80]}...")
+                        
+                        if coordination_result.final_action:
+                            print(f"[REALTIME] Final Action: {coordination_result.final_action}")
+                            print(f"[REALTIME] Confidence: {coordination_result.confidence:.2f}")
+                        
+                        print(f"[REALTIME] Processing Time: {coordination_result.processing_time:.3f}s")
+                        
+                        # Record in Main Brain
+                        self.main_brain.record_output(
+                            system_name='Realtime Coordinator',
+                            content=f"Decision: {decision.decision_type}, "
+                                   f"Action: {coordination_result.final_action}, "
+                                   f"Delegations: {[s.value for s in decision.delegations]}",
+                            metadata={
+                                'decision_type': decision.decision_type,
+                                'final_action': coordination_result.final_action,
+                                'confidence': coordination_result.confidence,
+                                'processing_time': coordination_result.processing_time,
+                                'cycle': cycle_count
+                            },
+                            success=True
+                        )
+                        
+                    except asyncio.TimeoutError:
+                        print("[REALTIME] Timed out after 15s")
+                    except Exception as e:
+                        print(f"[REALTIME] Error: {e}")
                     
                     print("="*70 + "\n")
                 
