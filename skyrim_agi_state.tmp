@@ -1,0 +1,36 @@
+{
+  "session_id": "skyrim_agi_20251113_083856_7ff25181",
+  "cycle": 3,
+  "uptime": 85.64245343208313,
+  "last_update": "2025-11-13T08:40:22.133564",
+  "current_action": "explore",
+  "last_action": "attack",
+  "action_source": "unknown",
+  "recent_actions": [
+    {
+      "name": "attack",
+      "timestamp": 1763041151.7952628,
+      "cycle": 0,
+      "source": "unknown"
+    },
+    {
+      "name": "attack",
+      "timestamp": 1763041172.075472,
+      "cycle": 1,
+      "source": "unknown"
+    },
+    {
+      "name": "attack",
+      "timestamp": 1763041200.0794432,
+      "cycle": 2,
+      "source": "unknown"
+    },
+    {
+      "name": "explore",
+      "timestamp": 1763041222.1335583,
+      "cycle": 3,
+      "source": "unknown"
+    }
+  ],
+  "perception": {
+    "scene_type": 
