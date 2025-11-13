@@ -41,6 +41,7 @@ from .skyrim_cognition import SkyrimCognitiveState, SkyrimMotivation, SkyrimActi
 from .strategic_planner import StrategicPlannerNeuron
 from .menu_learner import MenuLearner
 from .memory_rag import MemoryRAG
+from .curriculum_rag import CurriculumRAG, CATEGORY_MAPPINGS
 from .reinforcement_learner import ReinforcementLearner
 from .rl_reasoning_neuron import RLReasoningNeuron
 from .meta_strategist import MetaStrategist
@@ -133,6 +134,7 @@ class SkyrimConfig:
     use_cloud_rl: bool = True  # Enable cloud LLM-enhanced RL
     rl_memory_dir: str = "skyrim_rl_memory"
     rl_use_rag: bool = True  # Enable RAG context fetching
+    use_curriculum_rag: bool = True  # Enable university curriculum knowledge augmentation
     rl_cloud_reward_shaping: bool = True  # Use cloud LLM for reward shaping
     rl_moe_evaluation: bool = True  # Use MoE for action evaluation
     rl_save_frequency: int = 100  # Save RL memory every N experiences
@@ -285,6 +287,24 @@ class SkyrimAGI:
             perceptual_capacity=1000,
             cognitive_capacity=500
         )
+        
+        # 9b. University Curriculum RAG System
+        if self.config.use_curriculum_rag:
+            print("  [9b/11] University Curriculum RAG (academic knowledge)...")
+            self.curriculum_rag = CurriculumRAG(
+                curriculum_path="university_curriculum",
+                max_documents=150,
+                chunk_size=2000
+            )
+            try:
+                self.curriculum_rag.initialize()
+                stats = self.curriculum_rag.get_stats()
+                print(f"    ✓ Indexed {stats['documents_indexed']} texts across {len(stats['categories'])} categories")
+            except Exception as e:
+                print(f"    ⚠️ Curriculum RAG initialization failed: {e}")
+                self.curriculum_rag = None
+        else:
+            self.curriculum_rag = None
         
         # 10. RL Reasoning Neuron (LLM thinks about RL)
         print("  [10/11] RL reasoning neuron (LLM-enhanced RL)...")
@@ -503,6 +523,12 @@ class SkyrimAGI:
             "memory_rag", "memory", weight=1.0,
             metadata={'description': 'Memory RAG system'}
         )
+        
+        if self.curriculum_rag:
+            self.consciousness.add_node(
+                "curriculum_rag", "knowledge", weight=1.2,
+                metadata={'description': 'Academic knowledge from university curriculum'}
+            )
         
         # Game-specific systems
         self.consciousness_monitor.register_node(
@@ -833,18 +859,29 @@ class SkyrimAGI:
                     
                     # Connect local LLMs to components
                     self.rl_reasoning_neuron.llm_interface = self.huihui_llm
-                    self.meta_strategist.llm_interface = self.huihui_llm
                     self.strategic_planner.llm_interface = self.huihui_llm
+                    
+                    # Initialize Meta-Strategist with Mistral-7B
+                    mistral_config = LMStudioConfig(
+                        base_url="http://localhost:1234/v1",
+                        model_name="mistralai/mistral-7b-instruct-v0.3",
+                        temperature=0.7,
+                        max_tokens=1024
+                    )
+                    mistral_client = LMStudioClient(mistral_config)
+                    mistral_interface = ExpertLLMInterface(mistral_client)
+                    self.meta_strategist.llm_interface = mistral_interface
+                    print("[PARALLEL] ✓ Meta-Strategist using Mistral-7B")
                     
                     # Connect Huihui to AGI orchestrator as consciousness LLM
                     # This enables full Singularis dialectical reasoning
                     self.agi.consciousness_llm = self.huihui_llm
                     self.consciousness_bridge.consciousness_llm = self.huihui_llm
                     
-                    # Initialize state printer LLM (uses whatever model is loaded)
+                    # Initialize state printer LLM (microsoft/phi-4)
                     state_printer_config = LMStudioConfig(
                         base_url="http://localhost:1234/v1",
-                        model_name="local-model",  # Use whatever model is loaded
+                        model_name="microsoft/phi-4",
                         temperature=0.5,
                         max_tokens=1024
                     )
@@ -863,7 +900,7 @@ class SkyrimAGI:
                         print("[PARALLEL]   3. A model is loaded")
                     
                     print("[PARALLEL] ✓ Huihui connected to AGI orchestrator (enables dialectical synthesis)")
-                    print("[PARALLEL] ✓ State printer LLM connected (using loaded model)")
+                    print("[PARALLEL] ✓ State printer LLM connected (microsoft/phi-4)")
                     print("[PARALLEL] ✓ Local LLMs connected to components")
                     
             except Exception as e:
@@ -877,8 +914,8 @@ class SkyrimAGI:
                 print("\n[PARALLEL] Initializing Local MoE fallback...")
                 local_moe_config = LocalMoEConfig(
                     num_experts=4,
-                    expert_model="local-model",  # Use whatever model is loaded
-                    synthesizer_model="local-model",  # Use whatever model is loaded
+                    expert_model="microsoft/phi-4-mini-reasoning",  # Use phi-4-mini instances 1-4
+                    synthesizer_model="microsoft/phi-4:5",  # Use phi-4:5 for synthesis
                     base_url="http://localhost:1234/v1",
                     timeout=120,
                     max_tokens=512
@@ -886,7 +923,7 @@ class SkyrimAGI:
                 
                 self.local_moe = LocalMoEOrchestrator(local_moe_config)
                 await self.local_moe.initialize()
-                print("[PARALLEL] ✓ Local MoE fallback ready (4 experts using loaded model)")
+                print("[PARALLEL] ✓ Local MoE fallback ready (4x Phi-4-mini + Phi-4:5 synthesizer)")
             except Exception as e:
                 print(f"[PARALLEL] ⚠️ Local MoE initialization failed: {e}")
                 self.local_moe = None
@@ -1141,7 +1178,7 @@ class SkyrimAGI:
         # Parallel mode: query both simultaneously
         tasks = []
         
-        # MoE tasks
+        # MoE tasks (local LLMs)
         if self.moe:
             if image:
                 moe_vision_task = self.moe.query_vision_experts(vision_prompt, image, context)
@@ -1150,7 +1187,7 @@ class SkyrimAGI:
             moe_reasoning_task = self.moe.query_reasoning_experts(reasoning_prompt, None, context)
             tasks.append(('moe_reasoning', moe_reasoning_task))
         
-        # Hybrid tasks
+        # Hybrid tasks (cloud APIs - run in parallel with local)
         if self.hybrid_llm:
             if image:
                 hybrid_vision_task = self.hybrid_llm.analyze_image(vision_prompt, image)
@@ -1158,6 +1195,16 @@ class SkyrimAGI:
             
             hybrid_reasoning_task = self.hybrid_llm.generate_reasoning(reasoning_prompt)
             tasks.append(('hybrid_reasoning', hybrid_reasoning_task))
+            
+            # World model task (GPT-5-thinking) - runs in parallel with everything
+            if hasattr(self.hybrid_llm, 'openai') and self.hybrid_llm.openai:
+                world_model_prompt = f"{reasoning_prompt}\n\nAnalyze long-term consequences and causal dynamics of this decision."
+                world_model_task = self.hybrid_llm.generate_world_model(
+                    prompt=world_model_prompt,
+                    system_prompt="You are a world modeling system. Think deeply about causal relationships, long-term consequences, and system dynamics.",
+                    temperature=0.8
+                )
+                tasks.append(('world_model', world_model_task))
         
         # Execute all in parallel
         results = {}
@@ -1191,6 +1238,11 @@ class SkyrimAGI:
         if 'hybrid_reasoning' in results:
             reasoning_parts.append((results['hybrid_reasoning'], hybrid_weight))
         
+        # Add world model analysis with high weight (deep thinking)
+        if 'world_model' in results:
+            world_model_weight = 0.7  # High weight for deep causal analysis
+            reasoning_parts.append((f"[World Model Analysis]\n{results['world_model']}", world_model_weight))
+        
         reasoning_consensus = self._weighted_text_consensus(reasoning_parts)
         
         # Calculate overall coherence
@@ -1209,6 +1261,7 @@ class SkyrimAGI:
             'coherence': avg_coherence,
             'moe_results': {k: v for k, v in results.items() if 'moe' in k},
             'hybrid_results': {k: v for k, v in results.items() if 'hybrid' in k},
+            'world_model': results.get('world_model'),  # GPT-5-thinking deep analysis
         }
     
     def _weighted_text_consensus(self, text_weight_pairs: List[Tuple[str, float]]) -> str:
@@ -3607,9 +3660,9 @@ REASONING: <explanation>"""
             reasoning_text = None
             
             try:
-                # Full parallel (MoE+Hybrid) only for critical situations
+                # Full parallel (MoE+Hybrid+WorldModel) only for critical situations
                 if self.config.use_parallel_mode and use_full_moe:
-                    print("[CLOUD-LLM] Using FULL parallel (MoE + Hybrid)")
+                    print("[CLOUD-LLM] Using FULL parallel (MoE + Hybrid + GPT-5-thinking)")
                     response = await self.query_parallel_llm(
                         vision_prompt=vision_prompt,
                         reasoning_prompt=reasoning_prompt,
@@ -3617,13 +3670,63 @@ REASONING: <explanation>"""
                         context=state_dict
                     )
                     reasoning_text = response['reasoning']
+                    if response.get('world_model'):
+                        print("[WORLD-MODEL] Deep causal analysis included")
                 # Hybrid only for routine decisions (much faster, less API calls)
                 elif self.hybrid_llm:
-                    print("[CLOUD-LLM] Using Hybrid only (fast mode)")
-                    reasoning_text = await self.hybrid_llm.generate_reasoning(
-                        prompt=reasoning_prompt,
-                        system_prompt="You are an expert Skyrim player providing tactical advice."
-                    )
+                    print("[CLOUD-LLM] Using Hybrid (fast mode)")
+                    
+                    # Augment prompt with curriculum knowledge for strategic thinking
+                    augmented_prompt = reasoning_prompt
+                    if self.curriculum_rag:
+                        categories = CATEGORY_MAPPINGS.get('strategy', []) + CATEGORY_MAPPINGS.get('psychology', [])
+                        augmented_prompt = self.curriculum_rag.augment_prompt_with_knowledge(
+                            base_prompt=reasoning_prompt,
+                            top_k=1,
+                            categories=categories
+                        )
+                        if augmented_prompt != reasoning_prompt:
+                            print("[CURRICULUM] Strategic knowledge augmentation applied")
+                    
+                    # Run reasoning and world model in parallel
+                    parallel_tasks = [
+                        self.hybrid_llm.generate_reasoning(
+                            prompt=augmented_prompt,
+                            system_prompt="You are an expert Skyrim player providing tactical advice. Use academic knowledge to inform decisions."
+                        )
+                    ]
+                    
+                    # Add world model if available (GPT-5-thinking)
+                    if hasattr(self.hybrid_llm, 'openai') and self.hybrid_llm.openai:
+                        world_model_prompt = f"{reasoning_prompt}\n\nAnalyze causal dynamics and long-term consequences."
+                        
+                        # Augment world model with science and philosophy
+                        if self.curriculum_rag:
+                            categories = CATEGORY_MAPPINGS.get('science', []) + ['Philosophy Of Science']
+                            world_model_prompt = self.curriculum_rag.augment_prompt_with_knowledge(
+                                base_prompt=world_model_prompt,
+                                top_k=1,
+                                categories=categories
+                            )
+                        
+                        parallel_tasks.append(
+                            self.hybrid_llm.generate_world_model(
+                                prompt=world_model_prompt,
+                                system_prompt="Analyze causal relationships using scientific and philosophical principles.",
+                                temperature=0.8,
+                                max_tokens=1024
+                            )
+                        )
+                    
+                    # Execute in parallel (cloud models don't block each other)
+                    parallel_results = await asyncio.gather(*parallel_tasks, return_exceptions=True)
+                    reasoning_text = parallel_results[0] if not isinstance(parallel_results[0], Exception) else None
+                    
+                    # Incorporate world model if available
+                    if len(parallel_results) > 1 and not isinstance(parallel_results[1], Exception):
+                        world_analysis = parallel_results[1]
+                        reasoning_text = f"{reasoning_text}\n\n[Deep Analysis]\n{world_analysis}"
+                        print("[WORLD-MODEL] Parallel deep analysis completed")
                 elif self.moe:
                     _, reasoning_resp = await self.moe.query_all_experts(
                         vision_prompt=vision_prompt,
@@ -5279,6 +5382,14 @@ QUICK DECISION - Choose ONE action from available list:"""
         print(f"  Perceptual memories: {rag_stats['perceptual_memories']}")
         print(f"  Cognitive memories: {rag_stats['cognitive_memories']}")
         print(f"  Total memories: {rag_stats['total_memories']}")
+        
+        # Curriculum RAG stats
+        if self.curriculum_rag:
+            curr_stats = self.curriculum_rag.get_stats()
+            print(f"\nCurriculum RAG (Academic Knowledge):")
+            print(f"  Documents indexed: {curr_stats['documents_indexed']}")
+            print(f"  Knowledge retrievals: {curr_stats['retrievals_performed']}")
+            print(f"  Categories: {len(curr_stats['categories'])}")
 
         # RL stats
         if self.rl_learner is not None:
