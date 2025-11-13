@@ -23,6 +23,8 @@ Systems integrated:
 13. Analytic Evolution (Claude Haiku)
 14. Voice System (Gemini 2.5 Pro TTS)
 15. Streaming Video Interpreter (Gemini 2.5 Flash Native Audio)
+16. Hyperbolic Reasoning (Qwen3-235B) - Meta-cognitive reasoning
+17. Hyperbolic Vision (NVIDIA Nemotron) - Visual awareness
 
 Architecture:
 - Each system is a node
@@ -154,7 +156,8 @@ class DoubleHelixArchitecture:
             ("consciousness", "Consciousness Bridge"),
             ("analytic_evolution", "Analytic Evolution (Claude Haiku)"),
             ("reward_tuning", "Reward-Guided Tuning (Claude Sonnet 4.5)"),
-            ("darwinian_logic", "Darwinian Modal Logic (Gemini Flash 2.0)")
+            ("darwinian_logic", "Darwinian Modal Logic (Gemini Flash 2.0)"),
+            ("hyperbolic_reasoning", "Hyperbolic Reasoning (Qwen3-235B)")
         ]
         
         for node_id, name in analytical_systems:
@@ -175,7 +178,8 @@ class DoubleHelixArchitecture:
             ("self_reflection", "Self-Reflection (GPT-4 Realtime)"),
             ("realtime_coordinator", "Realtime Coordinator (GPT-4 Realtime)"),
             ("voice_system", "Voice System (Gemini 2.5 Pro TTS)"),
-            ("video_interpreter", "Streaming Video Interpreter (Gemini 2.5 Flash Native Audio)")
+            ("video_interpreter", "Streaming Video Interpreter (Gemini 2.5 Flash Native Audio)"),
+            ("hyperbolic_vision", "Hyperbolic Vision (NVIDIA Nemotron)")
         ]
         
         for node_id, name in intuitive_systems:
