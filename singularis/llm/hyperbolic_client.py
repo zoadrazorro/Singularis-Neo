@@ -15,8 +15,8 @@ class HyperbolicClient:
     def __init__(
         self,
         api_key: Optional[str] = None,
-        model: str = "Qwen3-235B-A22B-Instruct-2507",  # Text reasoning model
-        vlm_model: str = "Qwen2.5-VL-72B-Instruct",  # Vision-language model
+        model: str = "Qwen/Qwen2.5-72B-Instruct",  # Text reasoning model
+        vlm_model: str = "Qwen/Qwen2.5-VL-72B-Instruct",  # Vision-language model
         base_url: str = "https://api.hyperbolic.xyz/v1",
         timeout: int = 120,
     ) -> None:

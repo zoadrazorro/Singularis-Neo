@@ -141,7 +141,7 @@ class MoEOrchestrator:
         claude_model: str = "claude-sonnet-4-5-20250929",
         openai_model: str = "gpt-4o",
         hyperbolic_vision_model: str = "nvidia/NVIDIA-Nemotron-Nano-12B-v2-VL-BF16",
-        hyperbolic_reasoning_model: str = "Qwen3-235B-A22B-Instruct-2507",  # Fixed: removed Qwen/ prefix
+        hyperbolic_reasoning_model: str = "Qwen/Qwen2.5-72B-Instruct",  # Must use org/model format
         # Rate limits (requests per minute) - INCREASED for better performance
         gemini_rpm_limit: int = 30,  # Increased from 10 to reduce rate limit issues
         claude_rpm_limit: int = 100,  # Increased from 50 for better throughput
