@@ -195,6 +195,32 @@ class SkyrimConfig:
     use_double_helix: bool = True  # Enable double helix integration
     self_improvement_gating: bool = True  # Enable self-improvement gating based on integration scores
     
+    # Beta 1.0 Features - Temporal Binding
+    enable_temporal_binding: bool = True  # Enable temporal coherence tracking
+    temporal_window_size: int = 20  # Number of recent bindings to track
+    temporal_timeout: float = 30.0  # Seconds before auto-closing stale bindings
+    
+    # Beta 1.0 Features - Adaptive Memory
+    enable_adaptive_memory: bool = True  # Enable adaptive forgetting
+    memory_decay_rate: float = 0.95  # Confidence decay rate per consolidation
+    memory_forget_threshold: float = 0.1  # Confidence below which patterns are forgotten
+    
+    # Beta 1.0 Features - Enhanced Coherence
+    enable_enhanced_coherence: bool = True  # Enable 4D coherence measurement
+    
+    # Beta 1.0 Features - Lumen Balance
+    enable_lumen_balance: bool = True  # Enable Lumen balance tracking and rebalancing
+    lumen_severe_threshold: float = 0.5  # Balance score for emergency rebalancing
+    lumen_moderate_threshold: float = 0.7  # Balance score for gradual rebalancing
+    
+    # Beta 1.0 Features - Unified Perception
+    enable_unified_perception: bool = True  # Enable cross-modal perception fusion
+    
+    # Beta 1.0 Features - Goal Generation
+    enable_goal_generation: bool = True  # Enable novel goal generation
+    max_active_goals: int = 3  # Maximum concurrent active goals
+    goal_novelty_threshold: float = 0.7  # Minimum novelty for new goals (0-1)
+    
     # Legacy external augmentation (deprecated in favor of hybrid)
     enable_claude_meta: bool = False
     enable_gemini_vision: bool = False
