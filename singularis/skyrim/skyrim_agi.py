@@ -3358,31 +3358,19 @@ Based on this visual and contextual data, provide:
                         # Calculate visual similarity
                         similarity = perception.get('visual_similarity', 0.0)
                         
-                        # Start new temporal binding
-                        binding_id = await self.temporal_tracker.start_binding(
-                            perception={
-                                'visual_similarity': similarity,
-                                'scene': scene_type.value,
-                                'location': game_state.location_name
-                            },
-                            cycle=cycle_count
-                        )
-                        
-                        # Check for stuck loops
-                        if similarity > 0.95:
-                            stuck_loops = self.temporal_tracker.detect_stuck_loops(threshold=0.95)
-                            if stuck_loops:
-                                print(f"[TEMPORAL] ⚠️ STUCK LOOP DETECTED! {len(stuck_loops)} loops, similarity={similarity:.3f}")
-                                
-                                # Record to Main Brain
-                                self.main_brain.record_output(
-                                    system_name='Temporal Binding',
-                                    content=f"🚨 Stuck Loop Detected\nSimilarity: {similarity:.3f}\nLoops: {len(stuck_loops)}\nForcing exploration...",
-                                    metadata={'cycle': cycle_count, 'stuck_count': len(stuck_loops), 'similarity': similarity},
-                                    success=True
-                                )
+                        # Check for stuck loops BEFORE creating binding
+                        if self.temporal_tracker.is_stuck():
+                            print(f"[TEMPORAL] ⚠️ STUCK LOOP DETECTED! Stuck count: {self.temporal_tracker.stuck_loop_count}, similarity={similarity:.3f}")
+                            
+                            # Record to Main Brain
+                            self.main_brain.record_output(
+                                system_name='Temporal Binding',
+                                content=f"🚨 Stuck Loop Detected\nSimilarity: {similarity:.3f}\nStuck Count: {self.temporal_tracker.stuck_loop_count}\nForcing exploration...",
+                                metadata={'cycle': cycle_count, 'stuck_count': self.temporal_tracker.stuck_loop_count, 'similarity': similarity},
+                                success=True
+                            )
                     except Exception as e:
-                        print(f"[TEMPORAL] Binding start error: {e}")
+                        print(f"[TEMPORAL] Stuck detection error: {e}")
                 
                 # Compute world state and consciousness (consciousness runs in parallel, no semaphore)
                 world_state = await self.agi.perceive({
@@ -4535,17 +4523,40 @@ Applicable Rules: {len(logic_analysis_brief['applicable_rules'])}"""
                             print(f"[GPT-5] Action planning guidance error: {e}")
                 
                 # ═══════════════════════════════════════════════════════════
-                # COMPLETE TEMPORAL BINDING - Close the loop
+                # CREATE & CLOSE TEMPORAL BINDING - Track perception→action loop
                 # ═══════════════════════════════════════════════════════════
-                if binding_id and self.temporal_tracker:
+                if self.temporal_tracker and self.config.enable_temporal_binding:
                     try:
-                        await self.temporal_tracker.complete_binding(
-                            binding_id=binding_id,
-                            action=action,
-                            outcome={'coherence': current_consciousness.coherence if current_consciousness else 0.0}
+                        # Create binding: perception→action
+                        binding_id = self.temporal_tracker.bind_perception_to_action(
+                            perception={
+                                'visual_similarity': perception.get('visual_similarity', 0.0),
+                                'scene': scene_type.value,
+                                'location': game_state.location_name
+                            },
+                            action=action
                         )
+                        
+                        # Immediately close the loop with outcome
+                        coherence_delta = current_consciousness.coherence if current_consciousness else 0.0
+                        self.temporal_tracker.close_loop(
+                            binding_id=binding_id,
+                            outcome=f"action_{action}",
+                            coherence_delta=coherence_delta,
+                            success=True
+                        )
+                        
+                        # Record to Main Brain every 10 cycles
+                        if cycle_count % 10 == 0:
+                            stats = self.temporal_tracker.get_statistics()
+                            self.main_brain.record_output(
+                                system_name='Temporal Binding',
+                                content=f"Bindings: {stats['total_bindings']}\nUnclosed: {stats['unclosed_loops']}\nSuccess Rate: {stats['success_rate']:.1%}\nStuck: {stats['is_stuck']}",
+                                metadata={'cycle': cycle_count, 'stats': stats},
+                                success=True
+                            )
                     except Exception as e:
-                        print(f"[TEMPORAL] Binding complete error: {e}")
+                        print(f"[TEMPORAL] Binding error: {e}")
                 
                 # ═══════════════════════════════════════════════════════════
                 # ADAPTIVE MEMORY - Learn from experience
