@@ -78,6 +78,7 @@ from ..llm import (
     TaskType,
     MoEOrchestrator,
     ExpertRole,
+    HyperbolicClient,
 )
 
 
@@ -554,7 +555,7 @@ class SkyrimAGI:
         else:
             print("    ⚠️ Video interpreter disabled")
         
-        # 20. Double Helix Architecture (NEW - 15-System Integration)
+        # 20. Double Helix Architecture (NEW - 17-System Integration)
         print("  [20/22] Double helix architecture...")
         from ..evolution import DoubleHelixArchitecture
         
@@ -573,6 +574,46 @@ class SkyrimAGI:
                 self.double_helix = None
         else:
             print("    ⚠️ Double helix disabled")
+        
+        # 20.5 Hyperbolic API Integration (NEW - Parallel Reasoning & Vision)
+        print("  [20.5/22] Hyperbolic API (Qwen3-235B + NVIDIA Nemotron)...")
+        self.hyperbolic_reasoning = None
+        self.hyperbolic_vision = None
+        try:
+            # Reasoning model (Qwen3-235B - 235 billion parameters)
+            self.hyperbolic_reasoning = HyperbolicClient(
+                model="Qwen/Qwen3-235B-A22B-Instruct-2507",
+                timeout=300  # 5 minutes for 235B model
+            )
+            if self.hyperbolic_reasoning.is_available():
+                print("    ✓ Hyperbolic Reasoning (Qwen3-235B) initialized")
+                print("    ✓ Meta-cognitive reasoning enabled")
+                
+                # Record in double helix
+                if self.double_helix:
+                    self.double_helix.record_activation("hyperbolic_reasoning", True, 1.0)
+            else:
+                print("    ⚠️ Hyperbolic API key not found (HYPERBOLIC_API_KEY)")
+                self.hyperbolic_reasoning = None
+            
+            # Vision model (NVIDIA Nemotron)
+            self.hyperbolic_vision = HyperbolicClient(
+                vlm_model="nvidia/NVIDIA-Nemotron-Nano-12B-v2-VL-BF16",
+                timeout=120
+            )
+            if self.hyperbolic_vision.is_available():
+                print("    ✓ Hyperbolic Vision (NVIDIA Nemotron) initialized")
+                print("    ✓ Visual awareness enabled")
+                
+                # Record in double helix
+                if self.double_helix:
+                    self.double_helix.record_activation("hyperbolic_vision", True, 1.0)
+            else:
+                self.hyperbolic_vision = None
+        except Exception as e:
+            print(f"    ⚠️ Hyperbolic initialization failed: {e}")
+            self.hyperbolic_reasoning = None
+            self.hyperbolic_vision = None
         
         # 21. Temporal Binding System (NEW - Critical)
         print("  [21/27] Temporal binding system...")
