@@ -543,20 +543,74 @@ class SkyrimAGI:
         else:
             print("    ⚠️ Double helix disabled")
         
-        # 21. Unified Metrics Aggregator (NEW)
-        print("  [21/22] Unified metrics aggregator...")
+        # 21. Temporal Binding System (NEW - Critical)
+        print("  [21/27] Temporal binding system...")
+        from ..core.temporal_binding import TemporalCoherenceTracker
+        
+        self.temporal_tracker = TemporalCoherenceTracker(window_size=20)
+        print("    ✓ Temporal coherence tracking initialized")
+        print("    ✓ Perception→action→outcome loops will be tracked")
+        
+        # 22. Enhanced Coherence Metrics (NEW - Critical)
+        print("  [22/27] Enhanced coherence metrics...")
+        from ..consciousness.enhanced_coherence import EnhancedCoherenceMetrics
+        
+        self.enhanced_coherence = EnhancedCoherenceMetrics(
+            temporal_tracker=self.temporal_tracker
+        )
+        print("    ✓ 4D coherence measurement enabled")
+        print("    ✓ Integration + Temporal + Causal + Predictive")
+        
+        # 23. Hierarchical Memory System (NEW - Critical)
+        print("  [23/27] Hierarchical memory system...")
+        from ..learning.hierarchical_memory import HierarchicalMemory
+        
+        self.hierarchical_memory = HierarchicalMemory(
+            episodic_capacity=1000,
+            consolidation_threshold=10,
+            min_pattern_samples=3,
+            consolidation_interval=60.0
+        )
+        print("    ✓ Episodic→semantic consolidation enabled")
+        print("    ✓ Genuine learning from experience")
+        
+        # 24. Lumen Integration System (NEW)
+        print("  [24/27] Lumen integration system...")
+        from ..consciousness.lumen_integration import LumenIntegratedSystem
+        
+        self.lumen_integration = LumenIntegratedSystem()
+        print("    ✓ Metaluminosity framework integrated")
+        print("    ✓ Onticum + Structurale + Participatum balance tracking")
+        
+        # 25. Async Expert Pools (NEW - Critical)
+        print("  [25/27] Async expert pools...")
+        from ..llm.async_expert_pool import AsyncExpertPool, PooledExpertCaller
+        
+        # Will be initialized after LLM setup
+        self.gemini_pool = None
+        self.claude_pool = None
+        self.gemini_caller = None
+        self.claude_caller = None
+        print("    ✓ Async expert pools configured (will initialize with LLMs)")
+        
+        # 26. Unified Metrics Aggregator
+        print("  [26/27] Unified metrics aggregator...")
         self.unified_metrics = {
             'consciousness': {},
             'double_helix': {},
             'gpt5': {},
             'voice': {},
             'video': {},
-            'performance': {}
+            'performance': {},
+            'temporal': {},
+            'coherence': {},
+            'memory': {},
+            'lumen': {}
         }
         print("    ✓ Unified metrics tracking enabled")
         
-        # 22. Skyrim-specific Motivation System
-        print("  [22/22] Skyrim-specific motivation system...")
+        # 27. Skyrim-specific Motivation System
+        print("  [27/27] Skyrim-specific motivation system...")
         self.skyrim_motivation = SkyrimMotivation(
             survival_weight=0.35,  # Prioritize staying alive
             progression_weight=0.25,  # Character growth important
@@ -1548,6 +1602,28 @@ class SkyrimAGI:
         if self.video_interpreter:
             metrics['video'] = self.video_interpreter.get_stats()
         
+        # Temporal binding metrics (NEW)
+        if self.temporal_tracker:
+            metrics['temporal'] = self.temporal_tracker.get_statistics()
+        
+        # Enhanced coherence metrics (NEW)
+        if self.enhanced_coherence:
+            metrics['coherence'] = self.enhanced_coherence.get_statistics()
+        
+        # Hierarchical memory metrics (NEW)
+        if self.hierarchical_memory:
+            metrics['memory'] = self.hierarchical_memory.get_statistics()
+        
+        # Lumen integration metrics (NEW)
+        if self.lumen_integration:
+            metrics['lumen'] = self.lumen_integration.get_statistics()
+        
+        # Expert pool metrics (NEW)
+        if self.gemini_pool:
+            metrics['gemini_pool'] = self.gemini_pool.get_statistics()
+        if self.claude_pool:
+            metrics['claude_pool'] = self.claude_pool.get_statistics()
+        
         # Performance metrics
         metrics['performance'] = {
             'cycle_count': self.cycle_count,
@@ -1607,6 +1683,155 @@ class SkyrimAGI:
         except Exception as e:
             logger.error(f"[VIDEO] Interpretation failed: {e}")
             return None
+    
+    def bind_perception_action(self, perception: Dict[str, Any], action: str) -> str:
+        """
+        Bind perception to action for temporal tracking.
+        
+        Args:
+            perception: Perception data
+            action: Action being taken
+            
+        Returns:
+            Binding ID for later closure
+        """
+        if not self.temporal_tracker:
+            return ""
+        
+        return self.temporal_tracker.bind_perception_to_action(perception, action)
+    
+    def close_temporal_loop(
+        self,
+        binding_id: str,
+        outcome: str,
+        coherence_delta: float,
+        success: bool
+    ):
+        """
+        Close temporal loop after action execution.
+        
+        Args:
+            binding_id: ID from bind_perception_action
+            outcome: Observed outcome
+            coherence_delta: Change in coherence
+            success: Whether action was successful
+        """
+        if not self.temporal_tracker:
+            return
+        
+        self.temporal_tracker.close_loop(binding_id, outcome, coherence_delta, success)
+        
+        # Store in hierarchical memory
+        if self.hierarchical_memory and hasattr(self, 'last_perception'):
+            self.hierarchical_memory.store_episode(
+                scene_type=self.last_perception.get('scene_type', 'unknown'),
+                action=self.last_action or 'unknown',
+                outcome=outcome,
+                outcome_success=success,
+                coherence_delta=coherence_delta,
+                context=self.last_perception.copy() if self.last_perception else {},
+                metadata={'binding_id': binding_id}
+            )
+    
+    def check_stuck_loop(self) -> bool:
+        """Check if system is stuck in a loop."""
+        if not self.temporal_tracker:
+            return False
+        
+        is_stuck = self.temporal_tracker.is_stuck()
+        
+        if is_stuck:
+            logger.warning(
+                "[TEMPORAL] STUCK LOOP DETECTED - "
+                f"{self.temporal_tracker.stuck_loop_count} consecutive high-similarity cycles"
+            )
+        
+        return is_stuck
+    
+    async def compute_enhanced_coherence(
+        self,
+        subsystem_outputs: Dict[str, Any],
+        integration_score: float
+    ) -> Dict[str, float]:
+        """
+        Compute 4D enhanced coherence.
+        
+        Args:
+            subsystem_outputs: Outputs from all subsystems
+            integration_score: Current integration score
+            
+        Returns:
+            Dict with overall, integration, temporal, causal, predictive scores
+        """
+        if not self.enhanced_coherence:
+            return {'overall': integration_score}
+        
+        # Get recent temporal bindings
+        recent_bindings = (
+            self.temporal_tracker.get_recent_bindings(count=10)
+            if self.temporal_tracker else None
+        )
+        
+        # Compute 4D coherence
+        coherence = self.enhanced_coherence.compute_enhanced_coherence(
+            integration_score=integration_score,
+            subsystem_outputs=subsystem_outputs,
+            temporal_bindings=recent_bindings
+        )
+        
+        return coherence
+    
+    def retrieve_semantic_memory(self, scene_type: str) -> Optional[Any]:
+        """
+        Retrieve semantic memory for scene type.
+        
+        Args:
+            scene_type: Type of scene
+            
+        Returns:
+            Semantic pattern or None
+        """
+        if not self.hierarchical_memory:
+            return None
+        
+        return self.hierarchical_memory.retrieve_semantic(
+            scene_type=scene_type,
+            min_confidence=0.5
+        )
+    
+    def compute_lumen_balance(self, active_systems: Dict[str, Any]) -> Optional[Any]:
+        """
+        Compute Lumen balance across onticum/structurale/participatum.
+        
+        Args:
+            active_systems: Currently active systems
+            
+        Returns:
+            LumenBalance or None
+        """
+        if not self.lumen_integration:
+            return None
+        
+        # Get system weights from double helix if available
+        system_weights = None
+        if self.double_helix:
+            system_weights = {
+                node_id: node.contribution_weight
+                for node_id, node in self.double_helix.nodes.items()
+            }
+        
+        balance = self.lumen_integration.compute_lumen_balance(
+            active_systems=active_systems,
+            system_weights=system_weights
+        )
+        
+        # Log recommendations if imbalanced
+        if balance.balance_score < 0.7:
+            recommendations = self.lumen_integration.get_recommendations(balance)
+            for rec in recommendations:
+                logger.warning(f"[LUMEN] {rec}")
+        
+        return balance
     
     async def query_parallel_llm(
         self,
