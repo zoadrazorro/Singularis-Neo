@@ -27,6 +27,7 @@ from .gpt5_orchestrator import (
     SystemMessage,
     GPT5Response,
 )
+from .hyperbolic_client import HyperbolicClient
 
 __all__ = [
     "LMStudioClient",
@@ -50,4 +51,5 @@ __all__ = [
     "SystemType",
     "SystemMessage",
     "GPT5Response",
+    "HyperbolicClient",
 ]

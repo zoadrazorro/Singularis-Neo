@@ -133,6 +133,7 @@ async def main():
     print("─" * 70)
     print("ADVANCED SETTINGS")
     print("─" * 70)
+    enable_parallel = get_yes_no("Enable parallel LLM mode?", default=True)
     cycle_interval = float(get_user_input("Cycle interval (seconds)", default="3.0"))
     temporal_timeout = float(get_user_input("Temporal binding timeout (seconds)", default="30.0"))
     memory_decay = float(get_user_input("Memory decay rate (0-1)", default="0.95"))
@@ -155,6 +156,7 @@ async def main():
         
         # LLM settings - Prioritize UNLIMITED Gemini models (Flash 2.5 Live, Flash Lite)
         use_hybrid_llm=use_llm,  # Use hybrid LLM architecture
+        use_parallel_mode=enable_parallel,  # Enable parallel LLM processing (MoE + Hybrid)
         use_gemini_vision=True,  # Enable Gemini with unlimited models
         gemini_model="gemini-2.5-flash-lite",  # UNLIMITED - fastest, optimized for high throughput
         use_claude_reasoning=True,  # Use Claude as secondary
@@ -245,14 +247,16 @@ async def main():
         print()
         print("Core Systems:")
         print(f"  LLM:               {'✓' if use_llm else '✗'}")
+        print(f"  Parallel Mode:     {'✓' if enable_parallel else '✗'} (Multi-LLM)")
         print(f"  Gemini Flash Lite: ✓ (PRIMARY - UNLIMITED)")
         print(f"  GPT-5 Orchestrator: {'✓' if use_gpt5 else '✗'} (OpenAI)")
+        print(f"  Hyperbolic API:    ✓ (Qwen3-235B + Nemotron)")
         print(f"  Live Audio Stream: {'✓' if use_live_audio else '✗'} (Gemini+OpenAI)")
         print(f"  Claude Reasoning:  ✓ (Anthropic - secondary)")
         print(f"  Local Fallback:    ✓ (Qwen3-VL, Phi-4)")
         print(f"  Voice System:      {'✓' if use_voice else '✗'} (Gemini TTS)")
         print(f"  Video Interpreter: {'✓' if use_video else '✗'} (Gemini Flash)")
-        print(f"  Double Helix:      {'✓' if use_double_helix else '✗'}")
+        print(f"  Double Helix:      {'✓' if use_double_helix else '✗'} (17 systems)")
         print()
         print("Beta 1.0 Features:")
         print(f"  Temporal Binding:  {'✓' if enable_temporal else '✗'}")
