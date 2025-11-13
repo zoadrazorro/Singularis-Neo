@@ -215,7 +215,7 @@ class DashboardStreamer:
             # Write to file atomically
             temp_path = self.output_path.with_suffix('.tmp')
             with open(temp_path, 'w') as f:
-                json.dump(dashboard_state, f, indent=2)
+                json.dump(dashboard_state, f, indent=2, default=str)
             
             # Atomic rename
             temp_path.replace(self.output_path)

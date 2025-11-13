@@ -19,8 +19,8 @@ class LMStudioConfig:
     model_name: str = "microsoft/phi-4-mini-reasoning"
     temperature: float = 0.7
     max_tokens: int = 4096  # Increased for Phi-4 models
-    timeout: int = 60  # Increased for heavy parallel load
-    request_timeout: int = 50  # Per-request timeout (slightly lower than session timeout)
+    timeout: int = 120  # Increased for heavy parallel load with multiple experts
+    request_timeout: int = 100  # Per-request timeout (slightly lower than session timeout)
     
 
 class LMStudioClient:
@@ -179,9 +179,9 @@ class LMStudioClient:
             adaptive_timeout = self.config.timeout if image_path else self.config.request_timeout
             
             # Staggered delay to prevent overwhelming LM Studio with simultaneous requests
-            # Each request waits 0.3s to create 0.3s intervals between activations (reduced from 0.4s)
+            # Each request waits 0.5s to create 0.5s intervals between activations
             import asyncio
-            await asyncio.sleep(0.3)
+            await asyncio.sleep(0.5)
             
             logger.debug(
                 "Sending request to LM Studio",

@@ -2368,7 +2368,7 @@ Connect perception → thought → action into flowing experience.""",
                     skip_count += 1
                     if skip_count % 20 == 0:  # Only log every 20 skips
                         print(f"[PERCEPTION] Queue full, skipped {skip_count} cycles")
-                    await asyncio.sleep(1.5)  # Shorter wait when queue is full
+                    await asyncio.sleep(2.0)  # Wait 2s when queue is full to allow processing
                     continue
                 
                 perception = await self.perception.perceive()
@@ -3620,7 +3620,7 @@ Applicable Rules: {len(logic_analysis_brief['applicable_rules'])}"""
                 
                 # 1. CRITICAL HEALTH - Highest priority
                 if game_state.health < self.config.fast_health_threshold:
-                    if game_state.health < 15:
+                    if game_state.health < 10:
                         # Extremely low health - immediate retreat
                         fast_action = 'retreat'
                         fast_reason = f"CRITICAL health {game_state.health:.0f}% - retreating"
@@ -3630,11 +3630,15 @@ Applicable Rules: {len(logic_analysis_brief['applicable_rules'])}"""
                         fast_action = 'heal'
                         fast_reason = f"Low health {game_state.health:.0f}% - healing"
                         priority = 90
-                    else:
-                        # Block and back away
+                    elif game_state.health < 20:
+                        # Very low health - defensive stance
                         fast_action = 'block'
-                        fast_reason = f"Low health {game_state.health:.0f}%, no magicka - blocking"
-                        priority = 85
+                        fast_reason = f"Very low health {game_state.health:.0f}%, no magicka - blocking"
+                        priority = 60
+                    else:
+                        # Low health but not critical - allow LLM to decide
+                        fast_action = None
+                        priority = 0
                 
                 # 2. OVERWHELMING COMBAT - High priority
                 elif game_state.in_combat and game_state.enemies_nearby >= self.config.fast_danger_threshold:
@@ -3679,11 +3683,11 @@ Applicable Rules: {len(logic_analysis_brief['applicable_rules'])}"""
                     # Throttle fast actions to avoid spam
                     # Higher priority actions can execute sooner
                     if priority >= 90:
-                        min_interval = 3.0  # Critical health: 3 seconds minimum
+                        min_interval = 8.0  # Critical health: 8 seconds minimum
                     elif priority >= 70:
-                        min_interval = 4.0  # High danger: 4 seconds minimum  
+                        min_interval = 10.0  # High danger: 10 seconds minimum  
                     else:
-                        min_interval = 5.0  # Normal actions: 5 seconds minimum
+                        min_interval = 12.0  # Normal actions: 12 seconds minimum
                     
                     time_since_last = time.time() - last_fast_action_time
                     if time_since_last < min_interval:
