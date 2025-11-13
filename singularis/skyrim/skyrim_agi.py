@@ -3889,6 +3889,21 @@ REASONING: <explanation>"""
                     reasoning_text = response['reasoning']
                     if response.get('world_model'):
                         print("[WORLD-MODEL] Deep causal analysis included")
+                        
+                        # Record GPT-5-thinking world model to Main Brain
+                        if hasattr(self, 'main_brain') and self.main_brain:
+                            self.main_brain.record_output(
+                                system_name='GPT-5-thinking World Model',
+                                content=response['world_model'],
+                                metadata={
+                                    'consciousness_score': response.get('world_model_consciousness', 0.0),
+                                    'coherence': response.get('coherence', 0.0),
+                                    'source': 'parallel',
+                                    'integration_context': 'sensorimotor+perceptual+cognitive',
+                                    'timestamp': time.time()
+                                },
+                                success=True
+                            )
                 # Hybrid only for routine decisions (much faster, less API calls)
                 elif self.hybrid_llm:
                     print("[CLOUD-LLM] Using Hybrid (fast mode)")
@@ -3969,6 +3984,34 @@ REASONING: <explanation>"""
                         world_analysis = parallel_results[1]
                         reasoning_text = f"{reasoning_text}\n\n[Deep Analysis]\n{world_analysis}"
                         print("[WORLD-MODEL] Parallel deep analysis completed")
+                        
+                        # Record GPT-5-thinking world model to Main Brain
+                        if hasattr(self, 'main_brain') and self.main_brain:
+                            # Measure consciousness of the world model narrative
+                            from ..consciousness.measurement import ConsciousnessMeasurement
+                            consciousness_measure = ConsciousnessMeasurement()
+                            
+                            world_model_trace = consciousness_measure.measure(
+                                content=world_analysis,
+                                query="unified consciousness synthesis",
+                                lumen_focus="participatum"
+                            )
+                            
+                            self.main_brain.record_output(
+                                system_name='GPT-5-thinking World Model',
+                                content=world_analysis,
+                                metadata={
+                                    'consciousness_score': world_model_trace.overall_consciousness,
+                                    'phi': world_model_trace.phi,
+                                    'gwt_salience': world_model_trace.gwt_salience,
+                                    'hot_depth': world_model_trace.hot_depth,
+                                    'integration': world_model_trace.integration_score,
+                                    'differentiation': world_model_trace.differentiation_score,
+                                    'source': 'hybrid',
+                                    'timestamp': time.time()
+                                },
+                                success=True
+                            )
                 elif self.moe:
                     _, reasoning_resp = await self.moe.query_all_experts(
                         vision_prompt=vision_prompt,

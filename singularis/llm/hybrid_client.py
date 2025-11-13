@@ -44,7 +44,7 @@ class HybridConfig:
     claude_model: str = "claude-sonnet-4-5-20250929"
     
     use_openai_world_model: bool = True
-    openai_model: str = "gpt-5-thinking"  # GPT-5-thinking for world modeling
+    openai_model: str = "gpt-5-2025-08-07"  # GPT-5 for world modeling
     
     # Fallback models (local - optional)
     use_local_fallback: bool = False
