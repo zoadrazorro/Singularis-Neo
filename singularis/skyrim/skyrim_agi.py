@@ -3545,6 +3545,8 @@ Strongest System: {stats['strongest_system']} ({stats['strongest_weight']:.2f})"
                         self.stats['fast_action_count'] += 1
                         self.stats['fast_action_times'].append(execution_duration)
                         self.stats['actions_taken'] += 1
+                        self.stats['action_success_count'] += 1  # Count as success
+                        self.stats['action_source_heuristic'] += 1  # Fast loop uses heuristics
                         
                         last_fast_action_time = time.time()
                         
@@ -3712,6 +3714,8 @@ Strongest System: {stats['strongest_system']} ({stats['strongest_weight']:.2f})"
                 try:
                     await self._execute_action(action, scene_type)
                     self.stats['actions_taken'] += 1
+                    self.stats['action_success_count'] += 1  # Count as success
+                    self.stats['action_source_heuristic'] += 1  # Auxiliary loop uses heuristics
                     print(f"[ACTION] Successfully executed: {action}")
                 except Exception as e:
                     print(f"[ERROR] Action execution failed: {e}")
