@@ -6,6 +6,7 @@ import os
 from typing import Any, Dict, Optional, List
 
 import aiohttp
+from loguru import logger
 
 
 class HyperbolicClient:
@@ -14,12 +15,14 @@ class HyperbolicClient:
     def __init__(
         self,
         api_key: Optional[str] = None,
-        model: str = "Qwen/Qwen3-235B-A22B-Instruct-2507",
+        model: str = "Qwen3-235B-A22B-Instruct-2507",  # Text reasoning model
+        vlm_model: str = "Qwen2.5-VL-72B-Instruct",  # Vision-language model
         base_url: str = "https://api.hyperbolic.xyz/v1",
         timeout: int = 120,
     ) -> None:
         self.api_key = api_key or os.getenv("HYPERBOLIC_API_KEY")
         self.model = model
+        self.vlm_model = vlm_model
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
         self._session: Optional[aiohttp.ClientSession] = None
@@ -110,7 +113,7 @@ class HyperbolicClient:
         max_tokens: int = 2048,
     ) -> str:
         """
-        Analyze image using vision model (NVIDIA-Nemotron-Nano-12B-v2-VL).
+        Analyze image using vision model (Qwen2.5-VL-72B-Instruct).
         
         Args:
             prompt: Analysis prompt
@@ -125,16 +128,22 @@ class HyperbolicClient:
             raise RuntimeError("Hyperbolic API key not configured (HYPERBOLIC_API_KEY)")
 
         if image is None:
+            logger.warning("analyze_image called with None image")
             return ""
 
         import base64
         import io
 
         # Convert image to base64
-        buffered = io.BytesIO()
-        image.save(buffered, format="PNG")
-        image_bytes = buffered.getvalue()
-        image_b64 = base64.b64encode(image_bytes).decode("utf-8")
+        try:
+            buffered = io.BytesIO()
+            image.save(buffered, format="PNG")
+            image_bytes = buffered.getvalue()
+            image_b64 = base64.b64encode(image_bytes).decode("utf-8")
+            logger.debug(f"Hyperbolic image converted to base64: {len(image_bytes)} bytes")
+        except Exception as e:
+            logger.error(f"Failed to convert image to base64: {e}")
+            raise
 
         session = await self._ensure_session()
         url = f"{self.base_url}/chat/completions"
@@ -160,22 +169,36 @@ class HyperbolicClient:
         ]
 
         payload = {
-            "model": self.model,
+            "model": self.vlm_model,  # Use VLM model for vision
             "messages": messages,
             "temperature": temperature,
             "max_tokens": max_tokens,
         }
 
-        async with session.post(url, json=payload, headers=headers, timeout=self.timeout) as resp:
-            resp.raise_for_status()
-            data = await resp.json()
+        logger.debug(f"Hyperbolic vision request: model={self.vlm_model}, prompt={prompt[:80]}...")
 
-        # Extract response
-        choice = data.get("choices", [{}])[0]
-        message = choice.get("message", {})
-        content = message.get("content", "")
+        try:
+            async with session.post(url, json=payload, headers=headers, timeout=self.timeout) as resp:
+                if resp.status != 200:
+                    error_text = await resp.text()
+                    logger.error(f"Hyperbolic returned {resp.status}: {error_text[:500]}")
+                resp.raise_for_status()
+                data = await resp.json()
 
-        return content
+            # Extract response
+            choice = data.get("choices", [{}])[0]
+            message = choice.get("message", {})
+            content = message.get("content", "")
+
+            if not content:
+                logger.warning("Hyperbolic returned empty content")
+            else:
+                logger.info(f"Hyperbolic vision success: {len(content)} chars")
+
+            return content
+        except Exception as e:
+            logger.error(f"Hyperbolic vision request failed: {type(e).__name__}: {str(e)[:200]}")
+            raise
 
     async def generate_with_image(
         self,
