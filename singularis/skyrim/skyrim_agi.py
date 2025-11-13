@@ -168,6 +168,15 @@ class SkyrimConfig:
     use_realtime_coordinator: bool = False  # Enable GPT-4 Realtime API for streaming decisions
     realtime_decision_frequency: int = 10  # Use realtime coordinator every N cycles
     
+    # Self-Reflection System (GPT-4 Realtime)
+    use_self_reflection: bool = False  # Enable iterative evolving self-reflection
+    self_reflection_frequency: int = 50  # Reflect every N cycles
+    self_reflection_chain_length: int = 3  # Iterations per reflection chain
+    
+    # Reward-Guided Heuristic Tuning (Claude Sonnet 4.5)
+    use_reward_tuning: bool = False  # Enable reward-guided heuristic fine-tuning
+    reward_tuning_frequency: int = 10  # Tune heuristics every N outcomes
+    
     # Legacy external augmentation (deprecated in favor of hybrid)
     enable_claude_meta: bool = False
     enable_gemini_vision: bool = False
@@ -410,8 +419,35 @@ class SkyrimAGI:
         else:
             print("    ⚠️ Realtime coordinator disabled (set use_realtime_coordinator=True to enable)")
         
-        # 15. Skyrim-specific Motivation System
-        print("  [15/15] Skyrim-specific motivation system...")
+        # 15. Self-Reflection System (GPT-4 Realtime)
+        print("  [15/17] Self-reflection system (GPT-4 Realtime)...")
+        from ..consciousness import SelfReflectionSystem
+        
+        self.self_reflection = None
+        if self.config.use_self_reflection:
+            try:
+                self.self_reflection = SelfReflectionSystem()
+                print("    ✓ Iterative evolving self-reflection initialized")
+                print("    ✓ GPT-4 Realtime for continuous self-understanding")
+            except Exception as e:
+                print(f"    ⚠️ Self-reflection initialization failed: {e}")
+                self.self_reflection = None
+        else:
+            print("    ⚠️ Self-reflection disabled")
+        
+        # 16. Reward-Guided Heuristic Fine-Tuning (Claude Sonnet 4.5)
+        print("  [16/17] Reward-guided heuristic tuning (Claude Sonnet 4.5)...")
+        from ..learning.reward_guided_tuning import RewardGuidedTuning
+        
+        self.reward_tuning = None
+        if self.config.use_reward_tuning:
+            # Will be initialized after Claude client is ready
+            print("    ✓ Reward-guided tuning configured (will initialize with Claude)")
+        else:
+            print("    ⚠️ Reward-guided tuning disabled")
+        
+        # 17. Skyrim-specific Motivation System
+        print("  [17/17] Skyrim-specific motivation system...")
         self.skyrim_motivation = SkyrimMotivation(
             survival_weight=0.35,  # Prioritize staying alive
             progression_weight=0.25,  # Character growth important
@@ -1031,6 +1067,25 @@ class SkyrimAGI:
                         print(f"[PARALLEL] ⚠️ Realtime coordinator connection failed: {e}")
                         print("[PARALLEL]   Continuing without realtime coordination")
                         self.realtime_coordinator = None
+                
+                # Initialize Self-Reflection System
+                if self.self_reflection:
+                    try:
+                        await self.self_reflection.connect()
+                        print("[PARALLEL] ✓ Self-reflection system connected (GPT-4 Realtime)")
+                    except Exception as e:
+                        print(f"[PARALLEL] ⚠️ Self-reflection connection failed: {e}")
+                        self.self_reflection = None
+                
+                # Initialize Reward-Guided Tuning with Claude Sonnet 4.5
+                if self.config.use_reward_tuning and self.sensorimotor_llm:
+                    try:
+                        from ..learning.reward_guided_tuning import RewardGuidedTuning
+                        self.reward_tuning = RewardGuidedTuning(self.sensorimotor_llm)
+                        print("[PARALLEL] ✓ Reward-guided tuning initialized (Claude Sonnet 4.5)")
+                    except Exception as e:
+                        print(f"[PARALLEL] ⚠️ Reward tuning initialization failed: {e}")
+                        self.reward_tuning = None
                 
                 # Also initialize local LLM references if fallback enabled
                 if self.config.use_local_fallback and self.hybrid_llm.local_reasoning:
@@ -3234,6 +3289,77 @@ Decide: Should I make an immediate decision or delegate to subsystems?"""
                         print("[REALTIME] Timed out after 15s")
                     except Exception as e:
                         print(f"[REALTIME] Error: {e}")
+                    
+                    print("="*70 + "\n")
+                
+                # SELF-REFLECTION - Iterative evolving self-understanding
+                if cycle_count % self.config.self_reflection_frequency == 0 and self.self_reflection:
+                    print("\n" + "="*70)
+                    print("SELF-REFLECTION (GPT-4 Realtime - Iterative Evolution)")
+                    print("="*70)
+                    
+                    # Build reflection trigger
+                    trigger = f"Reflecting on cycle {cycle_count} experiences"
+                    
+                    # Build context
+                    reflection_context = {
+                        'recent_actions': ', '.join(self.action_history[-5:]) if self.action_history else 'none',
+                        'coherence_delta': consciousness_state.coherence_delta if consciousness_state else 0.0,
+                        'cycle': cycle_count
+                    }
+                    
+                    # Add emotion if available
+                    if hasattr(self, 'current_emotion') and self.current_emotion:
+                        reflection_context['emotion_state'] = f"{self.current_emotion.primary_emotion.value} ({self.current_emotion.intensity:.2f})"
+                    
+                    # Add spiritual insight if available
+                    if self.spiritual and self.spiritual.self_concept.recent_insights:
+                        reflection_context['spiritual_insight'] = self.spiritual.self_concept.recent_insights[-1]
+                    
+                    try:
+                        # Perform iterative reflection chain
+                        reflections = await asyncio.wait_for(
+                            self.self_reflection.iterative_reflection_chain(
+                                initial_question=trigger,
+                                context=reflection_context,
+                                iterations=self.config.self_reflection_chain_length
+                            ),
+                            timeout=20.0
+                        )
+                        
+                        # Log reflections
+                        print(f"\n[SELF-REFLECTION] Completed {len(reflections)}-iteration chain")
+                        for i, reflection in enumerate(reflections, 1):
+                            print(f"[SELF-REFLECTION] Iteration {i}:")
+                            print(f"[SELF-REFLECTION]   Insight: {reflection.insight[:150]}...")
+                            print(f"[SELF-REFLECTION]   Evolution Δ: {reflection.evolution_delta:.3f}")
+                            print(f"[SELF-REFLECTION]   Confidence: {reflection.confidence:.2f}")
+                        
+                        # Show evolved self-model
+                        self_model = self.self_reflection.get_self_model()
+                        print(f"\n[SELF-REFLECTION] Self-Model Evolution:")
+                        print(f"[SELF-REFLECTION]   Total Reflections: {self_model.total_reflections}")
+                        print(f"[SELF-REFLECTION]   Major Insights: {self_model.major_insights}")
+                        print(f"[SELF-REFLECTION]   Understanding Depth: {self_model.understanding_depth:.2%}")
+                        
+                        # Record in Main Brain
+                        self.main_brain.record_output(
+                            system_name='Self-Reflection',
+                            content=f"Reflections: {len(reflections)}, "
+                                   f"Evolution: {sum(r.evolution_delta for r in reflections):.3f}",
+                            metadata={
+                                'iterations': len(reflections),
+                                'total_evolution': sum(r.evolution_delta for r in reflections),
+                                'understanding_depth': self_model.understanding_depth,
+                                'cycle': cycle_count
+                            },
+                            success=True
+                        )
+                        
+                    except asyncio.TimeoutError:
+                        print("[SELF-REFLECTION] Timed out after 20s")
+                    except Exception as e:
+                        print(f"[SELF-REFLECTION] Error: {e}")
                     
                     print("="*70 + "\n")
                 
@@ -6686,6 +6812,40 @@ QUICK DECISION - Choose ONE action from available list:"""
         self.action_history.append(action)
         if len(self.action_history) > 20:  # Keep last 20 actions
             self.action_history.pop(0)
+        
+        # Record outcome for reward-guided tuning
+        if self.reward_tuning and consciousness_state:
+            # Compute reward based on coherence delta and action success
+            reward = consciousness_state.coherence_delta
+            
+            # Bonus for positive outcomes
+            if game_state.health > prev_health:
+                reward += 0.2  # Health increased
+            if not game_state.in_combat and prev_in_combat:
+                reward += 0.3  # Escaped combat
+            
+            # Penalty for negative outcomes
+            if game_state.health < prev_health - 10:
+                reward -= 0.3  # Took damage
+            if game_state.in_combat and not prev_in_combat:
+                reward -= 0.2  # Entered combat
+            
+            # Record outcome
+            self.reward_tuning.record_outcome(
+                action=action,
+                context={
+                    'health': prev_health,
+                    'in_combat': prev_in_combat,
+                    'scene': scene_type.value,
+                    'cycle': cycle_count
+                },
+                outcome={
+                    'health_delta': game_state.health - prev_health,
+                    'combat_state': game_state.in_combat
+                },
+                reward=reward,
+                coherence_delta=consciousness_state.coherence_delta
+            )
         
         # Track visual embeddings for similarity detection
         if visual_embedding is not None:
