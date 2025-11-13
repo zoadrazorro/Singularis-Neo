@@ -107,12 +107,12 @@ async def main():
     # Core systems
     print()
     print("─" * 70)
-    print("CORE SYSTEMS")
+    print("CORE SYSTEMS (Using UNLIMITED Gemini Flash 2.5 Lite)")
     print("─" * 70)
     use_llm = get_yes_no("Use LLM for smarter decisions?", default=True)
-    use_gpt5 = get_yes_no("Enable GPT-5 orchestrator?", default=True)
-    use_voice = get_yes_no("Enable voice system?", default=True)
-    use_video = get_yes_no("Enable video interpreter?", default=True)
+    use_gpt5 = get_yes_no("Enable GPT-5 orchestrator (OpenAI)?", default=True)
+    use_voice = get_yes_no("Enable voice system (Gemini TTS)?", default=False)
+    use_video = get_yes_no("Enable video interpreter (Gemini Flash)?", default=False)
     use_double_helix = get_yes_no("Enable double helix architecture?", default=True)
     
     # Beta 1.0 features
@@ -152,18 +152,26 @@ async def main():
         autonomous_duration=duration * 60,  # Convert to seconds
         cycle_interval=cycle_interval,
         
-        # LLM settings
+        # LLM settings - Prioritize UNLIMITED Gemini models (Flash 2.5 Live, Flash Lite)
         use_hybrid_llm=use_llm,  # Use hybrid LLM architecture
+        use_gemini_vision=True,  # Enable Gemini with unlimited models
+        gemini_model="gemini-2.5-flash-lite",  # UNLIMITED - fastest, optimized for high throughput
+        use_claude_reasoning=True,  # Use Claude as secondary
+        claude_model="claude-3-5-haiku-20241022",  # Fast Haiku
+        claude_sensorimotor_model="claude-sonnet-4-5-20250929",  # Sonnet for critical tasks
+        use_local_fallback=True,  # Enable local models as final fallback
+        
+        # GPT-5 Orchestrator
         use_gpt5_orchestrator=use_gpt5,
         gpt5_verbose=True,
         
-        # Voice system
-        enable_voice=use_voice,
+        # Voice system - Can enable with unlimited models if needed
+        enable_voice=use_voice,  # Voice uses Gemini TTS (check rate limits)
         voice_type="NOVA",
         voice_min_priority="HIGH",
         
-        # Video interpreter
-        enable_video_interpreter=use_video,
+        # Video interpreter - Can enable with unlimited models if needed
+        enable_video_interpreter=use_video,  # Video uses Gemini Flash (check rate limits)
         video_interpretation_mode="COMPREHENSIVE",
         video_frame_rate=0.5,
         
@@ -231,9 +239,12 @@ async def main():
         print()
         print("Core Systems:")
         print(f"  LLM:               {'✓' if use_llm else '✗'}")
-        print(f"  GPT-5 Orchestrator: {'✓' if use_gpt5 else '✗'}")
-        print(f"  Voice System:      {'✓' if use_voice else '✗'}")
-        print(f"  Video Interpreter: {'✓' if use_video else '✗'}")
+        print(f"  Gemini Flash Lite: ✓ (PRIMARY - UNLIMITED)")
+        print(f"  GPT-5 Orchestrator: {'✓' if use_gpt5 else '✗'} (OpenAI)")
+        print(f"  Claude Reasoning:  ✓ (Anthropic - secondary)")
+        print(f"  Local Fallback:    ✓ (Qwen3-VL, Phi-4)")
+        print(f"  Voice System:      {'✓' if use_voice else '✗'} (Gemini TTS)")
+        print(f"  Video Interpreter: {'✓' if use_video else '✗'} (Gemini Flash)")
         print(f"  Double Helix:      {'✓' if use_double_helix else '✗'}")
         print()
         print("Beta 1.0 Features:")

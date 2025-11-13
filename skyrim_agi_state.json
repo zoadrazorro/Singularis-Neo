@@ -1,41 +1,47 @@
 {
-  "session_id": "skyrim_agi_20251113_152231_ebcec257",
-  "cycle": 0,
-  "uptime": 28.250824689865112,
-  "last_update": "2025-11-13T15:22:59.790134",
+  "session_id": "skyrim_agi_20251113_152931_c81b1269",
+  "cycle": 1,
+  "uptime": 46.69740152359009,
+  "last_update": "2025-11-13T15:30:18.538182",
   "current_action": "look_around",
-  "last_action": "none",
+  "last_action": "look_around",
   "action_source": "unknown",
   "recent_actions": [
     {
       "name": "look_around",
-      "timestamp": 1763065379.7901254,
+      "timestamp": 1763065796.1709833,
       "cycle": 0,
+      "source": "unknown"
+    },
+    {
+      "name": "look_around",
+      "timestamp": 1763065818.5381732,
+      "cycle": 1,
       "source": "unknown"
     }
   ],
   "perception": {
-    "scene_type": "SceneType.INVENTORY",
+    "scene_type": "SceneType.COMBAT",
     "objects_detected": [
       [
         "dragon",
-        0.06749911606311798
+        0.06759005784988403
       ],
       [
         "armor",
-        0.06700769811868668
+        0.06720254570245743
       ],
       [
-        "door",
-        0.0669482946395874
+        "sword",
+        0.06717851758003235
       ],
       [
         "mage",
-        0.06694518029689789
+        0.06714581698179245
       ],
       [
         "guard",
-        0.06693003326654434
+        0.06691744178533554
       ]
     ],
     "enemies_nearby": false,
@@ -43,80 +49,86 @@
     "last_vision_time": 0
   },
   "game_state": {
-    "health": 100.0,
-    "magicka": 100.0,
-    "stamina": 100.0,
-    "in_combat": false,
-    "in_menu": true,
+    "health": 38.517551117312685,
+    "magicka": 67.49745755755434,
+    "stamina": 27.991151102937426,
+    "in_combat": true,
+    "in_menu": false,
     "location": "Skyrim"
   },
   "consciousness": {
-    "coherence": 0.21,
-    "phi": 0.11,
-    "nodes_active": 21,
+    "coherence": 0.22,
+    "phi": 0.08,
+    "nodes_active": 18,
     "trend": "stable",
     "history": [
       {
-        "timestamp": 1763065379.7901254,
+        "timestamp": 1763065796.1709833,
         "cycle": 0,
-        "coherence": 0.21,
-        "phi": 0.11
+        "coherence": 0.22,
+        "phi": 0.12
+      },
+      {
+        "timestamp": 1763065818.5381732,
+        "cycle": 1,
+        "coherence": 0.22,
+        "phi": 0.08
       }
     ]
   },
   "llm_status": {
     "mode": "none",
-    "cloud_active": 2,
-    "local_active": 1,
+    "cloud_active": 1,
+    "local_active": 0,
     "total_calls": 0,
     "last_call_time": 0,
     "active_models": [
       "Gemini 2.0 Flash",
-      "Claude Sonnet 4.5",
-      "Gemini 1",
-      "Gemini 2",
-      "Claude Sonnet",
-      "GPT-4o",
-      "Nemotron",
-      "Qwen3",
-      "Huihui-VL",
-      "Qwen3-VL",
-      "Phi-4"
+      "Claude Sonnet 4.5"
     ]
   },
   "performance": {
     "fps": 60,
-    "planning_time": 0.0013611316680908203,
-    "execution_time": 0.0,
+    "planning_time": 0.0012265443801879883,
+    "execution_time": 2.604382276535034,
     "vision_time": 0,
     "total_cycle_time": 0,
     "history": [
       {
-        "timestamp": 1763065379.7901254,
+        "timestamp": 1763065796.1709833,
         "cycle": 0,
         "fps": 60,
-        "planning_time": 0.0013611316680908203,
+        "planning_time": 0.0014188289642333984,
         "execution_time": 0.0,
+        "vision_time": 0,
+        "total_cycle_time": 0
+      },
+      {
+        "timestamp": 1763065818.5381732,
+        "cycle": 1,
+        "fps": 60,
+        "planning_time": 0.0012265443801879883,
+        "execution_time": 2.604382276535034,
         "vision_time": 0,
         "total_cycle_time": 0
       }
     ]
   },
   "diversity": {
-    "score": 1.0,
+    "score": 0.5,
     "unique_actions": 1,
-    "total_actions": 1,
-    "variety_rate": 1.0,
+    "total_actions": 2,
+    "variety_rate": 0.5,
     "action_distribution": {
-      "look_around": 1
+      "look_around": 2
     }
   },
   "stats": {
-    "success_rate": 0.0,
+    "success_rate": 1.0,
     "rl_actions": 0,
     "llm_actions": 0,
     "heuristic_actions": 0,
-    "total_actions": 1
+    "total_actions": 2
   },
   "world_model": {
     "beliefs": {},
