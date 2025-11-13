@@ -5593,23 +5593,37 @@ QUICK DECISION - Choose ONE action from available list:"""
         reason = feedback.get('reason', 'sensorimotor_stuck')
         similarity = feedback.get('visual_similarity')
         streak = feedback.get('similarity_streak', 0)
+        dialogue_loop = feedback.get('dialogue_loop', False)
         print(f"[PLANNING] Sensorimotor override engaged (reason: {reason}, similarity={similarity}, streak={streak})")
 
         recovery_priority = []
-        if not game_state.in_menu and 'activate' in available_actions:
-            recovery_priority.append('activate')
-        if 'jump' in available_actions:
-            recovery_priority.append('jump')
-        if 'turn_left' in available_actions:
-            recovery_priority.append('turn_left')
-        if 'turn_right' in available_actions:
-            recovery_priority.append('turn_right')
-        if 'move_backward' in available_actions:
-            recovery_priority.append('move_backward')
-        if 'look_around' in available_actions:
-            recovery_priority.append('look_around')
-        if 'sneak' in available_actions:
-            recovery_priority.append('sneak')
+        
+        # Special handling for dialogue loops - prioritize exiting dialogue
+        if dialogue_loop or reason == 'dialogue_loop':
+            print("[PLANNING] → Dialogue loop detected! Attempting to exit dialogue...")
+            # Try to exit dialogue with back button (Tab/ESC equivalent) and wait
+            if 'back' in available_actions:
+                recovery_priority.append('back')
+            if 'wait' in available_actions:
+                recovery_priority.append('wait')
+            # Move away from NPC
+            recovery_priority.extend(['move_backward', 'turn_left', 'turn_right'])
+        else:
+            # Normal stuck detection - try to move/interact
+            if not game_state.in_menu and 'activate' in available_actions:
+                recovery_priority.append('activate')
+            if 'jump' in available_actions:
+                recovery_priority.append('jump')
+            if 'turn_left' in available_actions:
+                recovery_priority.append('turn_left')
+            if 'turn_right' in available_actions:
+                recovery_priority.append('turn_right')
+            if 'move_backward' in available_actions:
+                recovery_priority.append('move_backward')
+            if 'look_around' in available_actions:
+                recovery_priority.append('look_around')
+            if 'sneak' in available_actions:
+                recovery_priority.append('sneak')
 
         for candidate in recovery_priority:
             if candidate != self.last_executed_action:
@@ -5652,12 +5666,20 @@ QUICK DECISION - Choose ONE action from available list:"""
 
         combined_text = f"{analysis}\n{visual_context}".lower()
         stuck_keywords = any(keyword in combined_text for keyword in ("stuck", "no movement", "blocked"))
-        should_override = stuck_keywords or (
+        
+        # Check for dialogue loop (high similarity + in_dialogue state)
+        current_perception = self.perception.perception_history[-1] if self.perception.perception_history else {}
+        in_dialogue = current_perception.get('game_state', {}).get('in_dialogue', False) if isinstance(current_perception.get('game_state'), dict) else False
+        dialogue_loop = in_dialogue and high_similarity and self.sensorimotor_similarity_streak >= 3
+        
+        should_override = stuck_keywords or dialogue_loop or (
             high_similarity and self.sensorimotor_similarity_streak >= self.sensorimotor_required_streak
         )
 
         reason = "analysis_stuck" if stuck_keywords else (
-            "similarity_loop" if high_similarity else ""
+            "dialogue_loop" if dialogue_loop else (
+                "similarity_loop" if high_similarity else ""
+            )
         )
 
         self.sensorimotor_state = {
@@ -5669,6 +5691,7 @@ QUICK DECISION - Choose ONE action from available list:"""
             'has_thinking': has_thinking,
             'stuck_keywords': stuck_keywords,
             'high_similarity': high_similarity,
+            'dialogue_loop': dialogue_loop,
             'should_override': should_override,
             'reason': reason,
             'timestamp': time.time(),
@@ -6199,7 +6222,7 @@ QUICK DECISION - Choose ONE action from available list:"""
                 'consciousness': {
                     'coherence': self.current_consciousness.coherence if self.current_consciousness else 0,
                     'phi': self.current_consciousness.consciousness_level if self.current_consciousness else 0,
-                    'nodes_active': len(self.current_consciousness.node_states) if self.current_consciousness else 0
+                    'nodes_active': len(self.consciousness_monitor.nodes) if hasattr(self, 'consciousness_monitor') and self.consciousness_monitor else 0
                 },
                 
                 # LLM status
