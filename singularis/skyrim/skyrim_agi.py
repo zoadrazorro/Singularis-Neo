@@ -2664,7 +2664,10 @@ Connect perception → thought → action into flowing experience.""",
         # ═══════════════════════════════════════════════════════════
         if self.live_audio and self.config.enable_live_audio:
             try:
-                await self.live_audio.start_stream()
+                # Initialize API clients first
+                await self.live_audio.initialize()
+                # Start streaming
+                await self.live_audio.start()
                 print("[LIVE AUDIO] 🎙️ Real-time commentary started")
                 
                 self.main_brain.record_output(
