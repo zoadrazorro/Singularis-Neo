@@ -52,21 +52,20 @@
 
 ---
 
-## ⚠️ Disabled Models (Rate Limit Issues)
+## ✅ Optional Models (Can Enable)
 
-### 1. **Google Gemini** - DISABLED
+### 1. **Google Gemini Voice/Video** - OPTIONAL
 - **Models**:
   - `gemini-2.5-pro-preview-tts` (Voice)
   - `gemini-2.5-flash-native-audio-preview-09-2025` (Video)
-  - `gemini-2.5-flash` (Vision)
-- **Rate Limit**: 30 RPM (free tier) - TOO LOW
-- **Issue**: System makes 4-5 calls per cycle = 120+ RPM needed
-- **Status**: ❌ DISABLED
+- **Rate Limit**: Check your tier (may have limits)
+- **Status**: ⚠️ OPTIONAL (disabled by default)
 
 **Systems Affected:**
-- Voice System (uses Gemini TTS)
-- Video Interpreter (uses Gemini Flash)
-- Vision fallback (uses Gemini Flash)
+- Voice System (uses Gemini TTS) - Can enable if needed
+- Video Interpreter (uses Gemini Flash) - Can enable if needed
+
+**Note**: Main vision uses Flash 2.5 Lite (unlimited), so these are optional enhancements
 
 ---
 
