@@ -249,22 +249,46 @@ class VoiceSystem:
         Play audio using pygame.
         
         Args:
-            audio_bytes: Audio data (WAV format)
+            audio_bytes: Audio data from Gemini TTS (PCM format)
         """
         if not PYGAME_AVAILABLE:
             return
         
         try:
-            # Load audio from bytes
-            audio_file = io.BytesIO(audio_bytes)
-            sound = pygame.mixer.Sound(audio_file)
+            # Gemini returns raw PCM audio data, need to convert to WAV
+            import tempfile
+            import wave
+            import struct
             
-            # Play and wait for completion
-            channel = sound.play()
-            while channel.get_busy():
-                await asyncio.sleep(0.1)
+            # Create WAV file from raw PCM data
+            with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as temp_file:
+                temp_path = temp_file.name
+                
+                # Write WAV header + PCM data
+                with wave.open(temp_path, 'wb') as wav_file:
+                    wav_file.setnchannels(1)  # Mono
+                    wav_file.setsampwidth(2)  # 16-bit
+                    wav_file.setframerate(24000)  # 24kHz
+                    wav_file.writeframes(audio_bytes)
             
-            logger.debug("[VOICE] Audio playback complete")
+            try:
+                # Load and play
+                sound = pygame.mixer.Sound(temp_path)
+                channel = sound.play()
+                
+                # Wait for completion
+                while channel.get_busy():
+                    await asyncio.sleep(0.1)
+                
+                logger.info("[VOICE] ✓ Audio playback complete")
+                
+            finally:
+                # Clean up temp file
+                import os
+                try:
+                    os.unlink(temp_path)
+                except:
+                    pass
             
         except Exception as e:
             logger.error(f"[VOICE] Audio playback failed: {e}")
