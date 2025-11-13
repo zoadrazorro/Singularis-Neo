@@ -5213,7 +5213,7 @@ QUICK DECISION - Choose ONE action from available list:"""
         elif action == 'heal':
             # Open inventory to heal (simplified)
             print("[ACTION] Attempting to heal (opening inventory)")
-            await self.actions.execute(Action(ActionType.INVENTORY, duration=0.2))
+            await self.actions.execute(Action(ActionType.OPEN_INVENTORY, duration=0.2))
             await asyncio.sleep(0.5)
         elif action == 'exit':
             # Exit menu/dialogue
@@ -5227,7 +5227,7 @@ QUICK DECISION - Choose ONE action from available list:"""
         elif action in ('open_inventory', 'open_map', 'open_magic', 'open_skills'):
             # Open specific menu
             print(f"[ACTION] Opening menu: {action}")
-            await self.actions.execute(Action(ActionType.INVENTORY, duration=0.2))
+            await self.actions.execute(Action(ActionType.OPEN_INVENTORY, duration=0.2))
             await asyncio.sleep(0.5)
         elif action == 'look_around':
             # Human-like looking behavior
@@ -5254,7 +5254,7 @@ QUICK DECISION - Choose ONE action from available list:"""
                 self.bindings.switch_to_menu()
                 # Actually open the inventory
                 print("[LAYER] Switching to Menu layer and opening inventory")
-                await self.actions.execute(Action(ActionType.INVENTORY, duration=0.2))
+                await self.actions.execute(Action(ActionType.OPEN_INVENTORY, duration=0.2))
                 await asyncio.sleep(0.5)
             elif target_layer == 'Stealth':
                 self.bindings.switch_to_stealth()
