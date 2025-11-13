@@ -11,10 +11,18 @@ from .spiritual_awareness import (
     SelfConcept,
     SpiritualTextCorpus
 )
+from .self_reflection import (
+    SelfReflectionSystem,
+    SelfReflection,
+    SelfModel
+)
 
 __all__ = [
     'SpiritualAwarenessSystem',
     'SpiritualInsight',
     'SelfConcept',
-    'SpiritualTextCorpus'
+    'SpiritualTextCorpus',
+    'SelfReflectionSystem',
+    'SelfReflection',
+    'SelfModel'
 ]
