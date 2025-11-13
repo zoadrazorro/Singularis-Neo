@@ -18,7 +18,7 @@ class HyperbolicClient:
         model: str = "Qwen/Qwen2.5-72B-Instruct",  # Text reasoning model
         vlm_model: str = "Qwen/Qwen2.5-VL-72B-Instruct",  # Vision-language model
         base_url: str = "https://api.hyperbolic.xyz/v1",
-        timeout: int = 120,
+        timeout: int = 180,  # Increased from 120s to 180s for sparse API calls
     ) -> None:
         self.api_key = api_key or os.getenv("HYPERBOLIC_API_KEY")
         self.model = model
@@ -73,7 +73,9 @@ class HyperbolicClient:
             "max_tokens": max_tokens,
         }
 
-        async with session.post(url, json=payload, headers=headers, timeout=self.timeout) as resp:
+        # Use aiohttp.ClientTimeout for proper timeout handling
+        timeout = aiohttp.ClientTimeout(total=self.timeout)
+        async with session.post(url, json=payload, headers=headers, timeout=timeout) as resp:
             resp.raise_for_status()
             data = await resp.json()
 
@@ -178,7 +180,9 @@ class HyperbolicClient:
         logger.debug(f"Hyperbolic vision request: model={self.vlm_model}, prompt={prompt[:80]}...")
 
         try:
-            async with session.post(url, json=payload, headers=headers, timeout=self.timeout) as resp:
+            # Use aiohttp.ClientTimeout for proper timeout handling
+            timeout = aiohttp.ClientTimeout(total=self.timeout)
+            async with session.post(url, json=payload, headers=headers, timeout=timeout) as resp:
                 if resp.status != 200:
                     error_text = await resp.text()
                     logger.error(f"Hyperbolic returned {resp.status}: {error_text[:500]}")

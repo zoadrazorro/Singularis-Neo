@@ -1616,10 +1616,14 @@ Connect perception → thought → action into flowing experience.""",
             return base_actions + ['respond', 'ask_question', 'goodbye', 'activate']
         
         elif scene_type == SceneType.INVENTORY:
-            return base_actions + ['equip_weapon', 'equip_armor', 'use_item', 'drop_item', 'close_menu']
+            # RECOMMENDATION 2: Disable 'explore' in inventory - only allow menu actions
+            print("[ACTION-FILTER] Inventory scene: disabling explore, enabling menu actions only")
+            return base_actions + ['activate', 'move_cursor', 'press_tab', 'equip_weapon', 'equip_armor', 'use_item', 'drop_item', 'close_menu']
         
         elif scene_type == SceneType.MAP:
-            return base_actions + ['set_waypoint', 'fast_travel', 'close_menu']
+            # RECOMMENDATION 2: Disable 'explore' in map - only allow map actions
+            print("[ACTION-FILTER] Map scene: disabling explore, enabling map actions only")
+            return base_actions + ['set_waypoint', 'fast_travel', 'close_menu', 'move_cursor']
         
         elif scene_type in [SceneType.INDOOR, SceneType.OUTDOOR]:
             exploration_actions = ['move_forward', 'move_backward', 'turn_left', 'turn_right', 'jump', 'sneak', 'activate']
@@ -3040,6 +3044,35 @@ Strongest System: {stats['strongest_system']} ({stats['strongest_weight']:.2f})"
                 # - Hybrid vision+reasoning pipeline (4-6s)
                 # - Local MoE synthesis (5-7s)
                 planning_start = time.time()
+                
+                # RECOMMENDATION 4: Adaptive planning cycles based on visual similarity
+                # Check if stuck in high-similarity state
+                similarity_stuck = False
+                if len(self.visual_embedding_history) >= 2:
+                    import numpy as np
+                    last = np.array(self.visual_embedding_history[-1]).flatten()
+                    prev = np.array(self.visual_embedding_history[-2]).flatten()
+                    similarity = np.dot(last, prev) / (np.linalg.norm(last) * np.linalg.norm(prev) + 1e-8)
+                    
+                    if similarity > 0.95:
+                        similarity_stuck = True
+                        print(f"[ADAPTIVE-PLANNING] High similarity detected: {similarity:.3f}")
+                
+                # RECOMMENDATION 4: Reduce planning timeout in stuck states
+                if similarity_stuck:
+                    planning_timeout = 5.0  # Reduce from 15s to 5s
+                    print(f"[ADAPTIVE-PLANNING] ⚡ SHORTENED CYCLE: {planning_timeout}s (similarity > 0.95)")
+                    print("[ADAPTIVE-PLANNING] Increasing sensorimotor polling priority")
+                    # Boost sensorimotor weight temporarily
+                    self.hebbian.record_activation(
+                        system_name='sensorimotor_claude45',
+                        success=True,
+                        contribution_strength=0.5,
+                        context={'adaptive_boost': True, 'high_similarity': True}
+                    )
+                else:
+                    planning_timeout = 15.0  # Standard planning time
+                
                 action = None
                 try:
                     async with self.llm_semaphore:
@@ -3049,10 +3082,10 @@ Strongest System: {stats['strongest_system']} ({stats['strongest_weight']:.2f})"
                                 motivation=mot_state,
                                 goal=self.current_goal
                             ),
-                            timeout=15.0  # Max 15s for planning to accommodate slow expert systems
+                            timeout=planning_timeout
                         )
                 except asyncio.TimeoutError:
-                    print("[REASONING] ⚠️ Planning timed out after 15s, using fallback")
+                    print(f"[REASONING] ⚠️ Planning timed out after {planning_timeout}s, using fallback")
                     action = None
                 except Exception as e:
                     print(f"[REASONING] ⚠️ Planning error: {e}, using fallback")
@@ -4643,16 +4676,40 @@ COHERENCE GAIN: <estimate 0.0-1.0 how much this increases understanding>
                 )
                 print(f"[PLANNING-CHECKPOINT] Failsafe stuck detection: {time.time() - checkpoint_stuck_start:.3f}s")
                 
+                # RECOMMENDATION 1: Check Hebbian weight for sensorimotor interrupt priority
+                sensorimotor_weight = self.hebbian.get_system_weight('sensorimotor_claude45')
+                print(f"[HEBBIAN-CONTROL] Sensorimotor weight: {sensorimotor_weight:.3f}")
+                
                 if failsafe_stuck:
                     # Measure consciousness impact
                     stuck_state = await self.measure_system_consciousness()
                     print(f"[FAILSAFE-STUCK] System coherence during stuck: {stuck_state.global_coherence:.3f}")
                     
-                    # Use failsafe recovery action
-                    if failsafe_recovery in available_actions:
-                        print(f"[FAILSAFE-STUCK] Using recovery: {failsafe_recovery}")
-                        self.stats['failsafe_stuck_detections'] = self.stats.get('failsafe_stuck_detections', 0) + 1
-                        return failsafe_recovery
+                    # RECOMMENDATION 1: Grant interrupt priority when sensorimotor weight > 1.3 AND stuck
+                    if sensorimotor_weight > 1.3:
+                        print(f"[HEBBIAN-CONTROL] ⚡ INTERRUPT PRIORITY: Sensorimotor weight {sensorimotor_weight:.3f} > 1.3")
+                        print(f"[HEBBIAN-CONTROL] Granting control authority to sensorimotor expert")
+                        
+                        # Strengthen pathway on successful interrupt
+                        self.hebbian.record_activation(
+                            system_name='sensorimotor_claude45',
+                            success=True,
+                            contribution_strength=1.2,  # Extra reward for interrupt
+                            context={'interrupt_priority': True, 'stuck_detected': True}
+                        )
+                        
+                        # Use failsafe recovery action with priority
+                        if failsafe_recovery in available_actions:
+                            print(f"[HEBBIAN-CONTROL] Using sensorimotor-priority recovery: {failsafe_recovery}")
+                            self.stats['sensorimotor_interrupts'] = self.stats.get('sensorimotor_interrupts', 0) + 1
+                            self.stats['failsafe_stuck_detections'] = self.stats.get('failsafe_stuck_detections', 0) + 1
+                            return failsafe_recovery
+                    else:
+                        # Standard stuck recovery
+                        if failsafe_recovery in available_actions:
+                            print(f"[FAILSAFE-STUCK] Using recovery: {failsafe_recovery}")
+                            self.stats['failsafe_stuck_detections'] = self.stats.get('failsafe_stuck_detections', 0) + 1
+                            return failsafe_recovery
                 
                 # Tier 2: Gemini vision stuck detection (every 10 cycles, cloud-based)
                 checkpoint_gemini_stuck_start = time.time()
@@ -4717,20 +4774,29 @@ COHERENCE GAIN: <estimate 0.0-1.0 how much this increases understanding>
                     else:
                         print(f"[GEMINI-MOE] ✓ Rate limit OK - Starting {len(self.moe.gemini_experts)} Gemini Flash experts for fast action selection...")
                         
-                        # Build prompt for Gemini experts
-                        vision_prompt = f"""Analyze this Skyrim gameplay:
+                        # RECOMMENDATION 3: Leverage Gemini Vision for action filtering
+                        # Build prompt with spatial reasoning context
+                        vision_prompt = f"""Analyze this Skyrim gameplay with spatial awareness:
 Scene: {perception.get('scene_type', 'unknown')}
 Health: {state_dict.get('health', 100)}%
 In Combat: {state_dict.get('in_combat', False)}
 Enemies: {state_dict.get('enemies_nearby', 0)}
 
-What do you see and recommend?"""
+Provide detailed spatial description: obstacles, pathways, interactive elements, and scene type confirmation."""
                         
-                        reasoning_prompt = f"""Recommend ONE action:
+                        # RECOMMENDATION 3: Use Gemini's spatial reasoning for filtering
+                        reasoning_prompt = f"""Recommend ONE action based on spatial analysis:
 Available: {', '.join(available_actions)}
 Top Q-values: {', '.join(f'{k}={v:.2f}' for k, v in sorted(q_values.items(), key=lambda x: x[1], reverse=True)[:3])}
 
-Format: ACTION: <action_name>"""
+Consider:
+- If in menu/inventory scene, only recommend: activate, move_cursor, press_tab
+- If exploring, consider spatial obstacles from vision
+- If stuck, recommend activate or turn actions
+
+Format: ACTION: <action_name>"""                        
+                        
+                        print("[GEMINI-VISION] Using spatial reasoning to inform action selection")
                         
                         gemini_moe_task = asyncio.create_task(
                             self.moe.query_all_experts(

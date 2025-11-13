@@ -1020,7 +1020,7 @@ class MoEOrchestrator:
         
         try:
             if is_vision and image:
-                # Vision query (Nemotron with image)
+                # Vision query (Nemotron with image) - increased timeout for sparse API
                 result = await asyncio.wait_for(
                     expert.generate_with_image(
                         prompt=full_prompt,
@@ -1028,17 +1028,17 @@ class MoEOrchestrator:
                         temperature=config.temperature,
                         max_tokens=config.max_tokens
                     ),
-                    timeout=30.0
+                    timeout=120.0  # Increased from 30s to 120s for sparse Hyperbolic API
                 )
             else:
-                # Text-only query (Qwen3 reasoning)
+                # Text-only query (Qwen3 reasoning) - increased timeout for sparse API
                 result = await asyncio.wait_for(
                     expert.generate_text(
                         prompt=full_prompt,
                         temperature=config.temperature,
                         max_tokens=config.max_tokens
                     ),
-                    timeout=30.0
+                    timeout=120.0  # Increased from 30s to 120s for sparse Hyperbolic API
                 )
             
             execution_time = time.time() - start_time
