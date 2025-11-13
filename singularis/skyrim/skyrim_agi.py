@@ -2640,17 +2640,21 @@ Based on this visual and contextual data, provide:
                         print(f"[THOUGHT] Memory Vividness: {random_thought.relevance_score:.2f}")
                         print(f"[THOUGHT] Content: {random_thought.excerpt}")
                         
-                        # Store as cognitive memory
+                        # Store as cognitive memory with correct parameters
                         self.memory_rag.store_cognitive_memory(
-                            thought=random_thought.excerpt,
-                            context={
+                            situation={
                                 'type': 'random_academic_thought',
                                 'category': random_thought.document.category,
                                 'title': random_thought.document.title,
                                 'vividness': random_thought.relevance_score,
                                 'cycle': cycle_count,
-                                'location': game_state.location_name
-                            }
+                                'location': game_state.location_name,
+                                'excerpt': random_thought.excerpt
+                            },
+                            action_taken='academic_reflection',
+                            outcome={'thought_integrated': True},
+                            success=True,
+                            reasoning=f"Brownian memory retrieval from {random_thought.document.category}"
                         )
                         
                         # Increment counter
