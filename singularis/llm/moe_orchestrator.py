@@ -144,7 +144,7 @@ class MoEOrchestrator:
         openai_model: str = "gpt-4o",
         openai_mini_model: str = "gpt-5-mini",  # GPT-5-mini for fast, cost-effective reasoning
         hyperbolic_vision_model: str = "nvidia/NVIDIA-Nemotron-Nano-12B-v2-VL-BF16",
-        hyperbolic_reasoning_model: str = "Qwen/Qwen2.5-72B-Instruct",  # Must use org/model format
+        hyperbolic_reasoning_model: str = "Qwen/Qwen3-235B-A22B-Instruct-2507",  # 235B parameter model for meta-cognition
         # Rate limits (requests per minute) - INCREASED for better performance
         gemini_rpm_limit: int = 30,  # Increased from 10 to reduce rate limit issues
         claude_rpm_limit: int = 100,  # Increased from 50 for better throughput
@@ -1028,20 +1028,22 @@ class MoEOrchestrator:
                         temperature=config.temperature,
                         max_tokens=config.max_tokens
                     ),
-                    timeout=120.0  # Increased from 30s to 120s for sparse Hyperbolic API
+                    timeout=240.0  # Increased to 240s for large vision models
                 )
             else:
-                # Text-only query (Qwen3 reasoning) - increased timeout for sparse API
+                # Text-only query (Qwen3-235B reasoning) - increased timeout for 235B parameter model
+                logger.info(f"Querying Hyperbolic {role.value} with model {config.model_name}...")
                 result = await asyncio.wait_for(
                     expert.generate_text(
                         prompt=full_prompt,
                         temperature=config.temperature,
                         max_tokens=config.max_tokens
                     ),
-                    timeout=120.0  # Increased from 30s to 120s for sparse Hyperbolic API
+                    timeout=300.0  # Increased to 300s (5 minutes) for 235B parameter Qwen3 model
                 )
             
             execution_time = time.time() - start_time
+            logger.info(f"Hyperbolic {role.value} completed in {execution_time:.2f}s with model {config.model_name}")
             
             # Parse confidence from response
             confidence = self._extract_confidence(result)
@@ -1060,8 +1062,15 @@ class MoEOrchestrator:
                 model_type="hyperbolic"
             )
             
+        except asyncio.TimeoutError:
+            execution_time = time.time() - start_time
+            logger.error(f"Hyperbolic expert {role.value} timed out after {execution_time:.2f}s (model: {config.model_name})")
+            logger.warning(f"Consider using a smaller model or increasing timeout beyond {execution_time:.1f}s")
+            raise
         except Exception as e:
-            logger.error(f"Hyperbolic expert {role.value} failed: {e}")
+            execution_time = time.time() - start_time
+            logger.error(f"Hyperbolic expert {role.value} failed after {execution_time:.2f}s: {type(e).__name__}: {str(e)[:200]}")
+            logger.error(f"Model: {config.model_name}, is_vision: {is_vision}")
             raise
     
     def _extract_confidence(self, text: str) -> float:

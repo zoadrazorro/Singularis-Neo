@@ -2627,7 +2627,16 @@ Based on this visual and contextual data, provide:
                                 gemini_visual = await asyncio.wait_for(
                                     self.hybrid_llm.analyze_image(
                                         image=screenshot,
-                                        prompt="Describe the visual scene focusing on: spatial layout, obstacles, pathways, terrain features, landmarks, and any navigational cues. Be specific about what's visible in each direction.",
+                                        prompt="""Describe the visual scene focusing on: spatial layout, obstacles, pathways, terrain features, landmarks, and any navigational cues. Be specific about what's visible in each direction.
+
+IMPORTANT - Camera Orientation Check:
+- If the view is mostly SKY/CEILING (looking up): State 'CAMERA_LOOKING_UP - recommend look_down action'
+- If the view is mostly GROUND/FLOOR (looking down): State 'CAMERA_LOOKING_DOWN - recommend look_up action'
+- If camera is at normal eye-level: State 'CAMERA_NORMAL - good orientation'
+
+Also check for combat:
+- Player's OWN weapon in view does NOT mean combat
+- Combat requires ENEMY characters visible, attacking, with red health bars""",
                                         max_tokens=512
                                     ),
                                     timeout=15.0
@@ -2636,9 +2645,7 @@ Based on this visual and contextual data, provide:
                             else:
                                 print("[SENSORIMOTOR] No screenshot available")
                         except Exception as e:
-                            print(f"[SENSORIMOTOR] Gemini visual failed: {e}")
-                    
-                    # Get Local vision model analysis (Qwen3-VL) as backup/supplement
+                            print(f"[SENSORIMOTOR] Gemini visual failed: {e}")                    # Get Local vision model analysis (Qwen3-VL) as backup/supplement
                     if hasattr(self, 'perception_llm') and self.perception_llm:
                         try:
                             print("[SENSORIMOTOR] Getting local visual analysis...")
@@ -2666,6 +2673,17 @@ Gemini Vision Analysis:
 Local Vision Model Analysis:
 {local_visual if local_visual else '[Not available]'}
 """
+                    
+                    # Check for camera orientation issues and auto-correct
+                    if gemini_visual:
+                        if 'CAMERA_LOOKING_UP' in gemini_visual:
+                            print("[CAMERA-REORIENT] Detected looking at sky/ceiling - correcting...")
+                            await self.actions.look_down()
+                            print("[CAMERA-REORIENT] ✓ Camera reoriented downward")
+                        elif 'CAMERA_LOOKING_DOWN' in gemini_visual:
+                            print("[CAMERA-REORIENT] Detected looking at ground/floor - correcting...")
+                            await self.actions.look_up()
+                            print("[CAMERA-REORIENT] ✓ Camera reoriented upward")
                     
                     # Compute visual similarity if we have embeddings
                     visual_similarity_info = ""

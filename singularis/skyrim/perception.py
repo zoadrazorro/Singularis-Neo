@@ -165,7 +165,7 @@ class SkyrimPerception:
             "city or town with stone buildings, NPCs walking, and cobblestone streets",
             "dark dungeon cave with stone walls, torches, and shadows - first person gameplay view",
             "indoor building interior with wooden furniture, fireplace, and NPCs - tavern or house",
-            "active combat with enemies attacking, health bar visible, and dynamic action - NOT just weapons drawn",
+            "active combat with ENEMY characters attacking the player, multiple enemy health bars visible, taking damage - NOT just player weapon visible in view",
             "dialogue conversation showing NPC face close-up with dialogue options at bottom of screen",
             "inventory menu UI showing item grid, character model on left, and equipment slots with detailed stats",
             "world map interface showing roads, cities, and location markers with compass rose",

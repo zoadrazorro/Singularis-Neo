@@ -15,10 +15,10 @@ class HyperbolicClient:
     def __init__(
         self,
         api_key: Optional[str] = None,
-        model: str = "Qwen/Qwen2.5-72B-Instruct",  # Text reasoning model
+        model: str = "Qwen/Qwen3-235B-A22B-Instruct-2507",  # 235B parameter reasoning model
         vlm_model: str = "Qwen/Qwen2.5-VL-72B-Instruct",  # Vision-language model
         base_url: str = "https://api.hyperbolic.xyz/v1",
-        timeout: int = 180,  # Increased from 120s to 180s for sparse API calls
+        timeout: int = 300,  # Increased to 300s (5 minutes) for 235B parameter models
     ) -> None:
         self.api_key = api_key or os.getenv("HYPERBOLIC_API_KEY")
         self.model = model
