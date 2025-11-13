@@ -149,6 +149,18 @@ class SkyrimControllerBindings:
         async def favorite_right(ctrl, duration=0.0):
             await ctrl.tap_button(XboxButton.DPAD_RIGHT)
         
+        async def heal(ctrl, duration=1.0):
+            # Use healing spell - press and hold RB (or use favorited healing)
+            # In Skyrim, healing spells are typically cast with triggers
+            # If healing spell is equipped in left hand, hold LT
+            # If in right hand, hold RT
+            # Simplified: use DPad to select healing from favorites, then cast
+            await ctrl.tap_button(XboxButton.DPAD_UP)  # Select healing from favorites
+            await asyncio.sleep(0.2)
+            ctrl.set_right_trigger(0.5)  # Cast healing spell (partial hold)
+            await asyncio.sleep(duration if duration > 0 else 1.0)
+            ctrl.set_right_trigger(0.0)
+        
         # Bind actions
         self.controller.bind_action("Exploration", "move_forward", move_forward)
         self.controller.bind_action("Exploration", "move_backward", move_backward)
@@ -176,6 +188,7 @@ class SkyrimControllerBindings:
         self.controller.bind_action("Exploration", "favorite_down", favorite_down)
         self.controller.bind_action("Exploration", "favorite_left", favorite_left)
         self.controller.bind_action("Exploration", "favorite_right", favorite_right)
+        self.controller.bind_action("Exploration", "heal", heal)
     
     def _setup_combat_layer(self):
         """

@@ -246,27 +246,41 @@ class HybridLLMClient:
             # Rate limiting
             await self._rate_limit()
             
-            # Try Gemini first
+            # Try Gemini first with extended timeout and retries
             if self.gemini:
                 try:
+                    # Use longer timeout for Gemini vision (it's critical)
+                    gemini_timeout = max(30, self.config.timeout)
                     result = await asyncio.wait_for(
                         self.gemini.analyze_image(
                             prompt=prompt,
                             image=image,
                             temperature=temperature,
-                            max_output_tokens=max_tokens
+                            max_output_tokens=max_tokens,
+                            max_retries=3  # Enable retries
                         ),
-                        timeout=self.config.timeout
+                        timeout=gemini_timeout
                     )
                     
                     self.stats['gemini_calls'] += 1
                     self.stats['total_time'] += time.time() - start_time
                     
-                    logger.debug(f"Gemini vision analysis: {len(result)} chars")
-                    return result
+                    # Log result with more detail
+                    if result and len(result) > 0:
+                        logger.debug(f"Gemini vision analysis: {len(result)} chars")
+                        return result
+                    else:
+                        logger.warning("Gemini returned empty response (0 chars)")
+                        # Fall through to local fallback
+                    
+                except asyncio.TimeoutError:
+                    logger.warning(f"Gemini vision timed out after {gemini_timeout}s")
+                    self.stats['errors'] += 1
+                    if not self.config.fallback_on_error:
+                        raise
                     
                 except Exception as e:
-                    logger.warning(f"Gemini vision failed: {e}")
+                    logger.warning(f"Gemini vision failed: {type(e).__name__}: {e}")
                     self.stats['errors'] += 1
                     
                     if not self.config.fallback_on_error:

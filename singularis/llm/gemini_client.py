@@ -59,8 +59,9 @@ class GeminiClient:
         image,
         temperature: float = 0.4,
         max_output_tokens: int = 768,
+        max_retries: int = 3,
     ) -> str:
-        """Send prompt + image to Gemini for multimodal analysis."""
+        """Send prompt + image to Gemini for multimodal analysis with retries."""
 
         if not self.is_available():
             raise RuntimeError("Gemini API key not configured (GEMINI_API_KEY)")
@@ -76,20 +77,49 @@ class GeminiClient:
             "data": base64.b64encode(image_bytes).decode("utf-8"),
         }
 
-        response = await self._generate_content(
-            contents=[
-                {
-                    "role": "user",
-                    "parts": [
-                        {"text": prompt},
-                        {"inline_data": inline_data},
+        # Retry logic for better reliability
+        last_error = None
+        for attempt in range(max_retries):
+            try:
+                response = await self._generate_content(
+                    contents=[
+                        {
+                            "role": "user",
+                            "parts": [
+                                {"text": prompt},
+                                {"inline_data": inline_data},
+                            ],
+                        }
                     ],
-                }
-            ],
-            temperature=temperature,
-            max_output_tokens=max_output_tokens,
-        )
-        return self._extract_text(response)
+                    temperature=temperature,
+                    max_output_tokens=max_output_tokens,
+                )
+                result = self._extract_text(response)
+                
+                # Validate response is not empty
+                if not result or len(result.strip()) == 0:
+                    if attempt < max_retries - 1:
+                        import asyncio
+                        await asyncio.sleep(0.5 * (attempt + 1))  # Exponential backoff
+                        continue
+                    else:
+                        return ""  # Return empty on final attempt
+                
+                return result
+                
+            except Exception as e:
+                last_error = e
+                if attempt < max_retries - 1:
+                    import asyncio
+                    await asyncio.sleep(1.0 * (attempt + 1))  # Exponential backoff
+                    continue
+                else:
+                    raise last_error
+        
+        # Should not reach here, but just in case
+        if last_error:
+            raise last_error
+        return ""
 
     async def _generate_content(
         self,

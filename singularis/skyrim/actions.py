@@ -52,6 +52,7 @@ class ActionType(Enum):
     POWER_ATTACK = "power_attack"
     BLOCK = "block"
     SHOUT = "shout"
+    HEAL = "heal"  # Cast healing spell
 
     # Interaction
     ACTIVATE = "activate"  # E key - use/talk/loot
@@ -117,6 +118,7 @@ class SkyrimActions:
         ActionType.SNEAK: 'ctrl',
         ActionType.ATTACK: 'left_click',
         ActionType.BLOCK: 'right_click',
+        ActionType.HEAL: 'h',  # Healing spell hotkey
         ActionType.ACTIVATE: 'e',
         ActionType.SHOUT: 'z',
         ActionType.OPEN_INVENTORY: 'tab',
@@ -181,6 +183,7 @@ class SkyrimActions:
             ActionType.POWER_ATTACK: "power_attack",
             ActionType.BLOCK: "block",
             ActionType.SHOUT: "shout",
+            ActionType.HEAL: "heal",  # Healing spell,
             ActionType.ACTIVATE: "activate",
             ActionType.WAIT: "wait",
             ActionType.SLEEP: "sleep",

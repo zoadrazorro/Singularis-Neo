@@ -2992,7 +2992,10 @@ Strongest System: {stats['strongest_system']} ({stats['strongest_weight']:.2f})"
                 scene_type = self.current_perception.get('scene_type', SceneType.UNKNOWN)
                 
                 # Skip fast actions in menus (they don't need reactive responses)
+                # CRITICAL FIX: Don't spam heal when already in menu
                 if scene_type in [SceneType.INVENTORY, SceneType.MAP, SceneType.DIALOGUE]:
+                    # If in menu, only allow menu exit actions
+                    # Don't try to heal or do other actions that open more menus
                     await asyncio.sleep(self.config.fast_loop_interval)
                     continue
                 
@@ -3008,8 +3011,8 @@ Strongest System: {stats['strongest_system']} ({stats['strongest_weight']:.2f})"
                         fast_action = 'retreat'
                         fast_reason = f"CRITICAL health {game_state.health:.0f}% - retreating"
                         priority = 100
-                    elif game_state.magicka > 30:
-                        # Try healing spell
+                    elif game_state.magicka > 30 and scene_type not in [SceneType.INVENTORY, SceneType.MAP, SceneType.DIALOGUE]:
+                        # Try healing spell - but NOT if already in a menu
                         fast_action = 'heal'
                         fast_reason = f"Low health {game_state.health:.0f}% - healing"
                         priority = 90
@@ -3059,9 +3062,17 @@ Strongest System: {stats['strongest_system']} ({stats['strongest_weight']:.2f})"
                 
                 # Execute fast action if one was determined
                 if fast_action and priority > 0:
-                    # Throttle fast actions to avoid spam (minimum 2 seconds between actions)
+                    # Throttle fast actions to avoid spam
+                    # Higher priority actions can execute sooner
+                    if priority >= 90:
+                        min_interval = 3.0  # Critical health: 3 seconds minimum
+                    elif priority >= 70:
+                        min_interval = 4.0  # High danger: 4 seconds minimum  
+                    else:
+                        min_interval = 5.0  # Normal actions: 5 seconds minimum
+                    
                     time_since_last = time.time() - last_fast_action_time
-                    if time_since_last < 2.0:
+                    if time_since_last < min_interval:
                         # Too soon, skip this action
                         await asyncio.sleep(self.config.fast_loop_interval)
                         continue
@@ -5211,10 +5222,17 @@ QUICK DECISION - Choose ONE action from available list:"""
             # Retreat by moving backward
             await self.actions.move_backward(duration=1.5)
         elif action == 'heal':
-            # Open inventory to heal (simplified)
-            print("[ACTION] Attempting to heal (opening inventory)")
-            await self.actions.execute(Action(ActionType.OPEN_INVENTORY, duration=0.2))
-            await asyncio.sleep(0.5)
+            # Use healing spell via controller binding (not inventory menu)
+            if scene_type in [SceneType.INVENTORY, SceneType.MAP, SceneType.DIALOGUE]:
+                print(f"[ACTION] Already in {scene_type.value}, exiting menu first")
+                # Exit menu instead
+                await self.actions.execute(Action(ActionType.BACK, duration=0.2))
+                await asyncio.sleep(0.5)
+            else:
+                # Execute heal action from controller bindings
+                # This uses favorites + healing spell, not inventory
+                print("[ACTION] Using healing spell (via controller binding)")
+                await self.actions.execute(Action(ActionType.HEAL, duration=1.0))
         elif action == 'exit':
             # Exit menu/dialogue
             await self.actions.execute(Action(ActionType.BACK, duration=0.2))
