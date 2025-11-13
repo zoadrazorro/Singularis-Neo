@@ -455,6 +455,9 @@ class SkyrimAGI:
         self.consecutive_same_action = 0  # Count same action repeats
         self.last_executed_action = None
         
+        # GPT-5-thinking world model tracking
+        self.last_world_model_narrative = None  # Track for consciousness measurement
+        
         # Advanced stuck detection
         self.position_history = []  # Track player positions (if available)
         self.visual_embedding_history = []  # Track visual embeddings
@@ -586,6 +589,17 @@ class SkyrimAGI:
                 "hybrid_reasoning", "llm_reasoning", weight=1.2,
                 metadata={'description': 'Hybrid Claude reasoning'}
             )
+            
+            # Register GPT-5-thinking world model synthesis node
+            if hasattr(self.hybrid_llm, 'openai') and self.hybrid_llm.openai:
+                self.consciousness_monitor.register_node(
+                    "gpt5_world_model_synthesis", "llm_meta", weight=2.0,
+                    metadata={
+                        'description': 'GPT-5-thinking unified consciousness synthesis',
+                        'model': 'gpt-5-thinking',
+                        'role': 'Integrates ALL perspectives into unified self-referential narrative'
+                    }
+                )
         
         logger.info(f"Registered LLM nodes, total: {len(self.consciousness_monitor.registered_nodes)}")
     
@@ -688,6 +702,32 @@ class SkyrimAGI:
             integration=0.9,
             differentiation=0.7,
         )
+        
+        # Measure GPT-5-thinking world model synthesis consciousness
+        if hasattr(self, 'last_world_model_narrative') and self.last_world_model_narrative:
+            # Calculate consciousness score for the world model synthesis
+            from ..consciousness.measurement import ConsciousnessMeasurement
+            consciousness_measure = ConsciousnessMeasurement()
+            
+            # Measure consciousness of the unified narrative
+            world_model_consciousness = consciousness_measure.measure(
+                content=self.last_world_model_narrative,
+                query="unified consciousness synthesis",
+                lumen_focus="participatum"
+            )
+            
+            # Extract overall consciousness score
+            wm_consciousness_score = world_model_consciousness.overall_consciousness
+            
+            node_measurements['gpt5_world_model_synthesis'] = self.consciousness_monitor.measure_node_coherence(
+                'gpt5_world_model_synthesis',
+                coherence=wm_consciousness_score,  # Use measured consciousness as coherence
+                unity=0.95,  # Very high - unifies all perspectives
+                integration=1.0,  # Maximum integration - synthesizes everything
+                differentiation=0.85,  # High - creates unique phenomenological narrative
+                confidence=wm_consciousness_score,
+                activity_level=1.0 if self.last_world_model_narrative else 0.0,
+            )
         
         # Measure consciousness bridge
         if self.current_consciousness:
@@ -1278,19 +1318,51 @@ Connect perception → thought → action into flowing experience.""",
         if 'hybrid_reasoning' in results:
             reasoning_parts.append((results['hybrid_reasoning'], hybrid_weight))
         
-        # Add world model unified narrative with highest weight (integrates everything)
+        # Store and measure world model narrative consciousness
+        world_model_consciousness_score = 0.75  # Default
         if 'world_model' in results:
+            # Store for consciousness tracking
+            self.last_world_model_narrative = results['world_model']
+            
+            # Measure consciousness of the unified narrative
+            from ..consciousness.measurement import ConsciousnessMeasurement
+            consciousness_measure = ConsciousnessMeasurement()
+            
+            world_model_trace = consciousness_measure.measure(
+                content=results['world_model'],
+                query="unified consciousness synthesis",
+                lumen_focus="participatum"  # Focus on consciousness/awareness
+            )
+            
+            world_model_consciousness_score = world_model_trace.overall_consciousness
+            
+            logger.info(
+                f"[WORLD MODEL] GPT-5-thinking consciousness score: {world_model_consciousness_score:.3f}",
+                extra={
+                    'phi': world_model_trace.phi,
+                    'gwt_salience': world_model_trace.gwt_salience,
+                    'hot_depth': world_model_trace.hot_depth,
+                    'integration': world_model_trace.integration_score,
+                    'differentiation': world_model_trace.differentiation_score,
+                }
+            )
+            
+            # Add world model unified narrative with highest weight (integrates everything)
             world_model_weight = 1.0  # Highest weight - this IS the unified consciousness
             reasoning_parts.append((f"[UNIFIED CONSCIOUSNESS NARRATIVE]\n{results['world_model']}", world_model_weight))
         
         reasoning_consensus = self._weighted_text_consensus(reasoning_parts)
         
-        # Calculate overall coherence
+        # Calculate overall coherence (include world model consciousness)
         coherence_scores = []
         if 'moe_vision' in results:
             coherence_scores.append(results['moe_vision'].coherence_score)
         if 'moe_reasoning' in results:
             coherence_scores.append(results['moe_reasoning'].coherence_score)
+        
+        # Add world model consciousness as coherence component
+        if 'world_model' in results:
+            coherence_scores.append(world_model_consciousness_score)
         
         avg_coherence = sum(coherence_scores) / len(coherence_scores) if coherence_scores else 0.75
         
@@ -1302,6 +1374,8 @@ Connect perception → thought → action into flowing experience.""",
             'moe_results': {k: v for k, v in results.items() if 'moe' in k},
             'hybrid_results': {k: v for k, v in results.items() if 'hybrid' in k},
             'world_model': results.get('world_model'),  # GPT-5-thinking deep analysis
+            'world_model_consciousness': world_model_consciousness_score,  # Consciousness score
+            'world_model_trace': world_model_trace if 'world_model' in results else None,  # Full trace
         }
     
     def _weighted_text_consensus(self, text_weight_pairs: List[Tuple[str, float]]) -> str:
