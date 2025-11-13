@@ -2538,8 +2538,8 @@ Based on this visual and contextual data, provide:
                 if scene_type in [SceneType.INVENTORY, SceneType.MAP]:
                     if not self.menu_learner.current_menu:
                         available_menu_actions = self.action_affordances.get_available_actions(
-                            scene_type=scene_type,
-                            game_state=game_state
+                            layer='Menu',
+                            game_state=game_state.to_dict()
                         )
                         self.menu_learner.enter_menu(scene_type.value, available_menu_actions)
                         print(f"[MENU-LEARNER] Entered {scene_type.value} menu")
@@ -6114,7 +6114,7 @@ QUICK DECISION - Choose ONE action from available list:"""
                 # Consciousness
                 'consciousness': {
                     'coherence': self.current_consciousness.coherence if self.current_consciousness else 0,
-                    'phi': self.current_consciousness.phi if self.current_consciousness else 0,
+                    'phi': self.current_consciousness.consciousness_level if self.current_consciousness else 0,
                     'nodes_active': len(self.current_consciousness.node_states) if self.current_consciousness else 0
                 },
                 
