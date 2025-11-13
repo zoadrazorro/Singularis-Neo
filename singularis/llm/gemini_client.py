@@ -8,6 +8,7 @@ import os
 from typing import Any, Dict, Optional
 
 import aiohttp
+from loguru import logger
 
 
 class GeminiClient:
@@ -18,7 +19,7 @@ class GeminiClient:
         api_key: Optional[str] = None,
         model: str = "gemini-2.5-pro",
         base_url: str = "https://generativelanguage.googleapis.com/v1beta",
-        timeout: int = 60,
+        timeout: int = 90,  # Increased from 60s for vision requests
     ) -> None:
         self.api_key = api_key or os.getenv("GEMINI_API_KEY")
         self.model = model
@@ -67,20 +68,29 @@ class GeminiClient:
             raise RuntimeError("Gemini API key not configured (GEMINI_API_KEY)")
 
         if image is None:
+            logger.warning("analyze_image called with None image")
             return ""
 
-        buffered = io.BytesIO()
-        image.save(buffered, format="PNG")
-        image_bytes = buffered.getvalue()
-        inline_data = {
-            "mime_type": "image/png",
-            "data": base64.b64encode(image_bytes).decode("utf-8"),
-        }
+        # Convert image to base64
+        try:
+            buffered = io.BytesIO()
+            image.save(buffered, format="PNG")
+            image_bytes = buffered.getvalue()
+            inline_data = {
+                "mime_type": "image/png",
+                "data": base64.b64encode(image_bytes).decode("utf-8"),
+            }
+            logger.debug(f"Image converted to base64: {len(image_bytes)} bytes")
+        except Exception as e:
+            logger.error(f"Failed to convert image to base64: {e}")
+            raise
 
         # Retry logic for better reliability
         last_error = None
         for attempt in range(max_retries):
             try:
+                logger.debug(f"Gemini vision attempt {attempt + 1}/{max_retries}: prompt={prompt[:80]}...")
+                
                 response = await self._generate_content(
                     contents=[
                         {
@@ -94,26 +104,33 @@ class GeminiClient:
                     temperature=temperature,
                     max_output_tokens=max_output_tokens,
                 )
+                
+                logger.debug(f"Gemini vision response received: {response.keys() if isinstance(response, dict) else type(response)}")
                 result = self._extract_text(response)
                 
                 # Validate response is not empty
                 if not result or len(result.strip()) == 0:
+                    logger.warning(f"Gemini returned empty response on attempt {attempt + 1}/{max_retries}")
                     if attempt < max_retries - 1:
                         import asyncio
                         await asyncio.sleep(0.5 * (attempt + 1))  # Exponential backoff
                         continue
                     else:
+                        logger.error(f"Gemini failed after {max_retries} attempts - all returned empty")
                         return ""  # Return empty on final attempt
                 
+                logger.info(f"Gemini vision success: {len(result)} chars (attempt {attempt + 1}/{max_retries})")
                 return result
                 
             except Exception as e:
                 last_error = e
+                logger.warning(f"Gemini vision attempt {attempt + 1}/{max_retries} failed: {type(e).__name__}: {str(e)[:200]}")
                 if attempt < max_retries - 1:
                     import asyncio
                     await asyncio.sleep(1.0 * (attempt + 1))  # Exponential backoff
                     continue
                 else:
+                    logger.error(f"Gemini vision failed after {max_retries} attempts: {type(last_error).__name__}")
                     raise last_error
         
         # Should not reach here, but just in case
