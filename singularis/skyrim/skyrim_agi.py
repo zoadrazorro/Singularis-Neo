@@ -841,10 +841,10 @@ class SkyrimAGI:
                     self.agi.consciousness_llm = self.huihui_llm
                     self.consciousness_bridge.consciousness_llm = self.huihui_llm
                     
-                    # Initialize state printer LLM (microsoft/phi-4)
+                    # Initialize state printer LLM (uses whatever model is loaded)
                     state_printer_config = LMStudioConfig(
                         base_url="http://localhost:1234/v1",
-                        model_name="microsoft/phi-4",
+                        model_name="local-model",  # Use whatever model is loaded
                         temperature=0.5,
                         max_tokens=1024
                     )
@@ -863,7 +863,7 @@ class SkyrimAGI:
                         print("[PARALLEL]   3. A model is loaded")
                     
                     print("[PARALLEL] ✓ Huihui connected to AGI orchestrator (enables dialectical synthesis)")
-                    print("[PARALLEL] ✓ State printer LLM connected (microsoft/phi-4)")
+                    print("[PARALLEL] ✓ State printer LLM connected (using loaded model)")
                     print("[PARALLEL] ✓ Local LLMs connected to components")
                     
             except Exception as e:
@@ -877,8 +877,8 @@ class SkyrimAGI:
                 print("\n[PARALLEL] Initializing Local MoE fallback...")
                 local_moe_config = LocalMoEConfig(
                     num_experts=4,
-                    expert_model="qwen/qwen3-vl-8b",
-                    synthesizer_model="microsoft/phi-4",
+                    expert_model="local-model",  # Use whatever model is loaded
+                    synthesizer_model="local-model",  # Use whatever model is loaded
                     base_url="http://localhost:1234/v1",
                     timeout=120,
                     max_tokens=512
@@ -886,7 +886,7 @@ class SkyrimAGI:
                 
                 self.local_moe = LocalMoEOrchestrator(local_moe_config)
                 await self.local_moe.initialize()
-                print("[PARALLEL] ✓ Local MoE fallback ready (4x Qwen3-VL + Phi-4)")
+                print("[PARALLEL] ✓ Local MoE fallback ready (4 experts using loaded model)")
             except Exception as e:
                 print(f"[PARALLEL] ⚠️ Local MoE initialization failed: {e}")
                 self.local_moe = None

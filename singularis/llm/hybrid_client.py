@@ -45,9 +45,10 @@ class HybridConfig:
     # Fallback models (local - optional)
     use_local_fallback: bool = False
     local_base_url: str = "http://localhost:1234/v1"
-    local_vision_model: str = "qwen/qwen3-4b-thinking-2507"
-    local_reasoning_model: str = "microsoft/phi-4-mini-reasoning:3"
-    local_action_model: str = "microsoft/phi-4"
+    # Note: LM Studio typically loads ONE model - use whatever is loaded
+    local_vision_model: str = "local-model"  # Use whatever model is loaded
+    local_reasoning_model: str = "local-model"  # Use whatever model is loaded
+    local_action_model: str = "local-model"  # Use whatever model is loaded
     
     # Performance settings
     timeout: int = 30

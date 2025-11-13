@@ -19,9 +19,9 @@ from .lmstudio_client import LMStudioClient, LMStudioConfig
 @dataclass
 class LocalMoEConfig:
     """Configuration for local MoE system."""
-    num_experts: int = 4  # Number of Qwen3 experts
-    expert_model: str = "qwen/qwen3-4b-thinking-2507"
-    synthesizer_model: str = "microsoft/phi-4"
+    num_experts: int = 4  # Number of experts
+    expert_model: str = "local-model"  # Use whatever model is loaded in LM Studio
+    synthesizer_model: str = "local-model"  # Use whatever model is loaded
     base_url: str = "http://localhost:1234/v1"
     timeout: int = 15  # Timeout per expert query (increased for thinking models)
     max_tokens: int = 1024  # Increased for better reasoning depth
@@ -57,12 +57,14 @@ class LocalMoEOrchestrator:
         """Initialize all LM Studio clients."""
         logger.info("Initializing local MoE experts...")
         
-        # Model names with instance suffixes (as shown in LM Studio)
+        # Use the single loaded model for all experts
+        # LM Studio typically loads ONE model at a time
+        # Using "local-model" tells LM Studio to use whatever is currently loaded
         expert_models = [
-            "qwen/qwen3-4b-thinking-2507",      # Instance 1
-            "microsoft/phi-4-mini-reasoning",    # Instance 2
-            "microsoft/phi-4-mini-reasoning:2",  # Instance 3
-            "microsoft/phi-4-mini-reasoning:3"   # Instance 4
+            "local-model",  # Expert 1: visual perception
+            "local-model",  # Expert 2: spatial reasoning
+            "local-model",  # Expert 3: threat assessment
+            "local-model"   # Expert 4: opportunity detection
         ]
         
         # Initialize experts with different model instances
