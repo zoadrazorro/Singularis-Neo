@@ -29,6 +29,12 @@ class TemporalBinding:
     success: bool = False
     binding_id: str = ""
     
+    # Multi-modal visual analysis
+    gemini_visual: Optional[str] = None
+    hyperbolic_visual: Optional[str] = None
+    video_interpretation: Optional[str] = None
+    gpt_video_analysis: Optional[str] = None
+    
     def __post_init__(self):
         """Generate unique binding ID."""
         if not self.binding_id:
@@ -78,14 +84,22 @@ class TemporalCoherenceTracker:
     def bind_perception_to_action(
         self,
         perception: Dict[str, Any],
-        action: str
+        action: str,
+        gemini_visual: Optional[str] = None,
+        hyperbolic_visual: Optional[str] = None,
+        video_interpretation: Optional[str] = None,
+        gpt_video_analysis: Optional[str] = None
     ) -> str:
         """
-        Create perception→action binding.
+        Create perception→action binding with multi-modal visual analysis.
         
         Args:
             perception: Perception data at time T
             action: Action taken at time T+1
+            gemini_visual: Gemini visual analysis
+            hyperbolic_visual: Hyperbolic Nemotron visual analysis
+            video_interpretation: Streaming video interpreter output
+            gpt_video_analysis: GPT-4 video analysis
             
         Returns:
             Binding ID for later closure
@@ -94,7 +108,11 @@ class TemporalCoherenceTracker:
             perception_timestamp=time.time(),
             perception_content=perception.copy(),
             action_timestamp=time.time(),
-            action_taken=action
+            action_taken=action,
+            gemini_visual=gemini_visual,
+            hyperbolic_visual=hyperbolic_visual,
+            video_interpretation=video_interpretation,
+            gpt_video_analysis=gpt_video_analysis
         )
         
         self.bindings.append(binding)

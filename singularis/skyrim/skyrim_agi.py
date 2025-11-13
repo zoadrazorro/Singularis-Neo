@@ -1535,7 +1535,13 @@ class SkyrimAGI:
         print("=" * 70)
         print()
         
-        # Initialize and start live audio stream
+        # Visual analysis cache for temporal binding
+        self._last_gemini_visual = None
+        self._last_local_visual = None
+        self._last_hyperbolic_visual = None
+        self._last_video_interpretation = None
+        
+        # Start live audio stream if enabled
         if self.live_audio:
             print("\n" + "=" * 70)
             print("STARTING LIVE AUDIO STREAM")
@@ -3748,23 +3754,33 @@ EXTENDED THINKING PROCESS:
                                 print(f"[GPT-5] Sensorimotor guidance error: {e}")
                         
                         # ═══════════════════════════════════════════════════════════
-                        # VOICE - Describe landscape/environment (every 15 cycles)
+                        # VOICE - Describe landscape/environment (every 10 cycles)
                         # ═══════════════════════════════════════════════════════════
-                        if self.voice_system and self.config.enable_voice and cycle_count % 15 == 0:
+                        if self.voice_system and self.config.enable_voice and cycle_count % 10 == 0:
                             try:
                                 # Extract landscape description from Gemini visual analysis
                                 if gemini_visual and len(gemini_visual) > 50:
+                                    print(f"[VOICE-LANDSCAPE] Gemini visual available: {len(gemini_visual)} chars")
                                     # Get first 2 sentences of visual description
                                     sentences = gemini_visual.split('.')[:2]
                                     landscape_desc = '. '.join(sentences).strip()
-                                    if landscape_desc:
+                                    if landscape_desc and len(landscape_desc) > 20:
+                                        print(f"[VOICE-LANDSCAPE] Speaking: {landscape_desc[:100]}...")
                                         await self.voice_system.speak(
                                             text=f"I observe: {landscape_desc}",
                                             priority=ThoughtPriority.HIGH,
                                             category="observation"
                                         )
+                                    else:
+                                        print(f"[VOICE-LANDSCAPE] Description too short: {len(landscape_desc)} chars")
+                                else:
+                                    print(f"[VOICE-LANDSCAPE] No Gemini visual available (cycle {cycle_count})")
                             except Exception as e:
                                 print(f"[VOICE] Landscape commentary error: {e}")
+                        
+                        # Cache visual analyses for temporal binding
+                        self._last_gemini_visual = gemini_visual
+                        self._last_local_visual = local_visual
                         
                         # If Gemini provided visual, record its contribution
                         if gemini_visual:
@@ -4566,14 +4582,24 @@ Applicable Rules: {len(logic_analysis_brief['applicable_rules'])}"""
                 # ═══════════════════════════════════════════════════════════
                 if self.temporal_tracker and self.config.enable_temporal_binding:
                     try:
-                        # Create binding: perception→action
+                        # Gather all visual analyses for temporal binding
+                        gemini_vis = getattr(self, '_last_gemini_visual', None)
+                        hyperbolic_vis = getattr(self, '_last_hyperbolic_visual', None)
+                        video_interp = None
+                        if self.video_interpreter:
+                            video_interp = self.video_interpreter.get_latest_interpretation()
+                        
+                        # Create binding: perception→action with multi-modal visual data
                         binding_id = self.temporal_tracker.bind_perception_to_action(
                             perception={
                                 'visual_similarity': perception.get('visual_similarity', 0.0),
                                 'scene': scene_type.value,
                                 'location': game_state.location_name
                             },
-                            action=action
+                            action=action,
+                            gemini_visual=gemini_vis,
+                            hyperbolic_visual=hyperbolic_vis,
+                            video_interpretation=video_interp
                         )
                         
                         # Immediately close the loop with outcome
