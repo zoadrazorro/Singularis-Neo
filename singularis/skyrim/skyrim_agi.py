@@ -248,6 +248,11 @@ class SkyrimAGI:
         self.consciousness_bridge = ConsciousnessBridge(
             consciousness_llm=None  # Will be set after LLM initialization
         )
+        
+        # 5b. Expert Rule System (NEW - fast rule-based reasoning)
+        print("  [5b/11] Expert rule system...")
+        from .expert_rules import RuleEngine
+        self.rule_engine = RuleEngine()
         print("[BRIDGE] Consciousness bridge initialized")
         print("[BRIDGE] This unifies game quality and philosophical coherence 𝒞")
         
@@ -2145,6 +2150,10 @@ Connect perception → thought → action into flowing experience.""",
             try:
                 cycle_count += 1
                 current_time = time.time()
+                
+                # Tick rule engine cycle
+                if hasattr(self, 'rule_engine'):
+                    self.rule_engine.tick_cycle()
                 
                 # Get current game state (non-blocking)
                 try:
@@ -4679,6 +4688,14 @@ COHERENCE GAIN: <estimate 0.0-1.0 how much this increases understanding>
             scene_type = perception['scene_type']
             current_layer = game_state.current_action_layer
             available_actions = game_state.available_actions
+            
+            # Filter out blocked actions from rule engine
+            if hasattr(self, 'rule_engine'):
+                original_count = len(available_actions)
+                available_actions = [a for a in available_actions if not self.rule_engine.is_action_blocked(a)]
+                if len(available_actions) < original_count:
+                    blocked = [a for a in game_state.available_actions if self.rule_engine.is_action_blocked(a)]
+                    print(f"[RULES] Filtered out {original_count - len(available_actions)} blocked actions: {', '.join(blocked)}")
 
             print(f"[PLANNING] Current layer: {current_layer}")
             print(f"[PLANNING] Available actions: {available_actions}")
@@ -4692,6 +4709,57 @@ COHERENCE GAIN: <estimate 0.0-1.0 how much this increases understanding>
                 self.stats['heuristic_action_count'] += 1
                 return override_action
             print(f"[PLANNING-CHECKPOINT] Sensorimotor check: {time.time() - checkpoint_sensorimotor:.3f}s")
+
+            # EXPERT RULE SYSTEM - Fast rule-based reasoning BEFORE expensive operations
+            checkpoint_rules = time.time()
+            print("\n[RULES] Evaluating expert rules...")
+            
+            # Prepare context for rule evaluation
+            rule_context = {
+                'visual_similarity': perception.get('visual_similarity', 0.0),
+                'recent_actions': self.action_history[-10:] if hasattr(self, 'action_history') else [],
+                'scene_classification': scene_type,
+                'visual_scene_type': perception.get('scene_type'),
+                'coherence_history': self.coherence_history[-10:] if hasattr(self, 'coherence_history') else [],
+                'health': game_state.health,
+                'in_combat': game_state.in_combat,
+                'enemies_nearby': game_state.enemies_nearby,
+            }
+            
+            # Evaluate rules
+            rule_results = self.rule_engine.evaluate(rule_context)
+            
+            # Display rule firing results
+            if rule_results['fired_rules']:
+                print(f"[RULES] ✓ Fired {len(rule_results['fired_rules'])} rules: {', '.join(rule_results['fired_rules'])}")
+                
+                # Show facts
+                if rule_results['facts']:
+                    print(f"[RULES] Active facts:")
+                    for fact_name, fact_data in rule_results['facts'].items():
+                        print(f"  • {fact_name} (confidence: {fact_data['confidence']:.2f})")
+                
+                # Show recommendations
+                if rule_results['recommendations']:
+                    top_rec = rule_results['recommendations'][0]
+                    print(f"[RULES] Top recommendation: {top_rec.action} (priority: {top_rec.priority.name}, reason: {top_rec.reason})")
+                
+                # Show blocked actions
+                if rule_results['blocked_actions']:
+                    print(f"[RULES] Blocked actions: {', '.join(rule_results['blocked_actions'])}")
+                
+                # Check if we have a high-priority recommendation we should use immediately
+                top_recommendation = self.rule_engine.get_top_recommendation(exclude_blocked=True)
+                if top_recommendation and top_recommendation.priority.value >= 3:  # HIGH or CRITICAL
+                    # Use rule recommendation immediately
+                    print(f"[RULES] ⚡ Using immediate recommendation: {top_recommendation.action} ({top_recommendation.reason})")
+                    print(f"[PLANNING-CHECKPOINT] Rule engine: {time.time() - checkpoint_rules:.3f}s (immediate action)")
+                    self.stats['heuristic_action_count'] += 1
+                    return top_recommendation.action
+            else:
+                print(f"[RULES] No rules fired")
+            
+            print(f"[PLANNING-CHECKPOINT] Rule engine: {time.time() - checkpoint_rules:.3f}s")
 
             # Prepare state dict for RL
             state_dict = game_state.to_dict()
