@@ -2790,6 +2790,11 @@ Connect perception → thought → action into flowing experience.""",
                 if hasattr(self, 'state_printer_llm') and hasattr(self.state_printer_llm, 'client'):
                     if hasattr(self.state_printer_llm.client, 'session') and self.state_printer_llm.client.session:
                         await self.state_printer_llm.client.session.close()
+                # Close Hyperbolic clients
+                if hasattr(self, 'hyperbolic_reasoning') and self.hyperbolic_reasoning:
+                    await self.hyperbolic_reasoning.close()
+                if hasattr(self, 'hyperbolic_vision') and self.hyperbolic_vision:
+                    await self.hyperbolic_vision.close()
                 print("[CLEANUP] ✓ All sessions closed")
             except Exception as e:
                 print(f"[CLEANUP] Warning: {e}")
