@@ -43,9 +43,13 @@ GEMINI_API_KEY=              # For Gemini vision & voice
 
 # Optional
 ANTHROPIC_API_KEY=           # For Claude experts (optional)
+HYPERBOLIC_API_KEY=          # For Hyperbolic TTS fallback (optional)
 ```
 
-**Note:** Wolfram telemetry uses OpenAI's API (via custom GPT), not a separate Wolfram App ID!
+**Notes:**
+- Wolfram telemetry uses OpenAI's API (via custom GPT), not a separate Wolfram App ID
+- Hyperbolic TTS automatically activates as fallback if Gemini TTS fails
+- Voice system gracefully degrades: Gemini TTS → Hyperbolic TTS → Silent
 
 ### 2. Install Dependencies
 

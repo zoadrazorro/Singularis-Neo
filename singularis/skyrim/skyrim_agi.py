@@ -3490,46 +3490,62 @@ Based on this visual and contextual data, provide:
                 
                 print(f"[REASONING] Coherence 𝒞 = {current_consciousness.coherence:.3f}")
                 
-                # Track GPT-5 differential coherence (every 5 cycles)
+                # Track coherence alignment: BeingState C_global vs subsystem measurements (every 5 cycles)
                 if self.gpt5_orchestrator and cycle_count % 5 == 0:
                     try:
-                        # Get average coherence from other consciousness nodes
-                        consciousness_nodes = self.consciousness_monitor.get_statistics()
-                        other_nodes_coherence = consciousness_nodes.get('avg_coherence', current_consciousness.coherence)
+                        # Get the UNIFIED coherence from BeingState (computed by CoherenceEngine)
+                        unified_coherence = self.being_state.global_coherence if hasattr(self, 'being_state') else current_consciousness.coherence
                         
-                        # Assume GPT-5's coherence assessment is similar to consciousness bridge
-                        # In future, could query GPT-5 directly for its coherence assessment
-                        gpt5_coherence = current_consciousness.coherence
+                        # Get average coherence from individual consciousness nodes
+                        consciousness_nodes = self.consciousness_monitor.get_statistics()
+                        subsystem_coherence = consciousness_nodes.get('avg_coherence', current_consciousness.coherence)
                         
                         # Record differential
                         self.gpt5_orchestrator.record_coherence_differential(
-                            gpt5_coherence=gpt5_coherence,
-                            other_nodes_coherence=other_nodes_coherence,
+                            gpt5_coherence=unified_coherence,  # Actually the unified C_global
+                            other_nodes_coherence=subsystem_coherence,
                             cycle=cycle_count
                         )
                         
-                        differential = abs(gpt5_coherence - other_nodes_coherence)
-                        if differential > 0.2:  # Significant difference
-                            print(f"[GPT5-COHERENCE] ⚠️ Differential: {differential:.3f} (GPT-5: {gpt5_coherence:.3f}, Others: {other_nodes_coherence:.3f})")
+                        differential = abs(unified_coherence - subsystem_coherence)
+                        if differential > 0.15:  # Significant difference (lowered threshold)
+                            print(f"[COHERENCE-ALIGN] ⚠️ Differential: {differential:.3f} (Unified C_global: {unified_coherence:.3f}, Subsystems: {subsystem_coherence:.3f})")
+                            
+                            # Diagnose and respond to coherence misalignment
+                            if unified_coherence < subsystem_coherence - 0.1:
+                                print(f"[COHERENCE-ALIGN] → Unified coherence LOW - subsystems fragmented")
+                                print(f"[COHERENCE-ALIGN] → RESPONSE: Triggering integrative action (look_around to gather context)")
+                                # Queue a look_around action to help integration
+                                if not self.action_queue.full():
+                                    await self.action_queue.put({
+                                        'action': 'look_around',
+                                        'reason': 'Coherence alignment: gathering context for integration',
+                                        'source': 'coherence_monitor',
+                                        'priority': 80
+                                    })
+                            elif subsystem_coherence < unified_coherence - 0.1:
+                                print(f"[COHERENCE-ALIGN] → Subsystem coherence LOW - integration working but nodes struggling")
+                                print(f"[COHERENCE-ALIGN] → RESPONSE: Subsystems need support, continuing current strategy")
                             
                             # Record significant differential to Main Brain
                             self.main_brain.record_output(
-                                system_name='GPT-5 Coherence Differential',
-                                content=f"⚠️ Significant Coherence Divergence\n"
-                                       f"GPT-5 Assessment: {gpt5_coherence:.3f}\n"
-                                       f"Other Nodes Avg: {other_nodes_coherence:.3f}\n"
+                                system_name='Coherence Alignment Monitor',
+                                content=f"⚠️ Coherence Alignment Issue\n"
+                                       f"Unified C_global (BeingState): {unified_coherence:.3f}\n"
+                                       f"Subsystem Average: {subsystem_coherence:.3f}\n"
                                        f"Differential: {differential:.3f}\n"
-                                       f"This indicates GPT-5's meta-cognitive view differs from other consciousness nodes.",
+                                       f"Analysis: {'Fragmentation - subsystems not integrating' if unified_coherence < subsystem_coherence else 'Subsystems struggling despite good integration'}",
                                 metadata={
                                     'cycle': cycle_count,
-                                    'gpt5_coherence': gpt5_coherence,
-                                    'other_coherence': other_nodes_coherence,
-                                    'differential': differential
+                                    'unified_coherence': unified_coherence,
+                                    'subsystem_coherence': subsystem_coherence,
+                                    'differential': differential,
+                                    'issue_type': 'fragmentation' if unified_coherence < subsystem_coherence else 'subsystem_struggle'
                                 },
                                 success=True
                             )
                     except Exception as e:
-                        print(f"[GPT5-COHERENCE] Tracking error: {e}")
+                        print(f"[COHERENCE-ALIGN] Tracking error: {e}")
                 
                 # ═══════════════════════════════════════════════════════════
                 # WOLFRAM ALPHA TELEMETRY - Advanced calculations (every 20 cycles)

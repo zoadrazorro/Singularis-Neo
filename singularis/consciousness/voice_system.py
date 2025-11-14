@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 import aiohttp
+import requests
 from loguru import logger
 
 try:
@@ -84,6 +85,7 @@ class VoiceSystem:
         enabled: bool = True,
         min_priority: ThoughtPriority = ThoughtPriority.MEDIUM,
         rate_limit_rpm: int = 60,  # Conservative for TTS
+        hyperbolic_api_key: Optional[str] = None,
     ):
         """
         Initialize voice system.
@@ -94,8 +96,10 @@ class VoiceSystem:
             enabled: Whether voice is enabled
             min_priority: Minimum priority to vocalize
             rate_limit_rpm: Max requests per minute
+            hyperbolic_api_key: Hyperbolic API key (fallback TTS)
         """
         self.api_key = api_key or os.getenv("GEMINI_API_KEY")
+        self.hyperbolic_api_key = hyperbolic_api_key or os.getenv("HYPERBOLIC_API_KEY")
         self.voice = voice
         self.enabled = enabled and PYGAME_AVAILABLE
         self.min_priority = min_priority
@@ -241,7 +245,67 @@ class VoiceSystem:
                 return None
                 
         except Exception as e:
-            logger.error(f"[VOICE] TTS generation failed: {type(e).__name__}: {e}")
+            logger.error(f"[VOICE] Gemini TTS generation failed: {type(e).__name__}: {e}")
+            logger.info("[VOICE] Attempting Hyperbolic TTS fallback...")
+            return await self._generate_speech_hyperbolic(text)
+    
+    async def _generate_speech_hyperbolic(self, text: str) -> Optional[bytes]:
+        """
+        Generate speech using Hyperbolic TTS as fallback.
+        
+        Args:
+            text: Text to convert to speech
+            
+        Returns:
+            Audio bytes or None if failed
+        """
+        if not self.hyperbolic_api_key:
+            logger.warning("[VOICE] No Hyperbolic API key configured for fallback")
+            return None
+        
+        url = "https://api.hyperbolic.xyz/v1/audio/generation"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.hyperbolic_api_key}"
+        }
+        data = {
+            "text": text,
+            "speed": "1"
+        }
+        
+        try:
+            logger.debug(f"[VOICE] Hyperbolic TTS: {text[:80]}...")
+            
+            # Use requests.post in thread pool to avoid blocking
+            loop = asyncio.get_event_loop()
+            response = await loop.run_in_executor(
+                None,
+                lambda: requests.post(url, headers=headers, json=data, timeout=30)
+            )
+            
+            if response.status_code != 200:
+                logger.error(f"[VOICE] Hyperbolic TTS failed ({response.status_code}): {response.text[:200]}")
+                return None
+            
+            response_data = response.json()
+            
+            # Extract audio data (format depends on Hyperbolic API response)
+            # Assuming it returns base64 encoded audio or direct bytes
+            if "audio" in response_data:
+                audio_b64 = response_data["audio"]
+                audio_bytes = base64.b64decode(audio_b64)
+                logger.info(f"[VOICE] Hyperbolic generated {len(audio_bytes)} bytes of audio")
+                return audio_bytes
+            elif "data" in response_data:
+                audio_bytes = base64.b64decode(response_data["data"])
+                logger.info(f"[VOICE] Hyperbolic generated {len(audio_bytes)} bytes of audio")
+                return audio_bytes
+            else:
+                logger.warning(f"[VOICE] Unexpected Hyperbolic response format: {list(response_data.keys())}")
+                return None
+                
+        except Exception as e:
+            logger.error(f"[VOICE] Hyperbolic TTS fallback failed: {type(e).__name__}: {e}")
             return None
     
     async def _play_audio(self, audio_bytes: bytes):
