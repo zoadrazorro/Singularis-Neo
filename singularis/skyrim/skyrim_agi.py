@@ -4962,10 +4962,14 @@ Applicable Rules: {len(logic_analysis_brief['applicable_rules'])}"""
                 
                 # Queue for learning
                 try:
-                    self.learning_queue.put_nowait({
-                        'action_data': action_data,
-                        'execution_time': time.time()
-                    })
+                    required_keys = ('game_state', 'scene_type', 'motivation', 'consciousness', 'cycle')
+                    if all(k in action_data for k in required_keys):
+                        self.learning_queue.put_nowait({
+                            'action_data': action_data,
+                            'execution_time': time.time()
+                        })
+                    else:
+                        print(f"[ACTION] Skipping learning for incomplete action_data: keys={list(action_data.keys())}")
                 except asyncio.QueueFull:
                     print(f"[ACTION] Learning queue full")
                 
@@ -4999,7 +5003,7 @@ Applicable Rules: {len(logic_analysis_brief['applicable_rules'])}"""
                 
                 action_data = learning_data['action_data']
                 action = action_data['action']
-                cycle_count = action_data['cycle']
+                cycle_count = action_data.get('cycle', self.cycle_count)
                 
                 print(f"[LEARNING] Processing cycle {cycle_count}")
                 
