@@ -5087,21 +5087,29 @@ Applicable Rules: {len(logic_analysis_brief['applicable_rules'])}"""
                 
                 # CURRICULUM RL REWARD COMPUTATION
                 # Blend coherence + game progress with curriculum stages
-                curriculum_reward = self.curriculum.compute_reward(
-                    state_before=before_state,
-                    action=str(action),
-                    state_after=after_state,
-                    consciousness_before=action_data['consciousness'],
-                    consciousness_after=after_consciousness
-                )
-                print(f"[CURRICULUM] Reward: {curriculum_reward:+.3f} | Stage: {self.curriculum.get_current_stage().name}")
-                
-                # Get symbolic rules for current stage
-                rules_info = self.curriculum.get_current_rules(after_state)
-                if rules_info.get('num_triggered', 0) > 0:
-                    print(f"[CURRICULUM] {rules_info['num_triggered']} symbolic rules triggered")
-                    if rules_info.get('suggested_action'):
-                        print(f"[CURRICULUM] Symbolic suggestion: {rules_info['suggested_action']}")
+                if hasattr(self, 'curriculum'):
+                    try:
+                        curriculum_reward = self.curriculum.compute_reward(
+                            state_before=before_state,
+                            action=str(action),
+                            state_after=after_state,
+                            consciousness_before=action_data['consciousness'],
+                            consciousness_after=after_consciousness
+                        )
+                        print(f"[CURRICULUM] Reward: {curriculum_reward:+.3f} | Stage: {self.curriculum.get_current_stage().name}")
+                        
+                        # Get symbolic rules for current stage
+                        rules_info = self.curriculum.get_current_rules(after_state)
+                        if rules_info.get('num_triggered', 0) > 0:
+                            print(f"[CURRICULUM] {rules_info['num_triggered']} symbolic rules triggered")
+                            if rules_info.get('suggested_action'):
+                                print(f"[CURRICULUM] Symbolic suggestion: {rules_info['suggested_action']}")
+                    except Exception as e:
+                        print(f"[CURRICULUM] ⚠️ Error computing curriculum reward: {e}")
+                        import traceback
+                        traceback.print_exc()
+                else:
+                    print("[CURRICULUM] ⚠️ Curriculum system not initialized, skipping")
                 
                 # Store RL experience (with consciousness)
                 if self.rl_learner is not None:
@@ -6484,57 +6492,63 @@ COHERENCE GAIN: <estimate 0.0-1.0 how much this increases understanding>
             
             # MOTOR CONTROL LAYER - Structured physical behavior
             checkpoint_motor = time.time()
-            print("\n[MOTOR] Evaluating motor control layer...")
             
-            # Build state dict for motor layer
-            motor_state = game_state.to_dict()
-            motor_state['visual_similarity'] = perception.get('visual_similarity', 0.0)
-            motor_state['in_menu'] = scene_type in [SceneType.INVENTORY, SceneType.MAP]
-            motor_state['in_dialogue'] = scene_type == SceneType.DIALOGUE
-            
-            # 1. REFLEXES (highest priority - life/death)
-            reflex_action = self.reflex_controller.get_reflex_action(motor_state)
-            if reflex_action:
-                print(f"[MOTOR] ⚡ REFLEX OVERRIDE: {reflex_action.name}")
-                print(f"[PLANNING-CHECKPOINT] Motor reflexes: {time.time() - checkpoint_motor:.3f}s (reflex triggered)")
-                self.stats['heuristic_action_count'] += 1
-                self.stats['motor_reflex_count'] = self.stats.get('motor_reflex_count', 0) + 1
-                from singularis.controls import HighLevelAction
-                return reflex_action.name.lower().replace('_', ' ')
-            
-            # 2. MENU HANDLER (second priority - prevent soft-lock)
-            menu_action = self.menu_handler.handle(motor_state)
-            if menu_action:
-                print(f"[MOTOR] Menu handler triggered: {menu_action.name}")
-                print(f"[PLANNING-CHECKPOINT] Motor menu handler: {time.time() - checkpoint_motor:.3f}s")
-                self.stats['heuristic_action_count'] += 1
-                self.stats['motor_menu_count'] = self.stats.get('motor_menu_count', 0) + 1
-                from singularis.controls import HighLevelAction
-                return menu_action.name.lower().replace('_', ' ')
-            
-            # 3. CONTEXT-AWARE ACTION SELECTION (combat vs exploration)
-            if motor_state.get('in_combat') or motor_state.get('enemies_nearby', 0) > 0:
-                # Combat mode - use combat controller
-                chosen_action = self.combat_controller.choose_combat_action(motor_state)
-                print(f"[MOTOR] Combat controller suggests: {chosen_action.name}")
-                print(f"[PLANNING-CHECKPOINT] Motor combat: {time.time() - checkpoint_motor:.3f}s")
-                self.stats['motor_combat_count'] = self.stats.get('motor_combat_count', 0) + 1
-                from singularis.controls import HighLevelAction
-                return chosen_action.name.lower().replace('_', ' ')
+            # Only run if motor layer is initialized
+            if hasattr(self, 'reflex_controller') and hasattr(self, 'menu_handler'):
+                print("\n[MOTOR] Evaluating motor control layer...")
+                
+                # Build state dict for motor layer
+                motor_state = game_state.to_dict()
+                motor_state['visual_similarity'] = perception.get('visual_similarity', 0.0)
+                motor_state['in_menu'] = scene_type in [SceneType.INVENTORY, SceneType.MAP]
+                motor_state['in_dialogue'] = scene_type == SceneType.DIALOGUE
+                
+                # 1. REFLEXES (highest priority - life/death)
+                reflex_action = self.reflex_controller.get_reflex_action(motor_state)
+                if reflex_action:
+                    print(f"[MOTOR] ⚡ REFLEX OVERRIDE: {reflex_action.name}")
+                    print(f"[PLANNING-CHECKPOINT] Motor reflexes: {time.time() - checkpoint_motor:.3f}s (reflex triggered)")
+                    self.stats['heuristic_action_count'] += 1
+                    self.stats['motor_reflex_count'] = self.stats.get('motor_reflex_count', 0) + 1
+                    from singularis.controls import HighLevelAction
+                    return reflex_action.name.lower().replace('_', ' ')
+                
+                # 2. MENU HANDLER (second priority - prevent soft-lock)
+                menu_action = self.menu_handler.handle(motor_state)
+                if menu_action:
+                    print(f"[MOTOR] Menu handler triggered: {menu_action.name}")
+                    print(f"[PLANNING-CHECKPOINT] Motor menu handler: {time.time() - checkpoint_motor:.3f}s")
+                    self.stats['heuristic_action_count'] += 1
+                    self.stats['motor_menu_count'] = self.stats.get('motor_menu_count', 0) + 1
+                    from singularis.controls import HighLevelAction
+                    return menu_action.name.lower().replace('_', ' ')
+                
+                # 3. CONTEXT-AWARE ACTION SELECTION (combat vs exploration)
+                if motor_state.get('in_combat') or motor_state.get('enemies_nearby', 0) > 0:
+                    # Combat mode - use combat controller
+                    chosen_action = self.combat_controller.choose_combat_action(motor_state)
+                    print(f"[MOTOR] Combat controller suggests: {chosen_action.name}")
+                    print(f"[PLANNING-CHECKPOINT] Motor combat: {time.time() - checkpoint_motor:.3f}s")
+                    self.stats['motor_combat_count'] = self.stats.get('motor_combat_count', 0) + 1
+                    from singularis.controls import HighLevelAction
+                    return chosen_action.name.lower().replace('_', ' ')
+                else:
+                    # Exploration mode - use navigator
+                    chosen_action = self.navigator.suggest_exploration_action(
+                        motor_state,
+                        perception
+                    )
+                    print(f"[MOTOR] Navigator suggests: {chosen_action.name}")
+                    print(f"[PLANNING-CHECKPOINT] Motor navigation: {time.time() - checkpoint_motor:.3f}s")
+                    self.stats['motor_navigation_count'] = self.stats.get('motor_navigation_count', 0) + 1
+                    # Note: We could return here for pure motor control, but let's blend with LLM for now
+                    # Store as recommendation for later blending
+                    self._motor_suggestion = chosen_action
+                    
+                    print(f"[PLANNING-CHECKPOINT] Motor control layer: {time.time() - checkpoint_motor:.3f}s")
             else:
-                # Exploration mode - use navigator
-                chosen_action = self.navigator.suggest_exploration_action(
-                    motor_state,
-                    perception
-                )
-                print(f"[MOTOR] Navigator suggests: {chosen_action.name}")
-                print(f"[PLANNING-CHECKPOINT] Motor navigation: {time.time() - checkpoint_motor:.3f}s")
-                self.stats['motor_navigation_count'] = self.stats.get('motor_navigation_count', 0) + 1
-                # Note: We could return here for pure motor control, but let's blend with LLM for now
-                # Store as recommendation for later blending
-                self._motor_suggestion = chosen_action
-            
-            print(f"[PLANNING-CHECKPOINT] Motor control layer: {time.time() - checkpoint_motor:.3f}s")
+                print("\n[MOTOR] ⚠️ Motor control layer not initialized, skipping")
+                print(f"[PLANNING-CHECKPOINT] Motor control layer: {time.time() - checkpoint_motor:.3f}s (skipped)")
             
             # COHERENCE-BASED CONFIDENCE ADJUSTMENT
             # When coherence is low (<0.5), reduce confidence in actions
