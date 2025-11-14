@@ -109,8 +109,8 @@ class SkyrimConfig:
     # Async execution
     enable_async_reasoning: bool = True  # Run reasoning in parallel with actions
     action_queue_size: int = 3  # Max queued actions
-    perception_interval: float = 0.25  # How often to perceive (seconds) - faster for responsiveness
-    max_concurrent_llm_calls: int = 6  # Increased from 2 to enable true parallel execution
+    perception_interval: float = 0.35  # Slightly slower perception to reduce queue pressure
+    max_concurrent_llm_calls: int = 4  # Reduce concurrent LLM calls for stability
     reasoning_throttle: float = 0.1  # Min seconds between reasoning cycles - minimal throttle
     
     # Fast reactive loop
@@ -749,6 +749,46 @@ class SkyrimAGI:
         self.goal_planner = HierarchicalGoalPlanner()
         self.analytics = GameplayAnalytics()
         self.meta_learner = MetaLearner()
+
+        # 29. Motor Control Layer (Arms and Legs!)
+        print("  [29/30] Motor control layer (hands and feet)...")
+        from singularis.controls import (
+            AffordanceExtractor,
+            MotorController,
+            ReflexController,
+            Navigator,
+            CombatController,
+            MenuHandler,
+        )
+        
+        self.affordance_extractor = AffordanceExtractor()
+        self.motor_controller = MotorController(self.actions, verbose=True)
+        self.reflex_controller = ReflexController(
+            critical_health_threshold=15.0,
+            low_health_threshold=30.0,
+            danger_enemy_count=4
+        )
+        self.navigator = Navigator(stuck_threshold=6)
+        self.combat_controller = CombatController(
+            low_health_threshold=40.0,
+            critical_health_threshold=25.0
+        )
+        self.menu_handler = MenuHandler(max_menu_time=3.0)
+        print("    ✓ Motor control layer initialized")
+        print("    ✓ Reflexes, navigation, combat, menu handling ready")
+        
+        # 30. Curriculum RL System (Progressive Learning)
+        print("  [30/30] Curriculum RL system (progressive learning)...")
+        from singularis.learning.curriculum_integration import CurriculumIntegration
+        
+        self.curriculum = CurriculumIntegration(
+            coherence_weight=0.6,  # 60% coherence, 40% progress
+            progress_weight=0.4,
+            enable_symbolic_rules=True
+        )
+        print("    ✓ Curriculum RL initialized")
+        print("    ✓ Progressive stages: Locomotion → Navigation → Combat")
+        print("    ✓ Blends Δ𝒞 (coherence) + game progress")
 
         # External augmentation clients (initialized later)
         self.claude_meta_client = None
@@ -5045,6 +5085,24 @@ Applicable Rules: {len(logic_analysis_brief['applicable_rules'])}"""
                     surprise_threshold=self.config.surprise_threshold
                 )
                 
+                # CURRICULUM RL REWARD COMPUTATION
+                # Blend coherence + game progress with curriculum stages
+                curriculum_reward = self.curriculum.compute_reward(
+                    state_before=before_state,
+                    action=str(action),
+                    state_after=after_state,
+                    consciousness_before=action_data['consciousness'],
+                    consciousness_after=after_consciousness
+                )
+                print(f"[CURRICULUM] Reward: {curriculum_reward:+.3f} | Stage: {self.curriculum.get_current_stage().name}")
+                
+                # Get symbolic rules for current stage
+                rules_info = self.curriculum.get_current_rules(after_state)
+                if rules_info.get('num_triggered', 0) > 0:
+                    print(f"[CURRICULUM] {rules_info['num_triggered']} symbolic rules triggered")
+                    if rules_info.get('suggested_action'):
+                        print(f"[CURRICULUM] Symbolic suggestion: {rules_info['suggested_action']}")
+                
                 # Store RL experience (with consciousness)
                 if self.rl_learner is not None:
                     action_source = action_data.get('source', 'unknown')
@@ -6423,6 +6481,60 @@ COHERENCE GAIN: <estimate 0.0-1.0 how much this increases understanding>
                 print(f"[EMERGENCY] No emergency conditions detected")
             
             print(f"[PLANNING-CHECKPOINT] Emergency rules: {time.time() - checkpoint_emergency:.3f}s")
+            
+            # MOTOR CONTROL LAYER - Structured physical behavior
+            checkpoint_motor = time.time()
+            print("\n[MOTOR] Evaluating motor control layer...")
+            
+            # Build state dict for motor layer
+            motor_state = game_state.to_dict()
+            motor_state['visual_similarity'] = perception.get('visual_similarity', 0.0)
+            motor_state['in_menu'] = scene_type in [SceneType.INVENTORY, SceneType.MAP]
+            motor_state['in_dialogue'] = scene_type == SceneType.DIALOGUE
+            
+            # 1. REFLEXES (highest priority - life/death)
+            reflex_action = self.reflex_controller.get_reflex_action(motor_state)
+            if reflex_action:
+                print(f"[MOTOR] ⚡ REFLEX OVERRIDE: {reflex_action.name}")
+                print(f"[PLANNING-CHECKPOINT] Motor reflexes: {time.time() - checkpoint_motor:.3f}s (reflex triggered)")
+                self.stats['heuristic_action_count'] += 1
+                self.stats['motor_reflex_count'] = self.stats.get('motor_reflex_count', 0) + 1
+                from singularis.controls import HighLevelAction
+                return reflex_action.name.lower().replace('_', ' ')
+            
+            # 2. MENU HANDLER (second priority - prevent soft-lock)
+            menu_action = self.menu_handler.handle(motor_state)
+            if menu_action:
+                print(f"[MOTOR] Menu handler triggered: {menu_action.name}")
+                print(f"[PLANNING-CHECKPOINT] Motor menu handler: {time.time() - checkpoint_motor:.3f}s")
+                self.stats['heuristic_action_count'] += 1
+                self.stats['motor_menu_count'] = self.stats.get('motor_menu_count', 0) + 1
+                from singularis.controls import HighLevelAction
+                return menu_action.name.lower().replace('_', ' ')
+            
+            # 3. CONTEXT-AWARE ACTION SELECTION (combat vs exploration)
+            if motor_state.get('in_combat') or motor_state.get('enemies_nearby', 0) > 0:
+                # Combat mode - use combat controller
+                chosen_action = self.combat_controller.choose_combat_action(motor_state)
+                print(f"[MOTOR] Combat controller suggests: {chosen_action.name}")
+                print(f"[PLANNING-CHECKPOINT] Motor combat: {time.time() - checkpoint_motor:.3f}s")
+                self.stats['motor_combat_count'] = self.stats.get('motor_combat_count', 0) + 1
+                from singularis.controls import HighLevelAction
+                return chosen_action.name.lower().replace('_', ' ')
+            else:
+                # Exploration mode - use navigator
+                chosen_action = self.navigator.suggest_exploration_action(
+                    motor_state,
+                    perception
+                )
+                print(f"[MOTOR] Navigator suggests: {chosen_action.name}")
+                print(f"[PLANNING-CHECKPOINT] Motor navigation: {time.time() - checkpoint_motor:.3f}s")
+                self.stats['motor_navigation_count'] = self.stats.get('motor_navigation_count', 0) + 1
+                # Note: We could return here for pure motor control, but let's blend with LLM for now
+                # Store as recommendation for later blending
+                self._motor_suggestion = chosen_action
+            
+            print(f"[PLANNING-CHECKPOINT] Motor control layer: {time.time() - checkpoint_motor:.3f}s")
             
             # COHERENCE-BASED CONFIDENCE ADJUSTMENT
             # When coherence is low (<0.5), reduce confidence in actions
@@ -8114,6 +8226,52 @@ QUICK DECISION - Choose ONE action from available list:"""
             # Show best recovery action if known
             if recovery_stats['best_recovery_action']:
                 print(f"  Best Recovery Action: {recovery_stats['best_recovery_action']}")
+        
+        # MOTOR CONTROL LAYER
+        motor_reflex = self.stats.get('motor_reflex_count', 0)
+        motor_menu = self.stats.get('motor_menu_count', 0)
+        motor_combat = self.stats.get('motor_combat_count', 0)
+        motor_nav = self.stats.get('motor_navigation_count', 0)
+        motor_total = motor_reflex + motor_menu + motor_combat + motor_nav
+        
+        if motor_total > 0:
+            print(f"\n🦾 MOTOR CONTROL LAYER:")
+            print(f"  Total Actions:    {motor_total}")
+            print(f"  Reflexes:         {motor_reflex} ({100*motor_reflex/motor_total:.1f}%)")
+            print(f"  Menu Handling:    {motor_menu} ({100*motor_menu/motor_total:.1f}%)")
+            print(f"  Combat:           {motor_combat} ({100*motor_combat/motor_total:.1f}%)")
+            print(f"  Navigation:       {motor_nav} ({100*motor_nav/motor_total:.1f}%)")
+            
+            # Get controller stats
+            if hasattr(self, 'motor_controller'):
+                motor_stats = self.motor_controller.get_stats()
+                print(f"  Total Executions: {motor_stats['total_executions']}")
+            
+            # Get stuck detection from navigator
+            if hasattr(self, 'navigator'):
+                nav_stats = self.navigator.get_stats()
+                print(f"  Stuck Detections: {nav_stats['stuck_detections']}")
+                print(f"  Stuck Counter:    {nav_stats['stuck_counter']}")
+        
+        # CURRICULUM RL
+        if hasattr(self, 'curriculum'):
+            curr_stats = self.curriculum.get_stats()
+            print(f"\n📚 CURRICULUM RL:")
+            print(f"  Current Stage:    {curr_stats['current_stage']}")
+            print(f"  Stage Cycles:     {curr_stats['stage_cycles']}")
+            print(f"  Progress:         {curr_stats['stage_successes']}/{self.curriculum.reward_fn.progress.advancement_threshold}")
+            print(f"  Avg Reward:       {curr_stats['avg_reward']:+.3f}")
+            print(f"  Advancements:     {curr_stats.get('curriculum_advancements', 0)}")
+            
+            # Show symbolic rules status
+            if hasattr(self, 'current_perception') and self.current_perception:
+                game_state = self.current_perception.get('game_state')
+                if game_state:
+                    rules_info = self.curriculum.get_current_rules(game_state.to_dict())
+                    if rules_info.get('num_triggered', 0) > 0:
+                        print(f"  Active Rules:     {rules_info['num_triggered']}")
+                        if rules_info.get('suggested_action'):
+                            print(f"  Suggestion:       {rules_info['suggested_action']}")
         
         print(f"{'='*70}\n")
 

@@ -8,6 +8,9 @@ from .text_processor import (
 )
 from .continual_learner import ContinualLearner
 from .compositional_knowledge import CompositionalKnowledgeBuilder
+from .curriculum_integration import CurriculumIntegration
+from .curriculum_reward import CurriculumRewardFunction, CurriculumStage
+from .curriculum_symbolic import CurriculumSymbolicRules
 
 __all__ = [
     "TextProcessor",
@@ -16,4 +19,8 @@ __all__ = [
     "LearningProgress",
     "ContinualLearner",
     "CompositionalKnowledgeBuilder",
+    "CurriculumIntegration",
+    "CurriculumRewardFunction",
+    "CurriculumStage",
+    "CurriculumSymbolicRules",
 ]
