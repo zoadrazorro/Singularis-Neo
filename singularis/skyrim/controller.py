@@ -631,4 +631,12 @@ class VirtualXboxController:
     def __del__(self):
         """Cleanup on deletion."""
         if self.gamepad:
-            self.reset()
+            try:
+                self.reset()
+            except Exception as e:
+                # Suppress ViGEm bus shutdown errors (e.g., VIGEM_ERROR_BUS_NOT_FOUND)
+                msg = str(e) if e else ""
+                if "VIGEM_ERROR_BUS_NOT_FOUND" in msg:
+                    print("[CONTROLLER] ViGEm bus not found during cleanup; ignoring")
+                else:
+                    print(f"[CONTROLLER] Cleanup warning: {e}")
