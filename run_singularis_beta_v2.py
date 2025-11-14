@@ -114,6 +114,8 @@ def load_config(args) -> 'SkyrimConfig':
     print("[CONFIG] Loading configuration...")
     
     config = SkyrimConfig()
+    # Force parallel mode: run MoE and Hybrid LLMs together for maximum intelligence
+    config.use_parallel_mode = True
     
     # Apply command-line overrides
     if args.cycle_interval:

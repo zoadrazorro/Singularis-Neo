@@ -117,6 +117,7 @@ class GeminiClient:
                         continue
                     else:
                         logger.error(f"Gemini failed after {max_retries} attempts - all returned empty")
+                        await self.close()
                         return ""  # Return empty on final attempt
                 
                 logger.info(f"Gemini vision success: {len(result)} chars (attempt {attempt + 1}/{max_retries})")
@@ -131,10 +132,12 @@ class GeminiClient:
                     continue
                 else:
                     logger.error(f"Gemini vision failed after {max_retries} attempts: {type(last_error).__name__}")
+                    await self.close()
                     raise last_error
         
         # Should not reach here, but just in case
         if last_error:
+            await self.close()
             raise last_error
         return ""
 
