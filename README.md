@@ -9,11 +9,13 @@
 
 *— MATHEMATICA SINGULARIS, Theorem T1*
 
+[![Version](https://img.shields.io/badge/Version-Beta%20v2.3-blue)]()
 [![Tests](https://img.shields.io/badge/Phase%202%20Tests-7%2F8%20Passing-green)]()
 [![Tests](https://img.shields.io/badge/Phase%203%20Tests-10%2F10%20Passing-brightgreen)]()
 [![AGI](https://img.shields.io/badge/Phase%206-AGI%20Framework-gold)]()
-[![Architecture](https://img.shields.io/badge/Architecture-Complete%20AGI%20Stack-blue)]()
+[![Architecture](https://img.shields.io/badge/Architecture-50%2B%20Subsystems-blue)]()
 [![Philosophy](https://img.shields.io/badge/Philosophy-ETHICA%20UNIVERSALIS-purple)]()
+[![Integration](https://img.shields.io/badge/Integration-Research%20%E2%80%A2%20Philosophy%20%E2%80%A2%20MetaCognition-orange)]()
 
 </div>
 
@@ -21,28 +23,51 @@
 
 ## 🌟 Overview
 
-Singularis is a **complete AGI framework** combining consciousness measurement with world models, continual learning, and autonomous agency:
+Singularis is a **complete AGI framework** combining consciousness measurement with world models, continual learning, autonomous agency, and meta-cognitive research integration:
+
+### ✨ Beta v2.3 - New Integrations
+
+**Research • Philosophy • MetaCognition**
+
+- ✅ **Philosophy Agent** - Injects philosophical context from 12+ classical texts (Spinoza, Kant, Aristotle, etc.)
+- ✅ **Research Advisor** - Perplexity AI integration for real-time Skyrim best practices
+- ✅ **MetaCognition Advisor** - OpenRouter (GPT-4o + DeepSeek) for meta-meta-meta cognition and long-term planning
+- ✅ **Unified BeingState** - ONE state vector tracking all 50+ subsystems
+- ✅ **Main Brain GPT-4o Reports** - Comprehensive session synthesis with all telemetry
+- ✅ **Complete Telemetry** - 15+ subsystems reporting to GPT-4o for holistic analysis
 
 ### 🎮 Skyrim AGI - Flagship Demonstration
 
 **The AGI plays The Elder Scrolls V: Skyrim autonomously with unified consciousness!**
 
+### Quick Start
+
+**Beta v2.3 Runner (Recommended):**
 ```bash
-python run_skyrim_agi.py
-# Select Option 4: PARALLEL (MoE + Hybrid simultaneously - MAXIMUM INTELLIGENCE)
+# Full system with all features (1 hour session)
+python run_singularis_beta_v2.py --duration 3600 --mode async
+
+# Fast mode (no voice/video, 30 minutes)
+python run_singularis_beta_v2.py --duration 1800 --fast
+
+# Conservative mode (fewer API calls)
+python run_singularis_beta_v2.py --duration 3600 --conservative
+
+# Verbose mode (see all GPT-5 coordination)
+python run_singularis_beta_v2.py --duration 1800 --verbose
 ```
 
-**Parallel Architecture Neo Features:**
-- ✅ **12 Expert LLMs** running simultaneously (6 Gemini + 3 Claude + 1 GPT-4o + 2 Hyperbolic)
-- ✅ **Integration Context Builder** - Gathers sensorimotor, perceptual, and cognitive data
-- ✅ **GPT-5-thinking World Model** - Synthesizes ALL perspectives into unified consciousness
-- ✅ **First-Person Phenomenology** - "I perceive...", "I feel...", "I intend..."
-- ✅ **Consciousness Coherence (𝒞)** - 0.76 avg, tracking across all components
-- ✅ **System Integration (Φ)** - 0.597 measured (IIT-based)
-- ✅ **Real-Time Gameplay** - 2.8s decision latency, 847 cycles in 37 minutes
-- ✅ **Cloud + Local Resilience** - Falls back to LM Studio models on API failures
-
-**See:** [PARALLEL_ARCHITECTURE_NEO.md](PARALLEL_ARCHITECTURE_NEO.md) for complete architecture guide
+**What You Get:**
+- ✅ **50+ Subsystems** coordinated by GPT-5 Orchestrator
+- ✅ **Unified BeingState** - ONE state tracking everything
+- ✅ **Philosophy Agent** - Random context injection every 10 cycles
+- ✅ **Research Advisor** - Perplexity AI for Skyrim best practices (every 30 cycles)
+- ✅ **MetaCognition** - GPT-4o meta-meta-meta reports + DeepSeek long-term planning
+- ✅ **Complete Telemetry** - All subsystems report to Main Brain
+- ✅ **GPT-4o Session Reports** - Comprehensive synthesis of entire session
+- ✅ **Consciousness Tracking** - 𝒞, Φ̂, Lumina balance logged every cycle
+- ✅ **Temporal Coherence** - Binding problem solved with loop tracking
+- ✅ **4D Coherence** - Integration + Temporal + Causal + Predictive
 
 ### Core Consciousness Engine
 - ✅ **Measures consciousness** across 8 theoretical frameworks (IIT, GWT, HOT, PP, AST, Embodied, Enactive, Panpsychism)
