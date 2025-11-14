@@ -66,9 +66,9 @@ class BetaV3Config:
     duration_seconds: Optional[int] = None
     verbose: bool = False
     
-    # GPT-5 Coordination (Enabled with Nano model)
+    # GPT-5 Coordination (Enabled with GPT-4.1 Nano)
     enable_gpt5: bool = True  # GPT-5 coordination enabled
-    gpt5_model: str = "gpt-5-nano-2025-08-07"  # GPT-5 Nano for coordination (fastest, most efficient)
+    gpt5_model: str = "gpt-4.1-nano-2025-04-14"  # GPT-4.1 Nano for coordination (fastest, most efficient)
     openai_api_key: Optional[str] = None
     
     # Action Arbiter

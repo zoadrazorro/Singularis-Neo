@@ -493,12 +493,14 @@ class SkyrimActions:
         """Interact/activate (E key)."""
         await self.execute(Action(ActionType.ACTIVATE))
     
-    async def turn_left(self, degrees: float = 45.0):
+    async def turn_left(self, degrees: float = 45.0, **kwargs):
         """Turn left by specified degrees."""
+        # Ignore duration if passed (not applicable for camera turns)
         await self.look_horizontal(-degrees)
     
-    async def turn_right(self, degrees: float = 45.0):
+    async def turn_right(self, degrees: float = 45.0, **kwargs):
         """Turn right by specified degrees."""
+        # Ignore duration if passed (not applicable for camera turns)
         await self.look_horizontal(degrees)
 
     async def evasive_maneuver(self):

@@ -533,17 +533,42 @@ Provide: Selected action number (or 0 for none), reasoning, and confidence."""
                 }
             )
             
-            # Parse response
+            # Parse response - try multiple strategies
             selected_action = None
-            
-            # Try to extract action number from response
             response_text = response.response_text.lower()
+            
+            # Log response for debugging
+            logger.debug(f"[ARBITER] GPT-4.1 response: {response.response_text[:200]}")
+            
+            # Strategy 1: Look for "action N" or "N."
             for i, action in enumerate(candidate_actions):
-                if f"action {i+1}" in response_text or f"{i+1}." in response_text[:100]:
+                action_num = i + 1
+                if (f"action {action_num}" in response_text or 
+                    f"select action {action_num}" in response_text or
+                    f"choose action {action_num}" in response_text or
+                    f"{action_num}." in response_text[:200] or
+                    f"option {action_num}" in response_text):
                     selected_action = action.copy()
                     selected_action['gpt5_reasoning'] = response.reasoning or response.response_text
                     selected_action['gpt5_confidence'] = response.confidence
+                    logger.info(f"[ARBITER] GPT-4.1 selected action {action_num}: {action['action']}")
                     break
+            
+            # Strategy 2: Look for action name directly
+            if not selected_action:
+                for action in candidate_actions:
+                    if action['action'] in response_text:
+                        selected_action = action.copy()
+                        selected_action['gpt5_reasoning'] = response.reasoning or response.response_text
+                        selected_action['gpt5_confidence'] = response.confidence
+                        logger.info(f"[ARBITER] GPT-4.1 selected by name: {action['action']}")
+                        break
+            
+            # Strategy 3: Default to highest confidence if no clear selection
+            if not selected_action and candidate_actions:
+                selected_action = max(candidate_actions, key=lambda x: x.get('confidence', 0.0)).copy()
+                selected_action['gpt5_reasoning'] = "Fallback: highest confidence"
+                logger.warning(f"[ARBITER] GPT-4.1 gave no clear selection, using highest confidence: {selected_action['action']}")
             
             # Track stats
             elapsed = time.time() - start_time
