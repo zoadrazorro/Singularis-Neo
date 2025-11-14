@@ -662,10 +662,10 @@ class Mind:
             print("\n" + "="*80)
             print("MIND SYSTEM INITIALIZED".center(80))
             print("="*80)
-            print("✓ Theory of Mind")
-            print("✓ Heuristic Differential Analyzer")
-            print("✓ Multi-Node Cross-Parallelism")
-            print("✓ Cognitive Coherence Analyzer")
+            print("[OK] Theory of Mind")
+            print("[OK] Heuristic Differential Analyzer")
+            print("[OK] Multi-Node Cross-Parallelism")
+            print("[OK] Cognitive Coherence Analyzer")
             print("="*80 + "\n")
     
     def _initialize_default_nodes(self):
@@ -794,28 +794,28 @@ class Mind:
         print("MIND SYSTEM STATISTICS".center(80))
         print("="*80)
         
-        print("\n🧠 Theory of Mind:")
+        print("\n[ToM] Theory of Mind:")
         print(f"  Self States: {stats['theory_of_mind']['self_states']}")
         print(f"  Tracked Agents: {stats['theory_of_mind']['tracked_agents']}")
         print(f"  Perspective Switches: {stats['theory_of_mind']['perspective_switches']}")
         
-        print("\n⚡ Heuristic Analysis:")
+        print("\n[HDA] Heuristic Analysis:")
         print(f"  Total Patterns: {stats['heuristics']['total_patterns']}")
         print(f"  Avg Success Rate: {stats['heuristics']['avg_success_rate']:.2%}")
         print(f"  Total Usage: {stats['heuristics']['total_usage']}")
         
-        print("\n🕸️  Multi-Node Network:")
+        print("\n[MNCP] Multi-Node Network:")
         print(f"  Total Nodes: {stats['multi_node']['total_nodes']}")
         print(f"  Total Connections: {stats['multi_node']['total_connections']}")
         print(f"  Avg Activation: {stats['multi_node']['avg_activation']:.2f}")
         
-        print("\n✨ Cognitive Coherence:")
+        print("\n[CCA] Cognitive Coherence:")
         print(f"  Current Coherence: {stats['coherence']['current_coherence']:.2%}")
         print(f"  Dissonance Level: {stats['coherence']['dissonance_level']:.2%}")
         print(f"  Total Beliefs: {stats['coherence']['total_beliefs']}")
         print(f"  Contradictions: {stats['coherence']['total_contradictions']}")
         
-        print("\n🎯 Mind State:")
+        print("\n[STATE] Mind State:")
         print(f"  Active Domains: {len(self.mind_state['active_domains'])}")
         print(f"  Current Perspective: {self.mind_state['perspective']}")
         
