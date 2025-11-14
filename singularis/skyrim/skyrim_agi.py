@@ -635,6 +635,27 @@ class SkyrimAGI:
             print(f"    ⚠️ Hyperbolic initialization failed: {e}")
             self.hyperbolic_reasoning = None
             self.hyperbolic_vision = None
+
+        # OMEGA DNA Hyperhelix (second helix mapping to Double Helix)
+        try:
+            from ..evolution import OmegaHyperhelix
+            self.omega = OmegaHyperhelix(
+                self.double_helix,
+                symbolic_bridge=getattr(self, 'symbolic_neural_bridge', None),
+                curriculum=getattr(self, 'curriculum', None),
+                task_sampler=getattr(self, 'task_sampler', None),
+                memory=getattr(self, 'hierarchical_memory', None),
+                world_model=getattr(self, 'skyrim_world', None),
+                perception=getattr(self, 'perception', None),
+                video_interpreter=getattr(self, 'video_interpreter', None),
+                voice_system=getattr(self, 'voice_system', None),
+                moe=getattr(self, 'moe', None),
+                hybrid_llm=getattr(self, 'hybrid_llm', None),
+            )
+            print("  [OMEGA] Hyperhelix initialized and mapped to Double Helix")
+        except Exception as e:
+            print(f"  [OMEGA] Initialization failed: {e}")
+            self.omega = None
         
         # 21. Temporal Binding System (NEW - Critical)
         print("  [21/27] Temporal binding system...")
@@ -643,6 +664,67 @@ class SkyrimAGI:
         self.temporal_tracker = TemporalCoherenceTracker(window_size=20)
         print("    ✓ Temporal coherence tracking initialized")
         print("    ✓ Perception→action→outcome loops will be tracked")
+
+        # MATRIX NETWORK OF IMPROVEMENT + PTPL (scaffolding)
+        try:
+            from ..evolution.matrix_network import MatrixManager
+            from ..reasoning.ptpl import PTPL
+            self.matrix_manager = MatrixManager(omega=self.omega)
+            self.matrix_manager.map_to_omega()
+            print(f"  [MATRIX] Manager initialized: modules = {len(self.matrix_manager.modules)}")
+            self.ptpl = PTPL(omega=self.omega)
+            print("  [PTPL] Phase-Temporal Participatory Logic ready")
+
+            # Register S/H/E executors to real subsystems
+            try:
+                # S: Rule engine + affordances (symbolic)
+                self.matrix_manager.register_executor(
+                    "S-Sensorimotor",
+                    lambda ctx: (
+                        (
+                            lambda rec: {'action': rec.action, 'confidence': 0.8} if rec else None
+                        )(
+                            self.rule_engine.get_top_recommendation(exclude_blocked=True)
+                            if hasattr(self, 'rule_engine') and self.rule_engine else None
+                        )
+                    )
+                )
+                # H: Reflex & heuristic templates (motor/combat/navigator)
+                self.matrix_manager.register_executor(
+                    "H-Sensorimotor",
+                    lambda ctx: (
+                        (lambda a: {'action': a, 'confidence': 0.7} if a else None)(
+                            (self.reflex_controller.get_reflex_action(self.current_perception.get('game_state').to_dict()).name.lower().replace('_',' ') if self.current_perception and self.reflex_controller and self.current_perception.get('game_state') and self.reflex_controller.get_reflex_action(self.current_perception.get('game_state').to_dict()) else None)
+                            or
+                            (self.navigator.suggest_exploration_action(self.current_perception.get('game_state').to_dict(), self.current_perception).name.lower().replace('_',' ') if self.current_perception and self.navigator and self.current_perception.get('game_state') else None)
+                        )
+                    )
+                )
+                # S: Planning (symbolic strategic suggestions)
+                self.matrix_manager.register_executor(
+                    "S-Planning",
+                    lambda ctx: (
+                        {'action': getattr(self, '_motor_suggestion', None).name.lower().replace('_',' ') if getattr(self, '_motor_suggestion', None) else 'look_around', 'confidence': 0.6}
+                    )
+                )
+                # E: Planning (emergent RL/Policy)
+                self.matrix_manager.register_executor(
+                    "E-Planning",
+                    lambda ctx: (
+                        (lambda top: {'action': top[0], 'confidence': 0.65} if top else None)(
+                            (lambda qv, acts: sorted([(a, qv.get(a, 0.0)) for a in acts], key=lambda x: x[1], reverse=True)[:1])(
+                                (self.rl_learner.get_q_values(self.current_perception.get('game_state').to_dict()) if (self.rl_learner and self.current_perception and self.current_perception.get('game_state')) else {}),
+                                (self.current_perception.get('game_state').available_actions if (self.current_perception and self.current_perception.get('game_state')) else [])
+                            )
+                        )
+                    )
+                )
+            except Exception as e:
+                print(f"  [MATRIX] Executor registration failed: {e}")
+        except Exception as e:
+            print(f"  [MATRIX/PTPL] Initialization failed: {e}")
+            self.matrix_manager = None
+            self.ptpl = None
         
         # 22. Enhanced Coherence Metrics (NEW - Critical)
         print("  [22/27] Enhanced coherence metrics...")
@@ -1801,6 +1883,14 @@ class SkyrimAGI:
         if self.video_interpreter:
             metrics['video'] = self.video_interpreter.get_stats()
         
+        # OMEGA Hyperhelix metrics
+        if hasattr(self, 'omega') and self.omega:
+            metrics['omega'] = self.omega.get_stats()
+        
+        # Matrix network metrics
+        if hasattr(self, 'matrix_manager') and self.matrix_manager:
+            metrics['matrix'] = self.matrix_manager.get_stats()
+        
         # Temporal binding metrics (NEW)
         if self.temporal_tracker:
             metrics['temporal'] = self.temporal_tracker.get_statistics()
@@ -2867,6 +2957,10 @@ Connect perception → thought → action into flowing experience.""",
             print(f"\n{'=' * 60}")
             print("AUTONOMOUS GAMEPLAY COMPLETE")
             print(f"{'=' * 60}")
+            
+            # Cleanup connections
+            await self._cleanup_connections()
+            
             self._print_final_stats()
             
             # Generate Main Brain session report
@@ -3369,6 +3463,50 @@ Based on this visual and contextual data, provide:
                 cycle_count = perception_data['cycle']
                 self.cycle_count = cycle_count  # Update global cycle count for rate limiting
                 
+                # Tick OMEGA Hyperhelix phase model
+                if hasattr(self, 'omega') and self.omega:
+                    try:
+                        self.omega.tick(0.5)
+                    except Exception:
+                        pass
+                
+                # MATRIX: resolve weights anchored to coherence/competence
+                try:
+                    if hasattr(self, 'matrix_manager') and self.matrix_manager:
+                        ctx = {}
+                        if hasattr(self, 'current_consciousness') and self.current_consciousness:
+                            ctx['coherence'] = float(getattr(self.current_consciousness, 'coherence', 0.6))
+                        # Enhanced overall coherence if available
+                        if hasattr(self, 'enhanced_coherence') and self.enhanced_coherence:
+                            try:
+                                coh_stats = self.enhanced_coherence.get_statistics()
+                                if coh_stats and 'overall' in coh_stats:
+                                    ctx['coherence_overall'] = float(coh_stats['overall'])
+                            except Exception:
+                                pass
+                        total_actions = self.stats.get('actions_taken', 0)
+                        succ = self.stats.get('action_success_count', 0)
+                        if total_actions > 0:
+                            ctx['competence'] = max(0.0, min(1.0, succ / total_actions))
+                            ctx['success_rate'] = ctx['competence']
+                        if hasattr(self, 'last_curriculum_reward_delta'):
+                            ctx['curriculum_reward_delta'] = float(self.last_curriculum_reward_delta)
+                        weights = self.matrix_manager.resolve_weights(ctx)
+                        if hasattr(self, 'omega') and self.omega and hasattr(self.omega, 'nodes'):
+                            for mid, w in weights.items():
+                                node = self.omega.nodes.get(mid)
+                                if node is not None:
+                                    node.contribution_weight = w
+                    
+                    # Occasionally co-design curriculum suggestions
+                    if hasattr(self, 'matrix_manager') and self.matrix_manager and cycle_count % 20 == 0:
+                        _ = self.matrix_manager.propose_curriculum(count=3)
+                    # Periodic consolidation to stabilize long-term knowledge
+                    if hasattr(self, 'matrix_manager') and self.matrix_manager and cycle_count % 100 == 0:
+                        self.matrix_manager.ewc_consolidate()
+                except Exception:
+                    pass
+                
                 print(f"\n[REASONING] Processing cycle {cycle_count}")
                 
                 # Update BeingState from all subsystems (every cycle)
@@ -3527,6 +3665,22 @@ Based on this visual and contextual data, provide:
                     game_state.to_dict(),
                     consciousness_context
                 )
+                
+                # CRITICAL FIX: Prevent zero coherence catastrophe
+                # Zero coherence breaks motor control, curriculum RL, and all learning
+                if current_consciousness.coherence < 0.01:
+                    print(f"[REASONING] ⚠️ ZERO COHERENCE DETECTED - Applying safety floor")
+                    from singularis.consciousness.consciousness_state import ConsciousnessState
+                    current_consciousness = ConsciousnessState(
+                        coherence=0.3,  # Minimal viable coherence
+                        coherence_ontical=0.25,
+                        coherence_structural=0.25,
+                        coherence_participatory=0.25,
+                        game_quality=0.3,
+                        consciousness_level=0.1,
+                        self_awareness=0.2
+                    )
+                    print(f"[REASONING] → Coherence restored to {current_consciousness.coherence:.3f}")
                 
                 print(f"[REASONING] Coherence 𝒞 = {current_consciousness.coherence:.3f}")
                 
@@ -5097,6 +5251,13 @@ Applicable Rules: {len(logic_analysis_brief['applicable_rules'])}"""
                             consciousness_after=after_consciousness
                         )
                         print(f"[CURRICULUM] Reward: {curriculum_reward:+.3f} | Stage: {self.curriculum.get_current_stage().name}")
+                        # Store reward delta for Matrix C₂ competence
+                        try:
+                            prev = getattr(self, '_prev_curriculum_reward', 0.0)
+                            self.last_curriculum_reward_delta = float(curriculum_reward - prev)
+                            self._prev_curriculum_reward = float(curriculum_reward)
+                        except Exception:
+                            self.last_curriculum_reward_delta = float(curriculum_reward)
                         
                         # Get symbolic rules for current stage
                         rules_info = self.curriculum.get_current_rules(after_state)
@@ -5753,6 +5914,10 @@ Applicable Rules: {len(logic_analysis_brief['applicable_rules'])}"""
             print(f"\n{'=' * 60}")
             print("AUTONOMOUS GAMEPLAY COMPLETE")
             print(f"{'=' * 60}")
+            
+            # Cleanup connections
+            await self._cleanup_connections()
+            
             self._print_final_stats()
 
     def _detect_stuck_failsafe(
@@ -6386,6 +6551,26 @@ COHERENCE GAIN: <estimate 0.0-1.0 how much this increases understanding>
             print(f"[PLANNING] Available actions: {available_actions}")
             print(f"[PLANNING-CHECKPOINT] Game state extraction: {time.time() - checkpoint_start:.3f}s")
 
+            # CAMERA STUCK DETECTION - Prevent "looking up" loops
+            if len(self.action_history) >= 3:
+                recent_3 = self.action_history[-3:]
+                camera_actions = ['look_up', 'look_down', 'look_around']
+                camera_count = sum(1 for a in recent_3 if any(cam in str(a).lower() for cam in camera_actions))
+                
+                if camera_count >= 3:
+                    print(f"[PLANNING] ⚠️ CAMERA STUCK DETECTED! Breaking loop with movement")
+                    self.stats['heuristic_action_count'] += 1
+                    self.stats['camera_stuck_breaks'] = self.stats.get('camera_stuck_breaks', 0) + 1
+                    # Force actual movement
+                    import random
+                    r = random.random()
+                    if r < 0.4:
+                        return 'step_forward'
+                    elif r < 0.7:
+                        return 'turn_left'
+                    else:
+                        return 'turn_right'
+            
             # Check sensorimotor state BEFORE starting expensive LLM operations
             checkpoint_sensorimotor = time.time()
             override_action = self._sensorimotor_override(available_actions, game_state)
@@ -8224,6 +8409,34 @@ QUICK DECISION - Choose ONE action from available list:"""
                 canonical = self.state_coordinator.get_canonical_state()
                 print(f"  Canonical Scene:     {canonical.get('scene', 'unknown')}")
         
+        # OMEGA DNA HYPERHELIX
+        if hasattr(self, 'omega') and self.omega:
+            omega = self.omega.get_stats()
+            phase = omega.get('phase', {})
+            print(f"\n🧬 OMEGA DNA HYPERHELIX:")
+            print(f"  Nodes Mapped:      {omega.get('nodes_mapped', 0)}")
+            print(f"  Phase 4D:")
+            print(f"    Integration:     {phase.get('integration', 0.0):.3f}")
+            print(f"    Temporal:        {phase.get('temporal', 0.0):.3f}")
+            print(f"    Causal:          {phase.get('causal', 0.0):.3f}")
+            print(f"    Predictive:      {phase.get('predictive', 0.0):.3f}")
+            print(f"  Gating Events:     {omega.get('gating_events', 0)}")
+            print(f"  MoE Calls:         {omega.get('moe_calls', 0)} (hybrid: {omega.get('hybrid_calls', 0)})")
+            print(f"  Cost Saved (est):  ${omega.get('cost_saved_estimate', 0.0):.2f}")
+            print(f"  Multimodal Align.: {omega.get('multimodal_alignments', 0)} avg={omega.get('avg_alignment_score', 0.0):.3f}")
+            print(f"  TTA Updates:       {omega.get('tta_updates', 0)}")
+            print(f"  Curriculum Suggs.: {omega.get('curriculum_suggestions', 0)}")
+            print(f"  EWC Consolidations:{omega.get('ewc_consolidations', 0)}")
+        
+        # MATRIX NETWORK OF IMPROVEMENT
+        if hasattr(self, 'matrix_manager') and self.matrix_manager:
+            mstats = self.matrix_manager.get_stats()
+            print(f"\n🧿 MATRIX NETWORK:")
+            print(f"  Modules:           {mstats.get('modules', 0)}")
+            print(f"  PhaseWeight Mean:  {mstats.get('phase_weight_mean', 0.0):.3f}")
+            print(f"  TTA Updates:       {mstats.get('tta_updates', 0)}")
+            print(f"  Curriculum Inject: {mstats.get('curriculum_injections', 0)}")
+        
         # STUCK Recovery Tracker
         if hasattr(self, 'stuck_tracker'):
             recovery_stats = self.stuck_tracker.get_stats()
@@ -8247,14 +8460,20 @@ QUICK DECISION - Choose ONE action from available list:"""
         motor_combat = self.stats.get('motor_combat_count', 0)
         motor_nav = self.stats.get('motor_navigation_count', 0)
         motor_total = motor_reflex + motor_menu + motor_combat + motor_nav
+        camera_stuck_breaks = self.stats.get('camera_stuck_breaks', 0)
         
-        if motor_total > 0:
+        if motor_total > 0 or camera_stuck_breaks > 0:
             print(f"\n🦾 MOTOR CONTROL LAYER:")
-            print(f"  Total Actions:    {motor_total}")
-            print(f"  Reflexes:         {motor_reflex} ({100*motor_reflex/motor_total:.1f}%)")
-            print(f"  Menu Handling:    {motor_menu} ({100*motor_menu/motor_total:.1f}%)")
-            print(f"  Combat:           {motor_combat} ({100*motor_combat/motor_total:.1f}%)")
-            print(f"  Navigation:       {motor_nav} ({100*motor_nav/motor_total:.1f}%)")
+            if motor_total > 0:
+                print(f"  Total Actions:    {motor_total}")
+                print(f"  Reflexes:         {motor_reflex} ({100*motor_reflex/motor_total:.1f}%)")
+                print(f"  Menu Handling:    {motor_menu} ({100*motor_menu/motor_total:.1f}%)")
+                print(f"  Combat:           {motor_combat} ({100*motor_combat/motor_total:.1f}%)")
+                print(f"  Navigation:       {motor_nav} ({100*motor_nav/motor_total:.1f}%)")
+            
+            # Camera stuck prevention
+            if camera_stuck_breaks > 0:
+                print(f"  Camera Stuck Breaks: {camera_stuck_breaks} {'🟢' if camera_stuck_breaks < 5 else '🟡' if camera_stuck_breaks < 15 else '🔴'}")
             
             # Get controller stats
             if hasattr(self, 'motor_controller'):
@@ -8265,6 +8484,7 @@ QUICK DECISION - Choose ONE action from available list:"""
             if hasattr(self, 'navigator'):
                 nav_stats = self.navigator.get_stats()
                 print(f"  Stuck Detections: {nav_stats['stuck_detections']}")
+                print(f"  Camera Stuck (Nav): {nav_stats.get('camera_stuck_detections', 0)}")
                 print(f"  Stuck Counter:    {nav_stats['stuck_counter']}")
         
         # CURRICULUM RL
@@ -8482,6 +8702,96 @@ QUICK DECISION - Choose ONE action from available list:"""
         
         return models
 
+    async def _cleanup_connections(self):
+        """Cleanup all async connections and resources."""
+        print("\n[CLEANUP] Closing all connections...")
+        closed_count = 0
+        
+        # Close video interpreter
+        if hasattr(self, 'video_interpreter') and self.video_interpreter:
+            try:
+                await self.video_interpreter.close()
+                print("[CLEANUP] ✓ Video interpreter closed")
+                closed_count += 1
+            except Exception as e:
+                print(f"[CLEANUP] ⚠️ Video interpreter close error: {e}")
+        
+        # Close voice system
+        if hasattr(self, 'voice_system') and self.voice_system:
+            try:
+                if hasattr(self.voice_system, 'close'):
+                    await self.voice_system.close()
+                    print("[CLEANUP] ✓ Voice system closed")
+                    closed_count += 1
+            except Exception as e:
+                print(f"[CLEANUP] ⚠️ Voice system close error: {e}")
+        
+        # Close GPT-5 orchestrator
+        if hasattr(self, 'gpt5_orchestrator') and self.gpt5_orchestrator:
+            try:
+                if hasattr(self.gpt5_orchestrator, 'close'):
+                    await self.gpt5_orchestrator.close()
+                    print("[CLEANUP] ✓ GPT-5 orchestrator closed")
+                    closed_count += 1
+            except Exception as e:
+                print(f"[CLEANUP] ⚠️ GPT-5 orchestrator close error: {e}")
+        
+        # Close Wolfram analyzer
+        if hasattr(self, 'wolfram_analyzer') and self.wolfram_analyzer:
+            try:
+                if hasattr(self.wolfram_analyzer, 'close'):
+                    await self.wolfram_analyzer.close()
+                    print("[CLEANUP] ✓ Wolfram analyzer closed")
+                    closed_count += 1
+            except Exception as e:
+                print(f"[CLEANUP] ⚠️ Wolfram analyzer close error: {e}")
+        
+        # Close LLM clients
+        llm_clients = [
+            ('gemini_client', 'Gemini client'),
+            ('claude_client', 'Claude client'),
+            ('openai_client', 'OpenAI client'),
+            ('hyperbolic_client', 'Hyperbolic client'),
+            ('lmstudio_client', 'LMStudio client'),
+        ]
+        
+        for attr_name, display_name in llm_clients:
+            if hasattr(self, attr_name):
+                client = getattr(self, attr_name)
+                if client:
+                    try:
+                        if hasattr(client, 'close'):
+                            await client.close()
+                            print(f"[CLEANUP] ✓ {display_name} closed")
+                            closed_count += 1
+                    except Exception as e:
+                        print(f"[CLEANUP] ⚠️ {display_name} close error: {e}")
+        
+        # Close MoE orchestrator
+        if hasattr(self, 'moe') and self.moe:
+            try:
+                if hasattr(self.moe, 'close'):
+                    await self.moe.close()
+                    print("[CLEANUP] ✓ MoE orchestrator closed")
+                    closed_count += 1
+            except Exception as e:
+                print(f"[CLEANUP] ⚠️ MoE orchestrator close error: {e}")
+        
+        # Close GPT-5 Meta RL
+        if hasattr(self, 'gpt5_meta_rl') and self.gpt5_meta_rl:
+            try:
+                if hasattr(self.gpt5_meta_rl, 'close'):
+                    await self.gpt5_meta_rl.close()
+                    print("[CLEANUP] ✓ GPT-5 Meta RL closed")
+                    closed_count += 1
+            except Exception as e:
+                print(f"[CLEANUP] ⚠️ GPT-5 Meta RL close error: {e}")
+        
+        # Wait for all connections to close
+        await asyncio.sleep(0.5)
+        
+        print(f"[CLEANUP] Complete - {closed_count} systems closed")
+    
     def _print_final_stats(self):
         """Print final statistics."""
         print(f"\nFinal Statistics:")

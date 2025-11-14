@@ -28,11 +28,13 @@ class Navigator:
         self.stuck_counter = 0
         self.last_action = None
         self.action_repetitions = 0
+        self.camera_action_count = 0  # Track camera-only actions
         
         self.stats = {
             'suggestions_made': 0,
             'stuck_detections': 0,
             'recovery_actions': 0,
+            'camera_stuck_detections': 0,
         }
     
     def _hash_visual(self, perception: Dict[str, Any]) -> int:
@@ -151,6 +153,7 @@ class Navigator:
         self.stuck_counter = 0
         self.last_action = None
         self.action_repetitions = 0
+        self.camera_action_count = 0
     
     def get_stats(self) -> Dict[str, Any]:
         """Get navigator statistics."""

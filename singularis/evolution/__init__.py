@@ -23,6 +23,7 @@ from .double_helix_architecture import (
     SystemNode,
     SystemStrand
 )
+from .omega_hyperhelix import OmegaHyperhelix
 
 __all__ = [
     'DarwinianModalLogic',
@@ -34,5 +35,6 @@ __all__ = [
     'EvolutionaryTrajectory',
     'DoubleHelixArchitecture',
     'SystemNode',
-    'SystemStrand'
+    'SystemStrand',
+    'OmegaHyperhelix'
 ]

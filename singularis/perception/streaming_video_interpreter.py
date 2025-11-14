@@ -128,18 +128,45 @@ class StreamingVideoInterpreter:
     async def _ensure_session(self) -> aiohttp.ClientSession:
         """Ensure aiohttp session exists."""
         if self._session is None or self._session.closed:
-            self._session = aiohttp.ClientSession()
+            # Use connector with proper connection limits and timeout
+            connector = aiohttp.TCPConnector(
+                limit=10,  # Max concurrent connections
+                limit_per_host=5,
+                ttl_dns_cache=300,
+                force_close=True  # Force close connections after use
+            )
+            timeout = aiohttp.ClientTimeout(total=30, connect=10)
+            self._session = aiohttp.ClientSession(
+                connector=connector,
+                timeout=timeout
+            )
         return self._session
     
     async def close(self):
-        """Close the interpreter."""
+        """Close the interpreter and cleanup connections."""
         self.is_streaming = False
         
         if self._session and not self._session.closed:
-            await self._session.close()
+            try:
+                await self._session.close()
+                # Wait for connections to close properly
+                await asyncio.sleep(0.25)
+            except Exception as e:
+                logger.warning(f"[VIDEO-INTERPRETER] Session close error: {e}")
         
         if PYGAME_AVAILABLE and pygame.mixer.get_init():
-            pygame.mixer.quit()
+            try:
+                pygame.mixer.quit()
+            except Exception as e:
+                logger.warning(f"[VIDEO-INTERPRETER] Mixer quit error: {e}")
+    
+    async def __aenter__(self):
+        """Context manager entry."""
+        return self
+    
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Context manager exit - ensures cleanup."""
+        await self.close()
     
     def _build_prompt(self) -> str:
         """Build prompt based on interpretation mode."""

@@ -1,95 +1,95 @@
 {
-  "session_id": "skyrim_agi_20251113_205153_2c7bb7e5",
-  "cycle": 39,
-  "uptime": 318.21595525741577,
-  "last_update": "2025-11-13T20:57:11.877027",
-  "current_action": "look_around",
-  "last_action": "attack",
+  "session_id": "skyrim_agi_20251113_220108_016ba689",
+  "cycle": 49,
+  "uptime": 298.1193308830261,
+  "last_update": "2025-11-13T22:06:06.540441",
+  "current_action": "quick attack",
+  "last_action": "close menu",
   "action_source": "unknown",
   "recent_actions": [
     {
       "name": "look_around",
-      "timestamp": 1763085138.0148022,
-      "cycle": 0,
-      "source": "unknown"
-    },
-    {
-      "name": "look_around",
-      "timestamp": 1763085160.5260599,
+      "timestamp": 1763089315.4735832,
       "cycle": 1,
       "source": "unknown"
     },
     {
       "name": "look_around",
-      "timestamp": 1763085183.1053426,
+      "timestamp": 1763089338.3415897,
       "cycle": 2,
       "source": "unknown"
     },
     {
       "name": "look_around",
-      "timestamp": 1763085205.889743,
+      "timestamp": 1763089360.937663,
       "cycle": 3,
       "source": "unknown"
     },
     {
-      "name": "move_backward",
-      "timestamp": 1763085273.2698479,
+      "name": "step_forward",
+      "timestamp": 1763089429.4321797,
       "cycle": 4,
       "source": "unknown"
     },
     {
       "name": "look_around",
-      "timestamp": 1763085295.6517577,
-      "cycle": 5,
+      "timestamp": 1763089452.5386271,
+      "cycle": 4,
       "source": "unknown"
     },
     {
-      "name": "look_around",
-      "timestamp": 1763085318.1499434,
+      "name": "quick attack",
+      "timestamp": 1763089475.4068918,
       "cycle": 6,
       "source": "unknown"
     },
     {
-      "name": "look_around",
-      "timestamp": 1763085341.1097317,
+      "name": "close menu",
+      "timestamp": 1763089498.2841454,
       "cycle": 16,
       "source": "unknown"
     },
     {
-      "name": "attack",
-      "timestamp": 1763085364.655318,
+      "name": "close menu",
+      "timestamp": 1763089520.9588726,
       "cycle": 27,
       "source": "unknown"
     },
     {
-      "name": "look_around",
-      "timestamp": 1763085431.8770227,
-      "cycle": 39,
+      "name": "close menu",
+      "timestamp": 1763089543.477496,
+      "cycle": 38,
+      "source": "unknown"
+    },
+    {
+      "name": "quick attack",
+      "timestamp": 1763089566.5404367,
+      "cycle": 49,
       "source": "unknown"
     }
   ],
   "perception": {
-    "scene_type": "SceneType.INVENTORY",
+    "scene_type": "SceneType.DIALOGUE",
     "objects_detected": [
       [
-        "staff",
-        0.06701046228408813
+        "mage",
+        0.06721249222755432
+      ],
+      [
+        "potion",
+        0.0671977773308754
+      ],
+      [
+        "chest",
+        0.06710311770439148
       ],
       [
         "bow",
-        0.06694357842206955
+        0.06692487001419067
       ],
       [
-        "dragon",
-        0.06689668446779251
-      ],
-      [
-        "door",
-        0.06687357276678085
-      ],
-      [
-        "sword",
-        0.06686945259571075
+        "armor",
+        0.06683500111103058
       ]
     ],
     "enemies_nearby": false,
@@ -97,78 +97,84 @@
     "last_vision_time": 0
   },
   "game_state": {
-    "health": 91.58664954587397,
+    "health": 67.81806836681034,
     "magicka": 100.0,
     "stamina": 100.0,
     "in_combat": false,
-    "in_menu": true,
+    "in_menu": false,
     "location": "Skyrim"
   },
   "consciousness": {
-    "coherence": 0.2197,
-    "phi": 0.175,
+    "coherence": 0.4382,
+    "phi": 0.4276,
     "nodes_active": 22,
     "trend": "increasing",
     "history": [
       {
-        "timestamp": 1763085138.0148022,
+        "timestamp": 1763089292.9522254,
         "cycle": 0,
         "coherence": 0.22,
         "phi": 0.11
       },
       {
-        "timestamp": 1763085160.5260599,
+        "timestamp": 1763089315.4735832,
         "cycle": 1,
         "coherence": 0.22,
         "phi": 0.08
       },
       {
-        "timestamp": 1763085183.1053426,
+        "timestamp": 1763089338.3415897,
         "cycle": 2,
         "coherence": 0.22,
         "phi": 0.08
       },
       {
-        "timestamp": 1763085205.889743,
+        "timestamp": 1763089360.937663,
         "cycle": 3,
-        "coherence": 0.2378,
-        "phi": 0.0923
+        "coherence": 0.22,
+        "phi": 0.08
       },
       {
-        "timestamp": 1763085273.2698479,
+        "timestamp": 1763089429.4321797,
         "cycle": 4,
         "coherence": 0.22,
         "phi": 0.08
       },
       {
-        "timestamp": 1763085295.6517577,
-        "cycle": 5,
+        "timestamp": 1763089452.5386271,
+        "cycle": 4,
         "coherence": 0.22,
         "phi": 0.08
       },
       {
-        "timestamp": 1763085318.1499434,
+        "timestamp": 1763089475.4068918,
         "cycle": 6,
-        "coherence": 0.22,
-        "phi": 0.08
+        "coherence": 0.2983,
+        "phi": 0.4276
       },
       {
-        "timestamp": 1763085341.1097317,
+        "timestamp": 1763089498.2841454,
         "cycle": 16,
         "coherence": 0.22,
-        "phi": 0.08
+        "phi": 0.09
       },
       {
-        "timestamp": 1763085364.655318,
+        "timestamp": 1763089520.9588726,
         "cycle": 27,
-        "coherence": 0.42,
-        "phi": 0.47
+        "coherence": 0.22,
+        "phi": 0.09
       },
       {
-        "timestamp": 1763085431.8770227,
-        "cycle": 39,
-        "coherence": 0.2197,
-        "phi": 0.175
+        "timestamp": 1763089543.477496,
+        "cycle": 38,
+        "coherence": 0.22,
+        "phi": 0.09
+      },
+      {
+        "timestamp": 1763089566.5404367,
+        "cycle": 49,
+        "coherence": 0.4382,
+        "phi": 0.4276
       }
     ]
   },
@@ -194,120 +200,130 @@
   },
   "performance": {
     "fps": 60,
-    "planning_time": 0.0011275291442871093,
-    "execution_time": 3.0049532890319823,
+    "planning_time": 0.0008872509002685547,
+    "execution_time": 5.521356868743896,
     "vision_time": 0,
     "total_cycle_time": 0,
     "history": [
       {
-        "timestamp": 1763085138.0148022,
+        "timestamp": 1763089292.9522254,
         "cycle": 0,
         "fps": 60,
-        "planning_time": 0.0012636184692382812,
+        "planning_time": 0.0011332035064697266,
         "execution_time": 0.0,
         "vision_time": 0,
         "total_cycle_time": 0
       },
       {
-        "timestamp": 1763085160.5260599,
+        "timestamp": 1763089315.4735832,
         "cycle": 1,
         "fps": 60,
-        "planning_time": 0.001124739646911621,
-        "execution_time": 1.8456690311431885,
+        "planning_time": 0.0011641979217529297,
+        "execution_time": 6.861258268356323,
         "vision_time": 0,
         "total_cycle_time": 0
       },
       {
-        "timestamp": 1763085183.1053426,
+        "timestamp": 1763089338.3415897,
         "cycle": 2,
         "fps": 60,
-        "planning_time": 0.0010488828023274739,
-        "execution_time": 1.7727153301239014,
+        "planning_time": 0.0012276967366536458,
+        "execution_time": 4.414353609085083,
         "vision_time": 0,
         "total_cycle_time": 0
       },
       {
-        "timestamp": 1763085205.889743,
+        "timestamp": 1763089360.937663,
         "cycle": 3,
         "fps": 60,
-        "planning_time": 0.0010166764259338379,
-        "execution_time": 1.775274435679118,
+        "planning_time": 0.0011862516403198242,
+        "execution_time": 3.476802110671997,
         "vision_time": 0,
         "total_cycle_time": 0
       },
       {
-        "timestamp": 1763085273.2698479,
+        "timestamp": 1763089429.4321797,
         "cycle": 4,
         "fps": 60,
-        "planning_time": 0.000997304916381836,
-        "execution_time": 1.748162078857422,
+        "planning_time": 0.0010616302490234375,
+        "execution_time": 2.793157434463501,
         "vision_time": 0,
         "total_cycle_time": 0
       },
       {
-        "timestamp": 1763085295.6517577,
-        "cycle": 5,
+        "timestamp": 1763089452.5386271,
+        "cycle": 4,
         "fps": 60,
-        "planning_time": 0.0009430885314941406,
-        "execution_time": 1.5393390655517578,
+        "planning_time": 0.0011085033416748046,
+        "execution_time": 1.9405829906463623,
         "vision_time": 0,
         "total_cycle_time": 0
       },
       {
-        "timestamp": 1763085318.1499434,
+        "timestamp": 1763089475.4068918,
         "cycle": 6,
         "fps": 60,
-        "planning_time": 0.0009377002716064453,
-        "execution_time": 1.5197103023529053,
+        "planning_time": 0.0010076999664306641,
+        "execution_time": 1.934377956390381,
         "vision_time": 0,
         "total_cycle_time": 0
       },
       {
-        "timestamp": 1763085341.1097317,
+        "timestamp": 1763089498.2841454,
         "cycle": 16,
         "fps": 60,
-        "planning_time": 0.0009174823760986328,
-        "execution_time": 1.5385236263275146,
+        "planning_time": 0.0008891105651855468,
+        "execution_time": 2.9300552368164063,
         "vision_time": 0,
         "total_cycle_time": 0
       },
       {
-        "timestamp": 1763085364.655318,
+        "timestamp": 1763089520.9588726,
         "cycle": 27,
         "fps": 60,
-        "planning_time": 0.0011543750762939454,
-        "execution_time": 1.5387503623962402,
+        "planning_time": 0.0009290695190429688,
+        "execution_time": 4.116304111480713,
         "vision_time": 0,
         "total_cycle_time": 0
       },
       {
-        "timestamp": 1763085431.8770227,
-        "cycle": 39,
+        "timestamp": 1763089543.477496,
+        "cycle": 38,
         "fps": 60,
-        "planning_time": 0.0011275291442871093,
-        "execution_time": 3.0049532890319823,
+        "planning_time": 0.00096893310546875,
+        "execution_time": 4.441592264175415,
+        "vision_time": 0,
+        "total_cycle_time": 0
+      },
+      {
+        "timestamp": 1763089566.5404367,
+        "cycle": 49,
+        "fps": 60,
+        "planning_time": 0.0008872509002685547,
+        "execution_time": 5.521356868743896,
         "vision_time": 0,
         "total_cycle_time": 0
       }
     ]
   },
   "diversity": {
-    "score": 0.3,
-    "unique_actions": 3,
-    "total_actions": 10,
-    "variety_rate": 0.3,
+    "score": 0.36363636363636365,
+    "unique_actions": 4,
+    "total_actions": 11,
+    "variety_rate": 0.36363636363636365,
     "action_distribution": {
-      "look_around": 8,
-      "move_backward": 1,
-      "attack": 1
+      "look_around": 4,
+      "quick attack": 3,
+      "close menu": 3,
+      "step_forward": 1
     }
   },
   "stats": {
     "success_rate": 1.0,
-    "rl_actions": 1,
+    "rl_actions": 0,
     "llm_actions": 0,
-    "heuristic_actions": 1,
-    "total_actions": 10
+    "heuristic_actions": 4,
+    "total_actions": 11
   },
   "world_model": {
     "beliefs": {},

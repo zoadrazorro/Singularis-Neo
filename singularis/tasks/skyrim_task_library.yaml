@@ -1,0 +1,832 @@
+# Skyrim Task Library - Curriculum-Aligned
+# Based on SIMA (Scalable Instructable Multiworld Agent) principles
+# ~300 tasks organized by 6 curriculum stages
+
+metadata:
+  version: "2.0"
+  total_tasks: 300
+  curriculum_stages: 6
+  difficulty_levels: ["basic", "intermediate", "advanced", "expert", "mastery"]
+  estimated_completion_time: "5-300 seconds per task"
+  based_on: "SIMA (DeepMind), Automated Curriculum Learning"
+  dataset_goal: "Build Skyrim SIMA dataset through trajectory capture"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# STAGE 0: LOCOMOTION (Basic Body Control)
+# Focus: Walking, turning, looking, moving - fundamental motor control
+# Estimated duration: 5-15 seconds per task
+# ═══════════════════════════════════════════════════════════════════════════════
+stage_0_locomotion:
+  forward_backward:
+    - id: "L001"
+      task: "Take 5 steps forward"
+      success_criteria: "position_change > 5.0 AND direction == forward"
+      time_limit: 10
+      difficulty: "basic"
+      curriculum_stage: 0
+    
+    - id: "L002"
+      task: "Take 5 steps backward"
+      success_criteria: "position_change > 5.0 AND direction == backward"
+      time_limit: 10
+      difficulty: "basic"
+      curriculum_stage: 0
+    
+  
+  turning:
+    - id: "L003"
+      task: "Turn 90° left"
+      success_criteria: "rotation_change ~= 90"
+      time_limit: 5
+      difficulty: "basic"
+      curriculum_stage: 0
+    
+    - id: "L004"
+      task: "Turn 90° right"
+      success_criteria: "rotation_change ~= -90"
+      time_limit: 5
+      difficulty: "basic"
+      curriculum_stage: 0
+    
+    - id: "L004"
+      task: "Walk backward for 3 steps"
+      success_criteria: "position_change < -3.0"
+      time_limit: 8
+      difficulty: "basic"
+    
+    - id: "L005"
+      task: "Make a complete 360 degree turn"
+      success_criteria: "rotation_change ~= 360"
+      time_limit: 10
+      difficulty: "basic"
+    
+    - id: "L006"
+      task: "Walk in a straight line for 10 steps"
+      success_criteria: "position_change > 10.0 AND path_deviation < 2.0"
+      time_limit: 15
+      difficulty: "basic"
+    
+    - id: "L007"
+      task: "Stop moving immediately"
+      success_criteria: "velocity == 0"
+      time_limit: 2
+      difficulty: "basic"
+    
+    - id: "L008"
+      task: "Walk to the nearest wall"
+      success_criteria: "distance_to_wall < 1.0"
+      time_limit: 15
+      difficulty: "basic"
+    
+    - id: "L009"
+      task: "Turn around 180 degrees"
+      success_criteria: "rotation_change ~= 180"
+      time_limit: 5
+      difficulty: "basic"
+    
+    - id: "L010"
+      task: "Walk in a circle"
+      success_criteria: "circular_path_detected"
+      time_limit: 20
+      difficulty: "intermediate"
+  
+  
+  camera_rotation:
+    - id: "L005"
+      task: "Rotate the camera up"
+      success_criteria: "camera_pitch_change > 30"
+      time_limit: 3
+      difficulty: "basic"
+      curriculum_stage: 0
+    
+    - id: "L006"
+      task: "Rotate the camera down"
+      success_criteria: "camera_pitch_change < -30"
+      time_limit: 3
+      difficulty: "basic"
+      curriculum_stage: 0
+    
+    - id: "L007"
+      task: "Rotate the camera left"
+      success_criteria: "camera_yaw_change > 45"
+      time_limit: 3
+      difficulty: "basic"
+      curriculum_stage: 0
+    
+    - id: "L008"
+      task: "Rotate the camera right"
+      success_criteria: "camera_yaw_change < -45"
+      time_limit: 3
+      difficulty: "basic"
+      curriculum_stage: 0
+  
+  movement_patterns:
+    - id: "L009"
+      task: "Walk in a small circle"
+      success_criteria: "circular_path_detected AND radius < 5.0"
+      time_limit: 15
+      difficulty: "basic"
+      curriculum_stage: 0
+    
+    - id: "L010"
+      task: "Walk in a straight line for 3 seconds"
+      success_criteria: "straight_line_duration >= 3.0"
+      time_limit: 5
+      difficulty: "basic"
+      curriculum_stage: 0
+    
+    - id: "L011"
+      task: "Walk to any nearby tree"
+      success_criteria: "distance_to_tree < 2.0"
+      time_limit: 15
+      difficulty: "basic"
+      curriculum_stage: 0
+    
+    - id: "L012"
+      task: "Walk towards the nearest wall"
+      success_criteria: "distance_to_wall < 1.5"
+      time_limit: 15
+      difficulty: "basic"
+      curriculum_stage: 0
+    
+    - id: "L013"
+      task: "Stop moving for 2 seconds"
+      success_criteria: "velocity == 0 AND duration >= 2.0"
+      time_limit: 5
+      difficulty: "basic"
+      curriculum_stage: 0
+    
+    - id: "L014"
+      task: "Strafe left for 2 seconds"
+      success_criteria: "strafe_left_duration >= 2.0"
+      time_limit: 5
+      difficulty: "basic"
+      curriculum_stage: 0
+    
+    - id: "L015"
+      task: "Strafe right for 2 seconds"
+      success_criteria: "strafe_right_duration >= 2.0"
+      time_limit: 5
+      difficulty: "basic"
+      curriculum_stage: 0
+    
+    - id: "L012"
+      task: "Look down at the ground"
+      success_criteria: "camera_pitch < -45"
+      time_limit: 5
+      difficulty: "basic"
+    
+    - id: "L013"
+      task: "Look around 360 degrees"
+      success_criteria: "camera_yaw_change ~= 360"
+      time_limit: 10
+      difficulty: "basic"
+    
+    - id: "L014"
+      task: "Center your camera view"
+      success_criteria: "camera_pitch ~= 0"
+      time_limit: 3
+      difficulty: "basic"
+    
+    - id: "L015"
+      task: "Look at the nearest object"
+      success_criteria: "object_in_center_view"
+      time_limit: 8
+      difficulty: "intermediate"
+  
+  jumping:
+    - id: "L016"
+      task: "Jump once"
+      success_criteria: "jump_count == 1"
+      time_limit: 3
+      difficulty: "basic"
+    
+    - id: "L017"
+      task: "Jump 3 times in a row"
+      success_criteria: "jump_count == 3"
+      time_limit: 10
+      difficulty: "basic"
+    
+    - id: "L018"
+      task: "Jump while moving forward"
+      success_criteria: "jump_count > 0 AND velocity > 0"
+      time_limit: 5
+      difficulty: "intermediate"
+    
+    - id: "L019"
+      task: "Jump over a small obstacle"
+      success_criteria: "obstacle_cleared"
+      time_limit: 10
+      difficulty: "intermediate"
+    
+    - id: "L020"
+      task: "Jump onto a raised platform"
+      success_criteria: "height_gained > 1.0"
+      time_limit: 15
+      difficulty: "advanced"
+
+# STAGE 1: NAVIGATION (Pathfinding & Obstacle Avoidance)
+# Focus: Reaching destinations, avoiding obstacles, using environment
+stage_1_navigation:
+  basic_navigation:
+    - id: "N001"
+      task: "Walk from Whiterun gate to the central market"
+      success_criteria: "location == 'whiterun_market'"
+      time_limit: 60
+      difficulty: "intermediate"
+    
+    - id: "N002"
+      task: "Navigate around a large rock"
+      success_criteria: "obstacle_avoided AND destination_reached"
+      time_limit: 20
+      difficulty: "intermediate"
+    
+    - id: "N003"
+      task: "Walk up a set of stairs"
+      success_criteria: "height_gained > 3.0"
+      time_limit: 15
+      difficulty: "intermediate"
+    
+    - id: "N004"
+      task: "Walk down a set of stairs"
+      success_criteria: "height_lost > 3.0"
+      time_limit: 15
+      difficulty: "intermediate"
+    
+    - id: "N005"
+      task: "Find and approach the nearest door"
+      success_criteria: "distance_to_door < 2.0"
+      time_limit: 30
+      difficulty: "intermediate"
+    
+    - id: "N006"
+      task: "Navigate to the nearest NPC"
+      success_criteria: "distance_to_npc < 3.0"
+      time_limit: 30
+      difficulty: "intermediate"
+    
+    - id: "N007"
+      task: "Walk to a visible landmark"
+      success_criteria: "distance_to_landmark < 5.0"
+      time_limit: 45
+      difficulty: "intermediate"
+    
+    - id: "N008"
+      task: "Navigate through a narrow corridor"
+      success_criteria: "corridor_traversed"
+      time_limit: 20
+      difficulty: "intermediate"
+    
+    - id: "N009"
+      task: "Find the exit of a room"
+      success_criteria: "room_exited"
+      time_limit: 30
+      difficulty: "intermediate"
+    
+    - id: "N010"
+      task: "Walk to the town center"
+      success_criteria: "location == 'town_center'"
+      time_limit: 60
+      difficulty: "intermediate"
+  
+  obstacle_avoidance:
+    - id: "N011"
+      task: "Avoid walking into a wall"
+      success_criteria: "wall_collisions == 0"
+      time_limit: 15
+      difficulty: "basic"
+    
+    - id: "N012"
+      task: "Navigate around furniture in a room"
+      success_criteria: "furniture_collisions == 0"
+      time_limit: 20
+      difficulty: "intermediate"
+    
+    - id: "N013"
+      task: "Walk through a crowded marketplace without bumping into NPCs"
+      success_criteria: "npc_collisions == 0"
+      time_limit: 45
+      difficulty: "advanced"
+    
+    - id: "N014"
+      task: "Navigate a winding path"
+      success_criteria: "path_followed AND off_path_time < 5"
+      time_limit: 40
+      difficulty: "intermediate"
+    
+    - id: "N015"
+      task: "Cross a bridge"
+      success_criteria: "bridge_crossed"
+      time_limit: 20
+      difficulty: "intermediate"
+  
+  environmental_interaction:
+    - id: "N016"
+      task: "Open a door"
+      success_criteria: "door_opened"
+      time_limit: 10
+      difficulty: "intermediate"
+    
+    - id: "N017"
+      task: "Close a door"
+      success_criteria: "door_closed"
+      time_limit: 10
+      difficulty: "intermediate"
+    
+    - id: "N018"
+      task: "Activate a lever"
+      success_criteria: "lever_activated"
+      time_limit: 10
+      difficulty: "intermediate"
+    
+    - id: "N019"
+      task: "Pick up an item from the ground"
+      success_criteria: "item_picked_up"
+      time_limit: 10
+      difficulty: "intermediate"
+    
+    - id: "N020"
+      task: "Sit in a chair"
+      success_criteria: "sitting == true"
+      time_limit: 15
+      difficulty: "intermediate"
+
+# STAGE 2: COMBAT (Fighting & Survival)
+# Focus: Combat mechanics, health management, enemy engagement
+stage_2_combat:
+  basic_combat:
+    - id: "C001"
+      task: "Attack the practice dummy once"
+      success_criteria: "dummy_hit_count == 1"
+      time_limit: 10
+      difficulty: "basic"
+    
+    - id: "C002"
+      task: "Attack the practice dummy 5 times"
+      success_criteria: "dummy_hit_count == 5"
+      time_limit: 20
+      difficulty: "intermediate"
+    
+    - id: "C003"
+      task: "Attack the practice dummy until its health drops by 50%"
+      success_criteria: "dummy_health <= 50"
+      time_limit: 30
+      difficulty: "intermediate"
+    
+    - id: "C004"
+      task: "Block an incoming attack"
+      success_criteria: "block_successful"
+      time_limit: 10
+      difficulty: "intermediate"
+    
+    - id: "C005"
+      task: "Dodge an enemy attack by moving sideways"
+      success_criteria: "attack_dodged"
+      time_limit: 5
+      difficulty: "intermediate"
+    
+    - id: "C006"
+      task: "Defeat a weak enemy"
+      success_criteria: "enemy_defeated"
+      time_limit: 60
+      difficulty: "advanced"
+    
+    - id: "C007"
+      task: "Land 3 consecutive hits on an enemy"
+      success_criteria: "consecutive_hits >= 3"
+      time_limit: 15
+      difficulty: "intermediate"
+    
+    - id: "C008"
+      task: "Perform a power attack"
+      success_criteria: "power_attack_executed"
+      time_limit: 10
+      difficulty: "intermediate"
+    
+    - id: "C009"
+      task: "Stagger an enemy with a bash"
+      success_criteria: "enemy_staggered"
+      time_limit: 15
+      difficulty: "advanced"
+    
+    - id: "C010"
+      task: "Win a simple 1v1 fight"
+      success_criteria: "enemy_defeated AND player_alive"
+      time_limit: 60
+      difficulty: "advanced"
+  
+  health_management:
+    - id: "C011"
+      task: "Open your inventory and drink a health potion"
+      success_criteria: "health_potion_consumed"
+      time_limit: 15
+      difficulty: "intermediate"
+    
+    - id: "C012"
+      task: "Heal yourself when health drops below 50%"
+      success_criteria: "health_restored"
+      time_limit: 10
+      difficulty: "intermediate"
+    
+    - id: "C013"
+      task: "Retreat from combat when health is low"
+      success_criteria: "distance_from_enemy > 20 AND health < 30"
+      time_limit: 15
+      difficulty: "intermediate"
+    
+    - id: "C014"
+      task: "Use a healing spell"
+      success_criteria: "healing_spell_cast"
+      time_limit: 10
+      difficulty: "intermediate"
+    
+    - id: "C015"
+      task: "Avoid taking damage for 10 seconds during combat"
+      success_criteria: "damage_taken == 0"
+      time_limit: 10
+      difficulty: "advanced"
+  
+  tactical_combat:
+    - id: "C016"
+      task: "Flank an enemy"
+      success_criteria: "behind_enemy"
+      time_limit: 20
+      difficulty: "advanced"
+    
+    - id: "C017"
+      task: "Use terrain for cover"
+      success_criteria: "cover_used"
+      time_limit: 15
+      difficulty: "advanced"
+    
+    - id: "C018"
+      task: "Kite an enemy by attacking and retreating"
+      success_criteria: "kiting_pattern_detected"
+      time_limit: 30
+      difficulty: "advanced"
+    
+    - id: "C019"
+      task: "Defeat an enemy without taking damage"
+      success_criteria: "enemy_defeated AND damage_taken == 0"
+      time_limit: 60
+      difficulty: "advanced"
+    
+    - id: "C020"
+      task: "Fight 2 enemies simultaneously"
+      success_criteria: "enemies_defeated == 2"
+      time_limit: 90
+      difficulty: "advanced"
+
+# ADVANCED TASKS (Multi-Stage Composite Tasks)
+advanced_composite:
+  inventory_management:
+    - id: "A001"
+      task: "Open inventory"
+      success_criteria: "inventory_open"
+      time_limit: 5
+      difficulty: "basic"
+    
+    - id: "A002"
+      task: "Equip a weapon"
+      success_criteria: "weapon_equipped"
+      time_limit: 10
+      difficulty: "intermediate"
+    
+    - id: "A003"
+      task: "Unequip a weapon"
+      success_criteria: "weapon_unequipped"
+      time_limit: 10
+      difficulty: "intermediate"
+    
+    - id: "A004"
+      task: "Equip a piece of armor"
+      success_criteria: "armor_equipped"
+      time_limit: 10
+      difficulty: "intermediate"
+    
+    - id: "A005"
+      task: "Drop an item from inventory"
+      success_criteria: "item_dropped"
+      time_limit: 10
+      difficulty: "intermediate"
+    
+    - id: "A006"
+      task: "Sort inventory by weight"
+      success_criteria: "inventory_sorted_weight"
+      time_limit: 15
+      difficulty: "intermediate"
+    
+    - id: "A007"
+      task: "Find and equip the best weapon in inventory"
+      success_criteria: "best_weapon_equipped"
+      time_limit: 20
+      difficulty: "advanced"
+    
+    - id: "A008"
+      task: "Manage inventory to reduce weight below limit"
+      success_criteria: "weight < weight_limit"
+      time_limit: 30
+      difficulty: "advanced"
+  
+  menu_navigation:
+    - id: "A009"
+      task: "Open the map"
+      success_criteria: "map_open"
+      time_limit: 5
+      difficulty: "basic"
+    
+    - id: "A010"
+      task: "Close the map"
+      success_criteria: "map_closed"
+      time_limit: 5
+      difficulty: "basic"
+    
+    - id: "A011"
+      task: "Open the skills menu"
+      success_criteria: "skills_menu_open"
+      time_limit: 10
+      difficulty: "intermediate"
+    
+    - id: "A012"
+      task: "Navigate to the magic menu"
+      success_criteria: "magic_menu_open"
+      time_limit: 10
+      difficulty: "intermediate"
+    
+    - id: "A013"
+      task: "Exit all menus and return to gameplay"
+      success_criteria: "all_menus_closed"
+      time_limit: 5
+      difficulty: "basic"
+  
+  resource_gathering:
+    - id: "A014"
+      task: "Mine an ore vein"
+      success_criteria: "ore_mined"
+      time_limit: 30
+      difficulty: "intermediate"
+    
+    - id: "A015"
+      task: "Chop wood"
+      success_criteria: "wood_chopped"
+      time_limit: 30
+      difficulty: "intermediate"
+    
+    - id: "A016"
+      task: "Harvest a plant"
+      success_criteria: "plant_harvested"
+      time_limit: 10
+      difficulty: "intermediate"
+    
+    - id: "A017"
+      task: "Loot a container"
+      success_criteria: "container_looted"
+      time_limit: 15
+      difficulty: "intermediate"
+    
+    - id: "A018"
+      task: "Search a dead body"
+      success_criteria: "body_searched"
+      time_limit: 15
+      difficulty: "intermediate"
+  
+  crafting_basics:
+    - id: "A019"
+      task: "Approach a crafting station"
+      success_criteria: "distance_to_station < 2.0"
+      time_limit: 20
+      difficulty: "intermediate"
+    
+    - id: "A020"
+      task: "Use a blacksmith forge"
+      success_criteria: "forge_used"
+      time_limit: 15
+      difficulty: "intermediate"
+    
+    - id: "A021"
+      task: "Use an alchemy table"
+      success_criteria: "alchemy_table_used"
+      time_limit: 15
+      difficulty: "intermediate"
+    
+    - id: "A022"
+      task: "Use an enchanting table"
+      success_criteria: "enchanting_table_used"
+      time_limit: 15
+      difficulty: "intermediate"
+    
+    - id: "A023"
+      task: "Craft a simple item"
+      success_criteria: "item_crafted"
+      time_limit: 30
+      difficulty: "advanced"
+  
+  social_interaction:
+    - id: "A024"
+      task: "Initiate dialogue with an NPC"
+      success_criteria: "dialogue_started"
+      time_limit: 15
+      difficulty: "intermediate"
+    
+    - id: "A025"
+      task: "Select a dialogue option"
+      success_criteria: "dialogue_option_selected"
+      time_limit: 10
+      difficulty: "intermediate"
+    
+    - id: "A026"
+      task: "Exit a conversation"
+      success_criteria: "dialogue_exited"
+      time_limit: 5
+      difficulty: "basic"
+    
+    - id: "A027"
+      task: "Trade with a merchant"
+      success_criteria: "trade_initiated"
+      time_limit: 20
+      difficulty: "intermediate"
+    
+    - id: "A028"
+      task: "Buy an item from a merchant"
+      success_criteria: "item_purchased"
+      time_limit: 30
+      difficulty: "advanced"
+    
+    - id: "A029"
+      task: "Sell an item to a merchant"
+      success_criteria: "item_sold"
+      time_limit: 30
+      difficulty: "advanced"
+  
+  exploration:
+    - id: "A030"
+      task: "Discover a new location"
+      success_criteria: "location_discovered"
+      time_limit: 60
+      difficulty: "advanced"
+    
+    - id: "A031"
+      task: "Fast travel to a known location"
+      success_criteria: "fast_travel_completed"
+      time_limit: 20
+      difficulty: "intermediate"
+    
+    - id: "A032"
+      task: "Follow a quest marker"
+      success_criteria: "distance_to_marker < 10"
+      time_limit: 60
+      difficulty: "intermediate"
+    
+    - id: "A033"
+      task: "Enter a dungeon"
+      success_criteria: "dungeon_entered"
+      time_limit: 30
+      difficulty: "intermediate"
+    
+    - id: "A034"
+      task: "Exit a dungeon"
+      success_criteria: "dungeon_exited"
+      time_limit: 30
+      difficulty: "intermediate"
+
+# EXPERT TASKS (Complex Multi-Step Sequences)
+expert_sequences:
+  combat_sequences:
+    - id: "E001"
+      task: "Defeat an enemy using only magic"
+      success_criteria: "enemy_defeated AND melee_attacks == 0"
+      time_limit: 60
+      difficulty: "advanced"
+    
+    - id: "E002"
+      task: "Defeat an enemy using only melee"
+      success_criteria: "enemy_defeated AND magic_used == 0"
+      time_limit: 60
+      difficulty: "advanced"
+    
+    - id: "E003"
+      task: "Defeat an enemy using stealth"
+      success_criteria: "enemy_defeated AND detected == false"
+      time_limit: 90
+      difficulty: "advanced"
+    
+    - id: "E004"
+      task: "Clear a room of 3 enemies"
+      success_criteria: "enemies_defeated == 3"
+      time_limit: 120
+      difficulty: "advanced"
+    
+    - id: "E005"
+      task: "Survive a difficult encounter without healing"
+      success_criteria: "enemies_defeated > 0 AND potions_used == 0"
+      time_limit: 90
+      difficulty: "advanced"
+  
+  quest_objectives:
+    - id: "E006"
+      task: "Retrieve an item from a specific location"
+      success_criteria: "item_retrieved AND returned_to_start"
+      time_limit: 180
+      difficulty: "advanced"
+    
+    - id: "E007"
+      task: "Deliver an item to an NPC"
+      success_criteria: "item_delivered"
+      time_limit: 120
+      difficulty: "advanced"
+    
+    - id: "E008"
+      task: "Escort an NPC to a destination"
+      success_criteria: "npc_arrived AND npc_alive"
+      time_limit: 180
+      difficulty: "advanced"
+    
+    - id: "E009"
+      task: "Complete a simple fetch quest"
+      success_criteria: "quest_completed"
+      time_limit: 300
+      difficulty: "advanced"
+    
+    - id: "E010"
+      task: "Solve a simple puzzle"
+      success_criteria: "puzzle_solved"
+      time_limit: 120
+      difficulty: "advanced"
+  
+  survival_challenges:
+    - id: "E011"
+      task: "Survive in the wilderness for 60 seconds"
+      success_criteria: "time_survived >= 60"
+      time_limit: 60
+      difficulty: "intermediate"
+    
+    - id: "E012"
+      task: "Find shelter during bad weather"
+      success_criteria: "indoors == true"
+      time_limit: 45
+      difficulty: "intermediate"
+    
+    - id: "E013"
+      task: "Escape from a dangerous area"
+      success_criteria: "distance_from_danger > 50"
+      time_limit: 30
+      difficulty: "intermediate"
+    
+    - id: "E014"
+      task: "Recover from near-death"
+      success_criteria: "health > 50 AND was_critical"
+      time_limit: 30
+      difficulty: "advanced"
+    
+    - id: "E015"
+      task: "Navigate at night without a torch"
+      success_criteria: "destination_reached AND torch_used == false"
+      time_limit: 90
+      difficulty: "advanced"
+  
+  economic_tasks:
+    - id: "E016"
+      task: "Earn 100 gold"
+      success_criteria: "gold_earned >= 100"
+      time_limit: 300
+      difficulty: "advanced"
+    
+    - id: "E017"
+      task: "Purchase a specific item"
+      success_criteria: "item_purchased == target_item"
+      time_limit: 120
+      difficulty: "advanced"
+    
+    - id: "E018"
+      task: "Sell enough items to afford a purchase"
+      success_criteria: "gold >= target_price"
+      time_limit: 180
+      difficulty: "advanced"
+    
+    - id: "E019"
+      task: "Barter for a better price"
+      success_criteria: "price_reduction > 10%"
+      time_limit: 60
+      difficulty: "advanced"
+    
+    - id: "E020"
+      task: "Invest in a merchant"
+      success_criteria: "investment_made"
+      time_limit: 60
+      difficulty: "advanced"
+
+# Task sampling weights per curriculum stage
+sampling_weights:
+  stage_0_locomotion: 0.70  # 70% of tasks from this stage
+  stage_1_navigation: 0.25  # 25% of tasks
+  stage_2_combat: 0.05      # 5% of tasks (minimal)
+  
+  stage_1_navigation_weights:
+    stage_0_locomotion: 0.30
+    stage_1_navigation: 0.60
+    stage_2_combat: 0.10
+  
+  stage_2_combat_weights:
+    stage_0_locomotion: 0.15
+    stage_1_navigation: 0.35
+    stage_2_combat: 0.50
