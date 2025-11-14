@@ -1199,10 +1199,21 @@ class SkyrimAGI:
             'action_source_heuristic': 0,  # Heuristic fallback
             'action_source_timeout': 0,  # Timeout fallback
             'random_academic_thoughts': 0,  # Brownian motion memory retrievals
+            # Phase 1.2: Action validation stats
+            'action_rejected_count': 0,  # Total rejected actions
+            'action_rejected_stale': 0,  # Rejected due to stale perception
+            'action_rejected_context': 0,  # Rejected due to context mismatch
         }
         
         # Last successful action source (for caching fast path)
         self.last_action_source: Optional[str] = None
+        
+        # Phase 2.3: Action Arbiter - Single point of action execution
+        print("  [PHASE 2] Initializing Action Arbiter...")
+        from .action_arbiter import ActionArbiter, ActionPriority
+        self.action_arbiter = ActionArbiter(self)
+        self.ActionPriority = ActionPriority  # Make enum accessible
+        print("    [OK] Action Arbiter initialized with priority system")
 
         # Set up controller reference in perception for layer awareness
         self.perception.set_controller(self.controller)
@@ -2549,6 +2560,93 @@ class SkyrimAGI:
         
         return is_stuck
     
+    def _is_perception_fresh(self, perception_timestamp: float, max_age_seconds: float = 2.0) -> bool:
+        """
+        Check if perception is still fresh enough to act on.
+        
+        Args:
+            perception_timestamp: Timestamp when perception was captured
+            max_age_seconds: Maximum age in seconds (default 2.0)
+            
+        Returns:
+            True if perception is fresh, False if stale
+        """
+        age = time.time() - perception_timestamp
+        if age > max_age_seconds:
+            print(f"[VALIDATION] ⚠️ Perception stale: {age:.1f}s old (max: {max_age_seconds}s)")
+            return False
+        return True
+    
+    def _validate_action_context(
+        self, 
+        action: str, 
+        perception_timestamp: float,
+        original_scene: str,
+        original_health: float
+    ) -> tuple[bool, str]:
+        """
+        Validate that action is still appropriate given current context.
+        
+        Args:
+            action: Action to validate
+            perception_timestamp: When perception was captured
+            original_scene: Scene type when action was planned
+            original_health: Health when action was planned
+            
+        Returns:
+            (is_valid, reason)
+        """
+        # Check 1: Perception freshness
+        if not self._is_perception_fresh(perception_timestamp):
+            return (False, f"Perception too old ({time.time() - perception_timestamp:.1f}s)")
+        
+        # Check 2: Game state changed significantly
+        if self.current_perception:
+            current_game_state = self.current_perception.get('game_state')
+            if current_game_state:
+                current_scene = str(self.current_perception.get('scene_type', 'unknown'))
+                current_health = getattr(current_game_state, 'health', 100)
+                
+                # Scene changed (e.g., entered menu or combat)
+                if current_scene != str(original_scene):
+                    return (False, f"Scene changed: {original_scene} → {current_scene}")
+                
+                # Health dropped critically (need emergency action instead)
+                if original_health > 30 and current_health < 20:
+                    return (False, f"Health critical: {original_health:.0f} → {current_health:.0f}")
+        
+        return (True, "Valid")
+    
+    async def _handle_action_result(self, result):
+        """
+        Handle action result callback from arbiter.
+        
+        Phase 2.4: Action result tracking and notifications
+        """
+        from .action_arbiter import ActionResult
+        
+        if not result.executed:
+            print(f"[CALLBACK] Action '{result.action}' not executed: {result.reason}")
+            self.stats['action_rejected_count'] += 1
+            
+            # Track rejection reasons
+            if 'too old' in result.reason.lower():
+                self.stats['action_rejected_stale'] += 1
+            elif 'scene changed' in result.reason.lower() or 'context' in result.reason.lower():
+                self.stats['action_rejected_context'] += 1
+        
+        elif not result.success:
+            print(f"[CALLBACK] Action '{result.action}' failed: {result.reason}")
+            self.stats['action_failure_count'] += 1
+        
+        else:
+            print(f"[CALLBACK] Action '{result.action}' succeeded ({result.execution_time:.3f}s)")
+            self.stats['action_success_count'] += 1
+        
+        # Notify other systems if action was overridden
+        if result.overrode_action:
+            print(f"[CALLBACK] ⚡ Overrode action: {result.overrode_action}")
+    
     async def compute_enhanced_coherence(
         self,
         subsystem_outputs: Dict[str, Any],
@@ -3799,17 +3897,21 @@ Scene: {self.perception.last_scene_type.value if hasattr(self.perception, 'last_
         
         # Start fast reactive loop if enabled
         tasks = [perception_task, reasoning_task, action_task, learning_task]
-        if self.config.enable_fast_loop:
-            fast_loop_task = asyncio.create_task(self._fast_reactive_loop(duration_seconds, start_time))
-            tasks.append(fast_loop_task)
-            print("[ASYNC] Fast reactive loop ENABLED")
-        else:
-            print("[ASYNC] Fast reactive loop DISABLED")
         
-        # Start auxiliary exploration loop (always enabled)
-        aux_exploration_task = asyncio.create_task(self._auxiliary_exploration_loop(duration_seconds, start_time))
-        tasks.append(aux_exploration_task)
-        print("[ASYNC] Auxiliary exploration loop ENABLED")
+        # PHASE 1.1: DISABLED - Fast reactive loop causes action conflicts
+        # Multiple action executors fighting for control
+        # if self.config.enable_fast_loop:
+        #     fast_loop_task = asyncio.create_task(self._fast_reactive_loop(duration_seconds, start_time))
+        #     tasks.append(fast_loop_task)
+        #     print("[ASYNC] Fast reactive loop ENABLED")
+        # else:
+        print("[ASYNC] Fast reactive loop DISABLED (Phase 1 architecture fix)")
+        
+        # PHASE 1.1: DISABLED - Auxiliary exploration loop overrides planned actions
+        # Causes race conditions with main reasoning loop
+        # aux_exploration_task = asyncio.create_task(self._auxiliary_exploration_loop(duration_seconds, start_time))
+        # tasks.append(aux_exploration_task)
+        print("[ASYNC] Auxiliary exploration loop DISABLED (Phase 1 architecture fix)")
         
         # Wait for all tasks to complete (or any to fail)
         await asyncio.gather(*tasks, return_exceptions=True)
@@ -4491,6 +4593,24 @@ Based on this visual and contextual data, provide:
                 # Fix 20: Display performance dashboard every 5 cycles
                 if cycle_count > 0 and cycle_count % self.dashboard_update_interval == 0:
                     self._display_performance_dashboard()
+                
+                # PHASE 2.4: Display arbiter stats every 20 cycles
+                if cycle_count > 0 and cycle_count % 20 == 0:
+                    try:
+                        arbiter_stats = self.action_arbiter.get_stats()
+                        print(f"\n{'='*60}")
+                        print(f"ACTION ARBITER STATS (Cycle {cycle_count})")
+                        print(f"{'='*60}")
+                        print(f"Total Requests: {arbiter_stats['total_requests']}")
+                        print(f"Executed: {arbiter_stats['executed']} ({arbiter_stats['success_rate']:.1%})")
+                        print(f"Rejected: {arbiter_stats['rejected']} (Rate: {arbiter_stats['rejection_rate']:.1%})")
+                        print(f"Overridden: {arbiter_stats['overridden']} (Rate: {arbiter_stats['override_rate']:.1%})")
+                        print(f"\nBy Source:")
+                        for source, count in sorted(arbiter_stats['by_source'].items(), key=lambda x: x[1], reverse=True)[:3]:
+                            print(f"  {source}: {count}")
+                        print(f"{'='*60}\n")
+                    except Exception as e:
+                        print(f"[ARBITER] Stats error: {e}")
                 
                 game_state = perception['game_state']
                 scene_type = perception['scene_type']
@@ -6047,19 +6167,33 @@ Applicable Rules: {len(logic_analysis_brief['applicable_rules'])}"""
                     except Exception as e:
                         print(f"[MEMORY] Adaptive memory error: {e}")
                 
-                # Queue action for execution (non-blocking)
+                # PHASE 2.3: Route action through arbiter instead of queue
                 try:
-                    self.action_queue.put_nowait({
-                        'action': action,
-                        'scene_type': scene_type,
-                        'game_state': game_state,
-                        'motivation': mot_state,
-                        'cycle': cycle_count,
-                        'consciousness': current_consciousness,
-                        'binding_id': binding_id  # Pass for later completion
-                    })
-                except asyncio.QueueFull:
-                    print(f"[REASONING] Action queue full, action {action} dropped")
+                    # Request action through arbiter with NORMAL priority
+                    result = await self.action_arbiter.request_action(
+                        action=action,
+                        priority=self.ActionPriority.NORMAL,  # Standard planned actions
+                        source='reasoning_loop',
+                        context={
+                            'perception_timestamp': perception_data.get('timestamp', time.time()),
+                            'scene_type': scene_type,
+                            'game_state': game_state,
+                            'motivation': mot_state,
+                            'consciousness': current_consciousness,
+                            'binding_id': binding_id,
+                            'cycle': cycle_count,
+                        },
+                        callback=self._handle_action_result
+                    )
+                    
+                    if not result.executed or not result.success:
+                        print(f"[REASONING] Action rejected/failed: {result.reason}")
+                        self.stats['action_rejected_count'] += 1
+                    else:
+                        print(f"[REASONING] Action executed: {action} ({result.execution_time:.3f}s)")
+                        
+                except Exception as e:
+                    print(f"[REASONING] Arbiter error: {e}")
                 
             except asyncio.TimeoutError:
                 # No perception available, wait a bit
@@ -6089,8 +6223,25 @@ Applicable Rules: {len(logic_analysis_brief['applicable_rules'])}"""
                 action = action_data['action']
                 scene_type = action_data.get('scene_type', 'unknown')
                 game_state = action_data.get('game_state', {})
+                perception_timestamp = action_data.get('timestamp', time.time())
                 
-                print(f"\n[ACTION] Executing: {action}")
+                # ===== PHASE 1.2: VALIDATE ACTION CONTEXT =====
+                original_health = getattr(game_state, 'health', 100) if hasattr(game_state, 'health') else 100
+                is_valid, reason = self._validate_action_context(
+                    action=action,
+                    perception_timestamp=perception_timestamp,
+                    original_scene=str(scene_type),
+                    original_health=original_health
+                )
+                
+                if not is_valid:
+                    print(f"\n[ACTION] ❌ Action rejected: {action}")
+                    print(f"[ACTION]    Reason: {reason}")
+                    self.stats['action_rejected_count'] = self.stats.get('action_rejected_count', 0) + 1
+                    continue  # Skip this action
+                # ===== END VALIDATION =====
+                
+                print(f"\n[ACTION] ✓ Executing: {action}")
                 
                 # Set flag to prevent auxiliary exploration interference
                 self.action_executing = True
