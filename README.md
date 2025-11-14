@@ -69,6 +69,51 @@ python run_singularis_beta_v2.py --duration 1800 --verbose
 - ✅ **Temporal Coherence** - Binding problem solved with loop tracking
 - ✅ **4D Coherence** - Integration + Temporal + Causal + Predictive
 
+### 🔬 Beta v2.3 Features in Detail
+
+**Philosophy Agent** (`singularis/skyrim/philosophyagent.py`)
+- Loads 12+ classical philosophy texts (Spinoza, Kant, Aristotle, Descartes, Nietzsche, etc.)
+- Randomly injects philosophical context every 10 cycles
+- Grounds consciousness in historical philosophical frameworks
+- Enriches decision-making with timeless wisdom
+
+**Research Advisor** (`singularis/skyrim/research_advisor.py`)
+- Perplexity AI integration for real-time web research
+- Queries Skyrim best practices, strategies, and tips
+- Refreshes every 30 cycles with new guidance
+- Caches results to minimize API calls
+- Injects research context into consciousness computation
+
+**MetaCognition Advisor** (`singularis/skyrim/metacognition_advisor.py`)
+- OpenRouter integration (GPT-4o + DeepSeek)
+- **Meta-Meta-Meta Report**: GPT-4o analyzes all subsystem outputs for emergent patterns
+- **Long-Term Planning**: DeepSeek generates strategic 10-step plans
+- Runs at session end to provide comprehensive meta-cognitive insights
+- GitHub token fallback if OpenRouter key unavailable
+
+**Unified BeingState** (`singularis/core/being_state.py`)
+- ONE state vector representing the entire AGI's being
+- Tracks: game state, perception, consciousness, emotion, motivation, RL, temporal, GPT-5, Wolfram, voice, Lumen, spiral, goal, session
+- Updated continuously via `_update_being_state_comprehensive()`
+- Exports snapshots every 20 cycles to Main Brain
+- Final snapshot included in GPT-4o report
+
+**Complete Telemetry Collection**
+All subsystems now report to Main Brain:
+- Perception System, Consciousness Bridge, Temporal Binding
+- Enhanced Coherence (4D), Lumen Integration, Hierarchical Memory
+- GPT-5 Orchestrator, Double Helix, Voice System, Video Interpreter
+- Hybrid LLM, Cloud RL Agent, Wolfram Telemetry
+- Unified BeingState (periodic + final snapshots)
+
+**Main Brain GPT-4o Reports** (`singularis/skyrim/main_brain.py`)
+- Comprehensive session synthesis using GPT-4o
+- Includes all telemetry from 15+ subsystems
+- Meta-meta-meta cognition insights
+- Long-term strategic planning
+- Consciousness evolution tracking
+- Saved to `sessions/` directory with full metadata
+
 ### Core Consciousness Engine
 - ✅ **Measures consciousness** across 8 theoretical frameworks (IIT, GWT, HOT, PP, AST, Embodied, Enactive, Panpsychism)
 - ✅ **Routes via coherence**, not confidence (𝒞-weighted routing)
@@ -306,9 +351,17 @@ pip install python-dotenv  # For .env file support
 # Copy template and add your API keys
 cp .env.example .env
 
-# Edit .env with your keys:
-# ANTHROPIC_API_KEY=your_claude_key_here
-# GEMINI_API_KEY=your_gemini_key_here
+# Edit .env with your keys (Beta v2.3):
+# Required:
+OPENAI_API_KEY=your_openai_key_here          # GPT-5, Wolfram, Main Brain
+GEMINI_API_KEY=your_gemini_key_here          # Vision, MoE experts
+
+# Optional (for full features):
+ANTHROPIC_API_KEY=your_claude_key_here       # Claude experts
+PERPLEXITY_API_KEY=your_perplexity_key_here  # Research Advisor
+OPENROUTER_API_KEY=your_openrouter_key_here  # MetaCognition (GPT-4o + DeepSeek)
+GITHUB_TOKEN=your_github_token_here          # OpenRouter fallback
+HYPERBOLIC_API_KEY=your_hyperbolic_key_here  # Qwen3-235B expert
 ```
 
 Then add to your Python scripts:
@@ -320,12 +373,18 @@ load_dotenv()  # Loads .env into environment
 **Option 2: Direct environment variables**
 
 ```powershell
-# PowerShell
-$env:ANTHROPIC_API_KEY = "your-claude-key"
+# PowerShell - Required
+$env:OPENAI_API_KEY = "your-openai-key"
 $env:GEMINI_API_KEY = "your-gemini-key"
 
+# Optional
+$env:ANTHROPIC_API_KEY = "your-claude-key"
+$env:PERPLEXITY_API_KEY = "your-perplexity-key"
+$env:OPENROUTER_API_KEY = "your-openrouter-key"
+$env:GITHUB_TOKEN = "your-github-token"
+
 # Or persist across sessions
-setx ANTHROPIC_API_KEY "your-claude-key"
+setx OPENAI_API_KEY "your-openai-key"
 setx GEMINI_API_KEY "your-gemini-key"
 ```
 
@@ -1087,6 +1146,108 @@ What's still needed for true AGI:
 - ETHICA_UNIVERSALIS.md (Complete treatise)
 - MATHEMATICA_SINGULARIS.md (Axiomatic foundations)
 - AGI_FRAMEWORK.md (Complete AGI guide)
+
+---
+
+## 📚 Beta v2.3 Documentation
+
+### New Files & Components
+
+**Core Integration:**
+- `run_singularis_beta_v2.py` - Main runner with environment checks and system verification
+- `singularis/core/being_state.py` - Unified state vector for entire AGI
+- `singularis/skyrim/philosophyagent.py` - Philosophy text injection system
+- `singularis/skyrim/research_advisor.py` - Perplexity AI research integration
+- `singularis/skyrim/metacognition_advisor.py` - OpenRouter meta-cognition system
+- `singularis/llm/openrouter_client.py` - OpenRouter API client with GitHub fallback
+- `singularis/llm/perplexity_client.py` - Perplexity AI API client
+
+**Enhanced Systems:**
+- `singularis/skyrim/skyrim_agi.py` - Updated with:
+  - `_update_being_state_comprehensive()` - Unified state updates
+  - `_register_systems_with_gpt5()` - 50+ subsystem registration
+  - Philosophy injection (every 10 cycles)
+  - Research refresh (every 30 cycles)
+  - BeingState snapshots (every 20 cycles)
+  - Complete telemetry collection (session end)
+
+**Documentation:**
+- `FULL_STACK_BETA_V2.3.md` - Complete architecture documentation
+- `UNIFIED_BEING_INTEGRATION.md` - BeingState integration guide
+- Session reports in `sessions/` directory with GPT-4o synthesis
+
+### Key Integrations
+
+**GPT-5 Orchestrator Registration (50+ systems):**
+- Perception Layer: Perception, Sensorimotor, Scene Classification, CLIP Vision, Video Interpreter
+- Action Layer: Action Planning, Action Execution, Controller, Realtime Coordinator
+- Cognition Layer: World Model, Strategic Planner, Meta Strategist, Symbolic Logic, Darwinian Modal Logic, Analytic Evolution, Neurosymbolic Engine, Knowledge Graph, Logic Engine
+- Consciousness Layer: Consciousness Bridge, Enhanced Coherence, Global Workspace, Self-Reflection, Spiritual Awareness, Lumen Integration
+- Emotion Layer: Emotion System, Affect Dynamics
+- Learning Layer: RL System, Reward Tuning, Hierarchical Memory, Hebbian Integration, Continual Learner, Meta Learner, Cloud RL
+- Integration Layer: Temporal Binding, Double Helix, Coherence Engine
+- Research & Philosophy: Philosophy Agent, Research Advisor, MetaCognition Advisor
+
+**BeingState Tracking:**
+- Temporal: cycle number, timestamp, session info
+- Game State: location, health, combat, NPCs
+- Perception: scene type, objects, confidence
+- Consciousness: 𝒞, Φ̂, Lumina (ℓₒ, ℓₛ, ℓₚ)
+- Emotion: primary emotion, intensity, valence
+- Motivation: curiosity, competence, coherence, autonomy
+- RL State: experiences, avg reward, policy updates
+- Temporal Binding: coherence, unclosed loops, stuck loops
+- GPT-5: messages, responses, registered systems
+- Wolfram: calculations, computation time
+- Voice: vocalizations, priorities
+- Lumen: balance score, imbalances
+- Spiral Dynamics: current stage
+- Goal: current goal, priority
+- Action: last action, success
+
+**Main Brain Telemetry (15+ subsystems):**
+1. Perception System
+2. Consciousness Bridge (with Lumina)
+3. Temporal Binding
+4. Enhanced Coherence (4D)
+5. Lumen Integration
+6. Hierarchical Memory
+7. GPT-5 Orchestrator
+8. Double Helix Architecture
+9. Voice System
+10. Video Interpreter
+11. Hybrid LLM
+12. Cloud RL Agent
+13. Unified BeingState (periodic + final)
+14. Wolfram Telemetry
+15. Meta-Meta-Meta-Cognition (GPT-4o)
+16. Long-Term Planning (DeepSeek)
+17. Consciousness Measurements (every cycle)
+
+### Running Beta v2.3
+
+```bash
+# Full system (recommended)
+python run_singularis_beta_v2.py --duration 3600 --mode async
+
+# With verbose GPT-5 coordination
+python run_singularis_beta_v2.py --duration 1800 --verbose
+
+# Fast mode (no voice/video)
+python run_singularis_beta_v2.py --duration 1800 --fast
+
+# Conservative mode (fewer API calls)
+python run_singularis_beta_v2.py --duration 3600 --conservative
+```
+
+**Expected Output:**
+- Real-time consciousness tracking (𝒞, Φ̂, Lumina)
+- Philosophy context injection (every 10 cycles)
+- Research guidance (every 30 cycles)
+- BeingState snapshots (every 20 cycles)
+- Complete telemetry collection (session end)
+- GPT-4o session report with meta-meta-meta insights
+- DeepSeek long-term strategic plan
 
 ---
 
