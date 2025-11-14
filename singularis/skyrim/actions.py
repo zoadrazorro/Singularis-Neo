@@ -472,6 +472,34 @@ class SkyrimActions:
     async def move_right(self, duration: float = 1.0):
         """Move right (strafe) for specified duration."""
         await self.execute(Action(ActionType.MOVE_RIGHT, duration))
+    
+    async def jump(self):
+        """Jump."""
+        await self.execute(Action(ActionType.JUMP))
+    
+    async def sprint(self, duration: float = 2.0):
+        """Sprint forward for specified duration."""
+        await self.execute(Action(ActionType.SPRINT, duration))
+    
+    async def attack(self):
+        """Attack (light attack)."""
+        await self.execute(Action(ActionType.ATTACK))
+    
+    async def block(self, duration: float = 1.0):
+        """Block with shield/weapon."""
+        await self.execute(Action(ActionType.BLOCK, duration))
+    
+    async def interact(self):
+        """Interact/activate (E key)."""
+        await self.execute(Action(ActionType.ACTIVATE))
+    
+    async def turn_left(self, degrees: float = 45.0):
+        """Turn left by specified degrees."""
+        await self.look_horizontal(-degrees)
+    
+    async def turn_right(self, degrees: float = 45.0):
+        """Turn right by specified degrees."""
+        await self.look_horizontal(degrees)
 
     async def evasive_maneuver(self):
         """

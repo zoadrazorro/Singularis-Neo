@@ -14,6 +14,7 @@ Phase 2.1 & 2.2: ActionArbiter implementation
 from __future__ import annotations
 
 import asyncio
+import random
 import time
 from dataclasses import dataclass, field
 from enum import Enum
@@ -112,6 +113,10 @@ class ActionArbiter:
         self.gpt5_coordination_count = 0
         self.gpt5_coordination_time = 0.0
         self.local_coordination_count = 0  # Fast local arbitration count
+        
+        # Periodic GPT-5 coordination (every 6-11 steps)
+        self.steps_since_gpt5 = 0
+        self.next_gpt5_interval = random.randint(6, 11)
         
         logger.info(
             f"[ARBITER] Action Arbiter initialized "
@@ -268,13 +273,18 @@ class ActionArbiter:
                 if request.priority != ActionPriority.CRITICAL:
                     return (False, "Can't open menus during combat (unless CRITICAL)")
         
-        # Check 6: Repeated action detection
+        # Check 6: Repeated action detection (lenient for exploration)
         if hasattr(self.agi, 'action_history'):
             recent = self.agi.action_history[-5:] if len(self.agi.action_history) >= 5 else []
             
             # Don't allow same action 5 times in a row (stuck loop)
             if len(recent) >= 5 and all(a == action for a in recent):
-                return (False, f"Action '{action}' repeated 5x (stuck loop prevention)")
+                # 'explore' action is excluded from repeated action detection 89% of the time
+                if action == 'explore' and random.random() < 0.89:
+                    # Allow explore to repeat 89% of the time
+                    pass  # Continue validation
+                else:
+                    return (False, f"Action '{action}' repeated 5x (stuck loop prevention)")
         
         return (True, "Valid")
     
@@ -347,10 +357,16 @@ class ActionArbiter:
         - Low subsystem consensus
         - Temporal coherence issues
         - Stuck loop detected
+        - Periodic interval reached (every 6-11 steps)
         
         Returns:
             True if GPT-5 coordination needed, False for fast local arbitration
         """
+        # Check periodic coordination interval
+        if self.steps_since_gpt5 >= self.next_gpt5_interval:
+            logger.info(f"[ARBITER] Periodic GPT-5 coordination (interval: {self.next_gpt5_interval})")
+            return True
+        
         # Always use local for single action
         if len(candidate_actions) <= 1:
             return False
@@ -430,9 +446,11 @@ class ActionArbiter:
                 selected = max(candidate_actions, key=lambda x: x.get('confidence', 0.0))
                 selected['coordination_method'] = 'local_fast'
                 self.local_coordination_count += 1
+                self.steps_since_gpt5 += 1  # Track steps for periodic coordination
                 logger.info(
                     f"[ARBITER] ⚡ Fast local arbitration: {selected['action']} "
-                    f"(confidence: {selected.get('confidence', 0.0):.2f})"
+                    f"(confidence: {selected.get('confidence', 0.0):.2f}) "
+                    f"[{self.steps_since_gpt5}/{self.next_gpt5_interval} until GPT-5]"
                 )
                 return selected
             return None
@@ -532,10 +550,14 @@ Provide: Selected action number (or 0 for none), reasoning, and confidence."""
             self.gpt5_coordination_count += 1
             self.gpt5_coordination_time += elapsed
             
+            # Reset periodic coordination counter and set new random interval
+            self.steps_since_gpt5 = 0
+            self.next_gpt5_interval = random.randint(6, 11)
+            
             logger.info(
                 f"[ARBITER] GPT-5 coordination complete: "
                 f"{'selected' if selected_action else 'no selection'} "
-                f"({elapsed:.2f}s)"
+                f"({elapsed:.2f}s) [next GPT-5 in {self.next_gpt5_interval} steps]"
             )
             
             return selected_action
@@ -569,8 +591,13 @@ Provide: Selected action number (or 0 for none), reasoning, and confidence."""
         Returns:
             (is_allowed, reason) - True if action should proceed
         """
-        # Check 1: Stuck loop prevention
+        # Check 1: Stuck loop prevention (lenient for exploration)
         if being_state.stuck_loop_count >= 3:
+            # 'explore' action is excluded from stuck loop detection 89% of the time
+            if action == 'explore' and random.random() < 0.89:
+                # Allow explore to continue 89% of the time
+                return (True, "Exploration action allowed despite stuck loop")
+            
             # Only allow actions that break the loop
             loop_breaking_actions = ['turn_left', 'turn_right', 'jump', 'move_backward']
             if action not in loop_breaking_actions and priority != ActionPriority.CRITICAL:

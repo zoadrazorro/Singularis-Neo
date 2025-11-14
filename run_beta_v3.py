@@ -173,17 +173,20 @@ class BetaV3System:
                     logger.info("[TEST-MODE] ✓ Virtual Xbox 360 controller ready")
                 
                 async def _execute_action(self, action, scene_type):
+                    """Execute action with 1:1 mapping to SkyrimActions."""
                     self.actions_executed.append(action)
                     self.action_history.append(action)
                     
-                    # Execute real gamepad action
+                    # Direct 1:1 execution - action names match SkyrimActions methods
                     if hasattr(self.actions, action):
                         try:
+                            logger.info(f"[TEST-MODE] ⚡ Executing: {action}")
                             await getattr(self.actions, action)()
                         except Exception as e:
-                            logger.warning(f"[TEST-MODE] Action {action} failed: {e}")
+                            logger.error(f"[TEST-MODE] Action {action} failed: {e}")
                     else:
-                        await asyncio.sleep(0.05)
+                        logger.warning(f"[TEST-MODE] Unknown action: {action}")
+                        await asyncio.sleep(0.1)
             
             mock_agi = MockSkyrimAGI()
             mock_agi.being_state = self.being_state  # Share BeingState
@@ -268,21 +271,34 @@ class BetaV3System:
                 'recommendations': ['move_forward', 'explore']
             })
         
-        # Gather candidate actions
-        candidate_actions = [
-            {
-                'action': 'explore',
-                'priority': 'NORMAL',
-                'source': 'reasoning',
-                'confidence': 0.75
-            },
-            {
-                'action': 'move_forward',
-                'priority': 'NORMAL',
-                'source': 'action_plan',
-                'confidence': 0.70
-            }
+        # Gather candidate actions (using real low-level action names)
+        # These map 1:1 with SkyrimActions methods
+        import random
+        available_actions = [
+            # Movement (most common)
+            'move_forward', 'move_forward', 'move_forward',  # 3x weight
+            'move_backward', 'move_left', 'move_right',
+            'turn_left', 'turn_right',
+            # Actions
+            'jump', 'sprint', 'attack', 'block', 'interact',
+            # Exploration
+            'look_around', 'look_up', 'look_down',
+            # Advanced
+            'evasive_maneuver', 'scan_for_targets', 'recenter_camera'
         ]
+        
+        # Generate 2-3 candidate actions with varying confidence
+        num_candidates = random.randint(2, 3)
+        candidate_actions = []
+        
+        for i in range(num_candidates):
+            action = random.choice(available_actions)
+            candidate_actions.append({
+                'action': action,
+                'priority': 'NORMAL',
+                'source': 'reasoning' if i == 0 else 'action_plan',
+                'confidence': 0.65 + random.random() * 0.25  # 0.65-0.90
+            })
         
         # GPT-5 coordination (if enabled) - uses hybrid mode
         selected_action = None
@@ -297,6 +313,9 @@ class BetaV3System:
                     self.stats['local_coordinations'] = self.stats.get('local_coordinations', 0) + 1
                 else:
                     self.stats['gpt5_coordinations'] += 1
+            else:
+                # GPT-5 was called but returned no selection
+                self.stats['gpt5_coordinations'] += 1
         
         if not selected_action:
             # Fallback: select highest confidence
@@ -504,8 +523,8 @@ class BetaV3System:
 async def main():
     """Main entry point."""
     parser = argparse.ArgumentParser(description="Singularis Beta v3 Runner")
-    parser.add_argument("--test-mode", action="store_true", default=True, help="Run in test mode (default)")
-    parser.add_argument("--production", action="store_true", help="Run in production mode with full SkyrimAGI")
+    parser.add_argument("--test-mode", action="store_true", default=False, help="Run in test mode")
+    parser.add_argument("--production", action="store_true", default=True, help="Run in production mode with full SkyrimAGI (default)")
     parser.add_argument("--no-gpt5", action="store_true", help="Disable GPT-5 coordination")
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose logging")
     parser.add_argument("--duration", type=int, help="Run duration in seconds")

@@ -1,17 +1,18 @@
 {
-  "cycle": 6,
-  "elapsed": 67.71101021766663,
+  "cycle": 18,
+  "elapsed": 45.12917518615723,
   "stats": {
-    "total_actions": 5,
-    "successful_actions": 5,
+    "total_actions": 17,
+    "successful_actions": 17,
     "rejected_actions": 0,
     "conflicts_prevented": 0,
     "gpt5_coordinations": 0,
-    "temporal_closure_rate": 1.0
+    "temporal_closure_rate": 1.0,
+    "local_coordinations": 15
   },
   "being_state": {
-    "timestamp": 1763150476.2542906,
-    "cycle": 6,
+    "timestamp": 1763150213.4063478,
+    "cycle": 18,
     "global_coherence": 0.85,
     "lumina": {
       "ontic": 0.0,
@@ -54,22 +55,25 @@
     "goal": null,
     "subsystems": {
       "sensorimotor": {
-        "status": "UNKNOWN",
-        "analysis": "",
-        "visual_similarity": 0.0,
-        "age": 999
+        "status": "IDLE",
+        "analysis": "Cycle 18",
+        "visual_similarity": 0.7,
+        "age": 7.23976993560791
       },
       "action_plan": {
-        "current": null,
-        "confidence": 0.0,
-        "reasoning": "",
-        "age": 999
+        "current": "explore",
+        "confidence": 0.85,
+        "reasoning": "Test mode action planning",
+        "age": 7.23975682258606
       },
       "memory": {
-        "pattern_count": 0,
+        "pattern_count": 11,
         "similar_situations": 0,
-        "recommendations": [],
-        "age": 999
+        "recommendations": [
+          "move_forward",
+          "explore"
+        ],
+        "age": 7.239749908447266
       },
       "emotion": {
         "primary": null,
