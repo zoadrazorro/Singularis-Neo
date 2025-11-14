@@ -31,6 +31,10 @@ from typing import Optional
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
+# Load environment variables from .env file
+from dotenv import load_dotenv
+load_dotenv()
+
 
 def print_banner():
     """Print the Singularis banner."""
@@ -105,7 +109,7 @@ def check_environment():
 
 def load_config(args) -> 'SkyrimConfig':
     """Load and configure the system."""
-    from singularis.skyrim.config import SkyrimConfig
+    from singularis.skyrim.skyrim_agi import SkyrimConfig
     
     print("[CONFIG] Loading configuration...")
     
@@ -116,7 +120,7 @@ def load_config(args) -> 'SkyrimConfig':
         config.cycle_interval = args.cycle_interval
     
     if args.verbose:
-        config.verbose = True
+        config.gpt5_verbose = True  # Use gpt5_verbose instead of verbose
     
     if args.no_voice:
         config.enable_voice = False
@@ -125,7 +129,9 @@ def load_config(args) -> 'SkyrimConfig':
         config.enable_video_interpreter = False
     
     if args.no_wolfram:
-        config.use_wolfram_telemetry = False
+        # Note: Wolfram is always enabled - it's integrated into the core system
+        # and performs analysis every 20 cycles automatically
+        print("  [INFO] Wolfram telemetry is always enabled (integrated into core)")
     
     # Performance settings
     if args.fast:
@@ -133,19 +139,22 @@ def load_config(args) -> 'SkyrimConfig':
         config.cycle_interval = 1.0
         config.enable_voice = False
         config.enable_video_interpreter = False
-        config.use_wolfram_telemetry = False
+        config.gpt5_verbose = False
     
     # Safety settings
     if args.conservative:
         print("  [CONSERVATIVE MODE] Reducing API calls...")
         config.cycle_interval = 5.0
         config.gemini_rpm_limit = 10
+        config.num_gemini_experts = 1
+        config.num_claude_experts = 1
     
     print(f"  Cycle interval: {config.cycle_interval}s")
     print(f"  Voice enabled: {config.enable_voice}")
     print(f"  Video enabled: {config.enable_video_interpreter}")
-    print(f"  Wolfram enabled: {getattr(config, 'use_wolfram_telemetry', False)}")
-    print(f"  Verbose mode: {config.verbose}")
+    print(f"  GPT-5 orchestrator: {config.use_gpt5_orchestrator}")
+    print(f"  Wolfram telemetry: Always enabled (every 20 cycles)")
+    print(f"  Verbose mode: {config.gpt5_verbose}")
     
     print("[CONFIG] ✓ Configuration loaded\n")
     return config
