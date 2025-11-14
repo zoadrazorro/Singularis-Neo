@@ -626,7 +626,7 @@ Provide: Selected action number (or 0 for none), reasoning, and confidence."""
                 if action in aggressive_actions and priority != ActionPriority.CRITICAL:
                     conflicts.append(f"health: critical health ({health:.0f}), aggressive action risky")
         
-        # Evaluate conflicts
+        # Evaluate conflicts (more lenient thresholds)
         if conflicts:
             # CRITICAL actions override all conflicts
             if priority == ActionPriority.CRITICAL:
@@ -642,10 +642,17 @@ Provide: Selected action number (or 0 for none), reasoning, and confidence."""
                 )
                 return (True, f"HIGH priority overrides {len(conflicts)} conflicts")
             
-            # Otherwise, block the action
+            # NORMAL priority can override 1-2 conflicts (more lenient)
+            if priority == ActionPriority.NORMAL and len(conflicts) <= 2:
+                logger.info(
+                    f"[ARBITER] NORMAL priority action '{action}' proceeding with {len(conflicts)} conflicts"
+                )
+                return (True, f"NORMAL priority allows {len(conflicts)} conflicts")
+            
+            # Only block if conflicts exceed thresholds
             conflict_summary = "; ".join(conflicts)
             logger.warning(
-                f"[ARBITER] Blocking action '{action}' due to conflicts: {conflict_summary}"
+                f"[ARBITER] Blocking action '{action}' due to {len(conflicts)} conflicts: {conflict_summary}"
             )
             return (False, f"Conflicts detected: {conflict_summary}")
         

@@ -66,9 +66,9 @@ class BetaV3Config:
     duration_seconds: Optional[int] = None
     verbose: bool = False
     
-    # GPT-5 Coordination (DISABLED - using fast local arbitration only)
-    enable_gpt5: bool = False  # Set to True to enable GPT-5 coordination
-    gpt5_model: str = "gpt-5-mini-2025-08-07"  # GPT-5 Mini for coordination
+    # GPT-5 Coordination (Enabled with Nano model)
+    enable_gpt5: bool = True  # GPT-5 coordination enabled
+    gpt5_model: str = "gpt-5-nano-2025-08-07"  # GPT-5 Nano for coordination (fastest, most efficient)
     openai_api_key: Optional[str] = None
     
     # Action Arbiter
@@ -148,7 +148,12 @@ class BetaV3System:
         
         # Initialize SkyrimAGI and ActionArbiter
         if self.config.test_mode:
-            # Create inline mock for test mode (no external dependencies)
+            # Import controller for test mode
+            from singularis.skyrim.controller import VirtualXboxController
+            from singularis.skyrim.controller_bindings import SkyrimControllerBindings
+            from singularis.skyrim.actions import SkyrimActions
+            
+            # Create inline mock for test mode (with gamepad)
             class MockSkyrimAGI:
                 def __init__(self):
                     self.current_perception = {
@@ -158,11 +163,27 @@ class BetaV3System:
                     self.action_history = []
                     self.actions_executed = []
                     self.being_state = None  # Will be set by BetaV3System
+                    
+                    # Initialize gamepad for test mode
+                    logger.info("[TEST-MODE] Initializing virtual gamepad...")
+                    self.controller = VirtualXboxController(dry_run=False)
+                    self.bindings = SkyrimControllerBindings(self.controller)
+                    self.bindings.switch_to_exploration()
+                    self.actions = SkyrimActions(controller=self.controller, dry_run=False)
+                    logger.info("[TEST-MODE] ✓ Virtual Xbox 360 controller ready")
                 
                 async def _execute_action(self, action, scene_type):
                     self.actions_executed.append(action)
                     self.action_history.append(action)
-                    await asyncio.sleep(0.05)
+                    
+                    # Execute real gamepad action
+                    if hasattr(self.actions, action):
+                        try:
+                            await getattr(self.actions, action)()
+                        except Exception as e:
+                            logger.warning(f"[TEST-MODE] Action {action} failed: {e}")
+                    else:
+                        await asyncio.sleep(0.05)
             
             mock_agi = MockSkyrimAGI()
             mock_agi.being_state = self.being_state  # Share BeingState
@@ -483,13 +504,18 @@ class BetaV3System:
 async def main():
     """Main entry point."""
     parser = argparse.ArgumentParser(description="Singularis Beta v3 Runner")
-    parser.add_argument("--test-mode", action="store_true", help="Run in test mode")
+    parser.add_argument("--test-mode", action="store_true", default=True, help="Run in test mode (default)")
+    parser.add_argument("--production", action="store_true", help="Run in production mode with full SkyrimAGI")
     parser.add_argument("--no-gpt5", action="store_true", help="Disable GPT-5 coordination")
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose logging")
     parser.add_argument("--duration", type=int, help="Run duration in seconds")
     parser.add_argument("--stats-interval", type=int, default=60, help="Stats print interval")
     
     args = parser.parse_args()
+    
+    # If --production is specified, disable test mode
+    if args.production:
+        args.test_mode = False
     
     # Configure logging
     logger.remove()

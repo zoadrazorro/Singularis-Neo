@@ -1,8 +1,8 @@
 # Hybrid Coordination System
 
-**Speed-Optimized Action Coordination**
+**Speed-Optimized Action Coordination with GPT-5 Nano**
 
-The Beta v3 system now uses a **hybrid coordination approach** that balances speed and intelligence:
+The Beta v3 system now uses a **hybrid coordination approach** with GPT-5 Nano that balances speed and intelligence:
 
 ---
 
@@ -23,7 +23,7 @@ Used when decisions are **simple and clear**:
 
 **Speed**: <1ms (instant decision)
 
-### 🧠 GPT-5 Mini Coordination (13-19s)
+### 🧠 GPT-5 Nano Coordination (8-12s)
 
 Used when decisions are **complex or conflicting**:
 - ❌ Multiple conflicting actions
@@ -33,9 +33,9 @@ Used when decisions are **complex or conflicting**:
 - ❌ Stuck loop detected (≥2 cycles)
 - ❌ Multiple stale subsystems (≥2)
 
-**Method**: Full meta-cognitive analysis via GPT-5 Mini
+**Method**: Full meta-cognitive analysis via GPT-5 Nano
 
-**Speed**: 13-19 seconds (deep reasoning)
+**Speed**: 8-12 seconds (deep reasoning, faster than Mini)
 
 ---
 
