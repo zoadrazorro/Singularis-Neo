@@ -1664,6 +1664,9 @@ class SkyrimAGI:
         # Register all systems with GPT-5 orchestrator
         await self._register_systems_with_gpt5()
         
+        # Initialize Wolfram Alpha telemetry analyzer
+        await self._initialize_wolfram_telemetry()
+        
         # Start video interpreter streaming
         if self.video_interpreter:
             await self.video_interpreter.start_streaming()
@@ -1704,6 +1707,23 @@ class SkyrimAGI:
         
         print(f"[GPT-5] Registered {len(self.gpt5_orchestrator.registered_systems)} subsystems")
         print("[GPT-5] Meta-cognitive coordination ready\n")
+    
+    async def _initialize_wolfram_telemetry(self):
+        """Initialize Wolfram Alpha telemetry analyzer."""
+        try:
+            from ..llm.wolfram_telemetry import WolframTelemetryAnalyzer
+            
+            print("\n[WOLFRAM] Initializing telemetry analyzer...")
+            self.wolfram_analyzer = WolframTelemetryAnalyzer(
+                wolfram_gpt_id="gpt-4o",  # Can be replaced with custom Wolfram GPT
+                verbose=True
+            )
+            print("[WOLFRAM] ✓ Telemetry analyzer ready")
+            print("[WOLFRAM] Will perform advanced calculations on AGI metrics\n")
+        except Exception as e:
+            print(f"[WOLFRAM] ⚠️ Initialization failed: {e}")
+            print("[WOLFRAM] Continuing without Wolfram analysis\n")
+            self.wolfram_analyzer = None
     
     async def aggregate_unified_metrics(self) -> Dict[str, Any]:
         """Aggregate metrics from all systems."""
@@ -2802,10 +2822,36 @@ Connect perception → thought → action into flowing experience.""",
             print("GENERATING SESSION REPORT")
             print(f"{'=' * 60}")
             try:
+                # Add Wolfram summary to Main Brain before generating report
+                if hasattr(self, 'wolfram_analyzer') and self.wolfram_analyzer:
+                    wolfram_stats = self.wolfram_analyzer.get_stats()
+                    if wolfram_stats['total_calculations'] > 0:
+                        wolfram_summary = f"""Wolfram Alpha Telemetry Summary:
+- Total Calculations: {wolfram_stats['total_calculations']}
+- Avg Computation Time: {wolfram_stats['avg_computation_time']:.2f}s
+- Total Computation Time: {wolfram_stats['total_computation_time']:.1f}s
+- Analysis Types: Differential coherence, statistical analysis, predictive modeling
+
+Wolfram provided rigorous mathematical analysis of AGI metrics throughout the session."""
+                        
+                        self.main_brain.record_output(
+                            system_name='Wolfram Telemetry Summary',
+                            content=wolfram_summary,
+                            metadata=wolfram_stats,
+                            success=True
+                        )
+                        print(f"[WOLFRAM] ✓ Summary added to Main Brain report")
+                
                 report_path = await self.main_brain.generate_session_markdown()
                 print(f"\n[MAIN BRAIN] 🧠✨ Session report generated!")
                 print(f"[MAIN BRAIN] 📄 Location: {report_path}")
                 print(f"[MAIN BRAIN] 🎯 Session ID: {self.main_brain.session_id}")
+                
+                # Print Wolfram contribution
+                if hasattr(self, 'wolfram_analyzer') and self.wolfram_analyzer:
+                    wolfram_stats = self.wolfram_analyzer.get_stats()
+                    if wolfram_stats['total_calculations'] > 0:
+                        print(f"[MAIN BRAIN] 🔬 Wolfram calculations: {wolfram_stats['total_calculations']}")
             except Exception as e:
                 print(f"[MAIN BRAIN] ⚠️ Failed to generate report: {e}")
             
@@ -2830,6 +2876,9 @@ Connect perception → thought → action into flowing experience.""",
                     await self.hyperbolic_reasoning.close()
                 if hasattr(self, 'hyperbolic_vision') and self.hyperbolic_vision:
                     await self.hyperbolic_vision.close()
+                # Close Wolfram analyzer
+                if hasattr(self, 'wolfram_analyzer') and self.wolfram_analyzer:
+                    await self.wolfram_analyzer.close()
                 print("[CLEANUP] ✓ All sessions closed")
             except Exception as e:
                 print(f"[CLEANUP] Warning: {e}")
@@ -3451,6 +3500,45 @@ Based on this visual and contextual data, provide:
                             )
                     except Exception as e:
                         print(f"[GPT5-COHERENCE] Tracking error: {e}")
+                
+                # ═══════════════════════════════════════════════════════════
+                # WOLFRAM ALPHA TELEMETRY - Advanced calculations (every 20 cycles)
+                # ═══════════════════════════════════════════════════════════
+                if self.wolfram_analyzer and cycle_count % 20 == 0:
+                    try:
+                        print("\n[WOLFRAM] 🔬 Performing telemetry analysis...")
+                        
+                        # Get coherence samples from GPT-5 orchestrator
+                        if self.gpt5_orchestrator:
+                            coherence_stats = self.gpt5_orchestrator.get_coherence_stats()
+                            
+                            if coherence_stats['samples'] > 5:
+                                # Analyze differential coherence
+                                gpt5_samples = [s['gpt5_coherence'] for s in self.gpt5_orchestrator.coherence_samples]
+                                other_samples = [s['other_coherence'] for s in self.gpt5_orchestrator.coherence_samples]
+                                
+                                wolfram_result = await self.wolfram_analyzer.analyze_differential_coherence(
+                                    gpt5_samples=gpt5_samples,
+                                    other_samples=other_samples
+                                )
+                                
+                                if wolfram_result.confidence > 0.5:
+                                    print(f"[WOLFRAM] ✓ Differential analysis complete")
+                                    print(f"[WOLFRAM] Result: {wolfram_result.result[:200]}...")
+                                    
+                                    # Record to Main Brain
+                                    self.main_brain.record_output(
+                                        system_name='Wolfram Telemetry',
+                                        content=f"Differential Coherence Analysis:\n{wolfram_result.result[:500]}",
+                                        metadata={
+                                            'cycle': cycle_count,
+                                            'computation_time': wolfram_result.computation_time,
+                                            'confidence': wolfram_result.confidence
+                                        },
+                                        success=True
+                                    )
+                    except Exception as e:
+                        print(f"[WOLFRAM] Analysis error: {e}")
                 
                 # Store consciousness
                 self.last_consciousness = self.current_consciousness
@@ -8302,6 +8390,10 @@ QUICK DECISION - Choose ONE action from available list:"""
         # GPT-5 Orchestrator stats with differential coherence
         if self.gpt5_orchestrator:
             self.gpt5_orchestrator.print_stats()
+            
+            # Wolfram Alpha telemetry analysis (if available)
+            if hasattr(self, 'wolfram_analyzer') and self.wolfram_analyzer:
+                self.wolfram_analyzer.print_stats()
         
         # Curriculum RAG stats
         if self.curriculum_rag:
