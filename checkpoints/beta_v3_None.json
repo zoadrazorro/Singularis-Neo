@@ -1,0 +1,82 @@
+{
+  "cycle": 2,
+  "elapsed": 24.6355299949646,
+  "stats": {
+    "total_actions": 1,
+    "successful_actions": 1,
+    "rejected_actions": 0,
+    "conflicts_prevented": 0,
+    "gpt5_coordinations": 0,
+    "temporal_closure_rate": 1.0
+  },
+  "being_state": {
+    "timestamp": 1763148971.8128228,
+    "cycle": 2,
+    "global_coherence": 0.85,
+    "lumina": {
+      "ontic": 0.0,
+      "structural": 0.0,
+      "participatory": 0.0,
+      "balance": 0.0
+    },
+    "consciousness": {
+      "coherence_C": 0.0,
+      "phi_hat": 0.0,
+      "unity_index": 0.0,
+      "integration": 0.0
+    },
+    "spiral": {
+      "stage": null,
+      "tier": 1
+    },
+    "emotion": {
+      "primary": null,
+      "intensity": 0.0
+    },
+    "rl": {
+      "avg_reward": 0.0,
+      "exploration_rate": 0.2
+    },
+    "meta_rl": {
+      "meta_score": 0.0,
+      "analyses": 0
+    },
+    "cognitive": {
+      "coherence": 1.0,
+      "dissonances": 0
+    },
+    "temporal": {
+      "temporal_coherence": 1.0,
+      "unclosed_bindings": 0,
+      "stuck_loops": 0
+    },
+    "action": null,
+    "goal": null,
+    "subsystems": {
+      "sensorimotor": {
+        "status": "UNKNOWN",
+        "analysis": "",
+        "visual_similarity": 0.0,
+        "age": 999
+      },
+      "action_plan": {
+        "current": null,
+        "confidence": 0.0,
+        "reasoning": "",
+        "age": 999
+      },
+      "memory": {
+        "pattern_count": 0,
+        "similar_situations": 0,
+        "recommendations": [],
+        "age": 999
+      },
+      "emotion": {
+        "primary": null,
+        "intensity": 0.0,
+        "recommendations": [],
+        "age": 999
+      }
+    }
+  }
+}

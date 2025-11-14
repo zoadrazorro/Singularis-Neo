@@ -31,6 +31,16 @@ from typing import Optional
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
+# Try to load .env file if it exists
+try:
+    from dotenv import load_dotenv
+    env_file = project_root / ".env"
+    if env_file.exists():
+        load_dotenv(env_file)
+        print(f"✓ Loaded environment from {env_file}")
+except ImportError:
+    pass  # python-dotenv not installed, will use system env vars
+
 from singularis.core.being_state import BeingState
 from singularis.core.temporal_binding import TemporalCoherenceTracker
 from singularis.skyrim.action_arbiter import ActionArbiter, ActionPriority
@@ -56,9 +66,9 @@ class BetaV3Config:
     duration_seconds: Optional[int] = None
     verbose: bool = False
     
-    # GPT-5 Coordination
-    enable_gpt5: bool = True
-    gpt5_model: str = "gpt-5"
+    # GPT-5 Coordination (DISABLED - using fast local arbitration only)
+    enable_gpt5: bool = False  # Set to True to enable GPT-5 coordination
+    gpt5_model: str = "gpt-5-mini-2025-08-07"  # GPT-5 Mini for coordination
     openai_api_key: Optional[str] = None
     
     # Action Arbiter
@@ -179,13 +189,15 @@ class BetaV3System:
                 temporal_window_size=self.config.temporal_window_size,
                 temporal_timeout=self.config.temporal_timeout,
                 
-                # Disable competing loops (Phase 1)
-                enable_fast_loop=False,
-                enable_auxiliary_exploration=False,
+                # Disable competing loops (Phase 1 - Emergency Stabilization)
+                enable_fast_loop=False,  # Disabled to prevent action conflicts
                 
                 # Enable GPT-5 if configured
                 use_gpt5_orchestrator=self.config.enable_gpt5,
                 gpt5_verbose=self.config.verbose,
+                
+                # Reduce cycle interval for better responsiveness
+                cycle_interval=3.0,  # 3 seconds per cycle (Phase 1 rate limit fix)
             )
             
             # Initialize SkyrimAGI
@@ -251,15 +263,19 @@ class BetaV3System:
             }
         ]
         
-        # GPT-5 coordination (if enabled)
+        # GPT-5 coordination (if enabled) - uses hybrid mode
         selected_action = None
         if self.config.enable_gpt5 and self.arbiter and len(candidate_actions) > 1:
             selected_action = await self.arbiter.coordinate_action_decision(
                 being_state=self.being_state,
                 candidate_actions=candidate_actions
             )
+            # Track coordination method (hybrid system)
             if selected_action:
-                self.stats['gpt5_coordinations'] += 1
+                if selected_action.get('coordination_method') == 'local_fast':
+                    self.stats['local_coordinations'] = self.stats.get('local_coordinations', 0) + 1
+                else:
+                    self.stats['gpt5_coordinations'] += 1
         
         if not selected_action:
             # Fallback: select highest confidence
@@ -362,8 +378,19 @@ class BetaV3System:
         print(f"  Conflicts Prevented: {self.stats['conflicts_prevented']}")
         
         if self.config.enable_gpt5:
-            print(f"\nGPT-5 Coordination:")
-            print(f"  Coordinations: {self.stats['gpt5_coordinations']}")
+            local_count = self.stats.get('local_coordinations', 0)
+            gpt5_count = self.stats['gpt5_coordinations']
+            total_coord = local_count + gpt5_count
+            
+            print(f"\nHybrid Coordination (Speed Optimized):")
+            if total_coord > 0:
+                print(f"  Total decisions: {total_coord}")
+                print(f"  ⚡ Fast local: {local_count} ({local_count/total_coord*100:.1f}%)")
+                print(f"  🧠 GPT-5 Mini: {gpt5_count} ({gpt5_count/total_coord*100:.1f}%)")
+                speed_improvement = (local_count / total_coord) * 100
+                print(f"  Speed improvement: ~{speed_improvement:.0f}% instant")
+            else:
+                print(f"  No coordinations yet")
         
         if self.temporal_tracker:
             print(f"\nTemporal Binding:")

@@ -108,9 +108,10 @@ class ActionArbiter:
         # Callbacks for requesting systems
         self.callbacks: Dict[str, Callable[[ActionResult], Awaitable[None]]] = {}
         
-        # GPT-5 coordination stats
+        # GPT-5 coordination stats (hybrid mode)
         self.gpt5_coordination_count = 0
         self.gpt5_coordination_time = 0.0
+        self.local_coordination_count = 0  # Fast local arbitration count
         
         logger.info(
             f"[ARBITER] Action Arbiter initialized "
@@ -327,6 +328,77 @@ class ActionArbiter:
             # This sets the flag so the action loop knows it was overridden
             self.current_action = None
     
+    def _should_use_gpt5_coordination(
+        self,
+        being_state: 'BeingState',
+        candidate_actions: List[Dict[str, Any]]
+    ) -> bool:
+        """
+        Determine if GPT-5 coordination is needed (hybrid mode).
+        
+        Use fast local arbitration when:
+        - Single candidate action (no conflict)
+        - All candidates have same priority
+        - High subsystem consensus (>80%)
+        - Low temporal issues (coherence >0.8, unclosed <5)
+        
+        Use GPT-5 coordination when:
+        - Multiple conflicting actions
+        - Low subsystem consensus
+        - Temporal coherence issues
+        - Stuck loop detected
+        
+        Returns:
+            True if GPT-5 coordination needed, False for fast local arbitration
+        """
+        # Always use local for single action
+        if len(candidate_actions) <= 1:
+            return False
+        
+        # Check for priority conflicts
+        priorities = [a.get('priority', 'NORMAL') for a in candidate_actions]
+        if len(set(priorities)) > 1:
+            # Mixed priorities - need coordination
+            return True
+        
+        # Check subsystem consensus
+        confidences = [a.get('confidence', 0.0) for a in candidate_actions]
+        max_confidence = max(confidences) if confidences else 0.0
+        confidence_spread = max_confidence - min(confidences) if confidences else 0.0
+        
+        # Use GPT-5 if: very low confidence OR very high spread (disagreement)
+        # Lowered thresholds for more aggressive fast local arbitration
+        if max_confidence < 0.4:
+            # Very low confidence - need coordination
+            return True
+        
+        if confidence_spread > 0.5:
+            # Very high disagreement - need coordination
+            return True
+        
+        # Check temporal coherence (more lenient)
+        if being_state.temporal_coherence < 0.6 or being_state.unclosed_bindings > 10:
+            # Serious temporal issues - need coordination
+            return True
+        
+        # Check for stuck loops (more lenient)
+        if being_state.stuck_loop_count >= 3:
+            # Definitely stuck - need coordination
+            return True
+        
+        # Check subsystem freshness
+        stale_count = 0
+        for subsystem in ['sensorimotor', 'action_plan', 'memory', 'emotion']:
+            if not being_state.is_subsystem_fresh(subsystem, max_age=5.0):
+                stale_count += 1
+        
+        if stale_count >= 2:
+            # Multiple stale subsystems - need coordination
+            return True
+        
+        # Otherwise, use fast local arbitration
+        return False
+    
     async def coordinate_action_decision(
         self,
         being_state: 'BeingState',
@@ -335,10 +407,10 @@ class ActionArbiter:
         """
         Coordinate action decision through GPT-5 orchestrator.
         
-        Phase 3.3: GPT-5 Orchestrator Coordination
+        Phase 3.3: GPT-5 Orchestrator Coordination (Hybrid Mode)
         
-        Gathers subsystem states from BeingState and queries GPT-5 for
-        coordinated decision-making across all systems.
+        Uses fast local arbitration for simple cases, GPT-5 only for complex
+        decisions requiring meta-cognitive coordination.
         
         Args:
             being_state: Current unified state
@@ -349,6 +421,20 @@ class ActionArbiter:
         """
         if not self.enable_gpt5_coordination or not self.gpt5:
             logger.debug("[ARBITER] GPT-5 coordination disabled, skipping")
+            return None
+        
+        # Hybrid mode: Check if GPT-5 coordination is needed
+        if not self._should_use_gpt5_coordination(being_state, candidate_actions):
+            # Fast local arbitration - select highest confidence action
+            if candidate_actions:
+                selected = max(candidate_actions, key=lambda x: x.get('confidence', 0.0))
+                selected['coordination_method'] = 'local_fast'
+                self.local_coordination_count += 1
+                logger.info(
+                    f"[ARBITER] ⚡ Fast local arbitration: {selected['action']} "
+                    f"(confidence: {selected.get('confidence', 0.0):.2f})"
+                )
+                return selected
             return None
         
         start_time = time.time()
@@ -712,10 +798,16 @@ Provide: Selected action number (or 0 for none), reasoning, and confidence."""
                 print(f"  {reason}: {count}")
         
         if self.enable_gpt5_coordination:
-            print(f"\nGPT-5 Coordination:")
-            print(f"  Coordinated decisions: {self.gpt5_coordination_count}")
+            total_coordinations = self.gpt5_coordination_count + self.local_coordination_count
+            print(f"\nHybrid Coordination (Speed Optimized):")
+            print(f"  Total decisions: {total_coordinations}")
+            print(f"  ⚡ Fast local: {self.local_coordination_count} ({self.local_coordination_count/total_coordinations*100:.1f}%)" if total_coordinations > 0 else "  ⚡ Fast local: 0")
+            print(f"  🧠 GPT-5 Mini: {self.gpt5_coordination_count} ({self.gpt5_coordination_count/total_coordinations*100:.1f}%)" if total_coordinations > 0 else "  🧠 GPT-5 Mini: 0")
             if self.gpt5_coordination_count > 0:
                 avg_time = self.gpt5_coordination_time / self.gpt5_coordination_count
-                print(f"  Avg coordination time: {avg_time:.2f}s")
+                print(f"  Avg GPT-5 time: {avg_time:.2f}s")
+            if total_coordinations > 0:
+                speed_improvement = (self.local_coordination_count / total_coordinations) * 100
+                print(f"  Speed improvement: ~{speed_improvement:.0f}% decisions instant")
         
         print(f"{'='*60}\n")
