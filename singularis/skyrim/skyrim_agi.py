@@ -64,6 +64,8 @@ from .adaptive_loop_manager import AdaptiveLoopManager, LoopSettings
 from .gameplay_analytics import GameplayAnalytics
 from .meta_learning import MetaLearner
 
+from .philosophyagent import get_random_philosophical_context
+
 # Base AGI components
 from ..agi_orchestrator import AGIOrchestrator, AGIConfig
 from ..agency import MotivationType
@@ -3660,7 +3662,13 @@ Based on this visual and contextual data, provide:
                     'screenshot': perception.get('screenshot'),
                     'vision_summary': perception.get('gemini_analysis')
                 }
-                # Consciousness bridge calls 2 big models in parallel - don't throttle it
+                try:
+                    if (cycle_count % 10 == 0) or (scene_type == SceneType.EXPLORATION):
+                        phil = await get_random_philosophical_context(hybrid_llm=getattr(self, 'hybrid_llm', None))
+                        if isinstance(phil, dict):
+                            consciousness_context.update(phil)
+                except Exception as _ph_err:
+                    pass
                 current_consciousness = await self.consciousness_bridge.compute_consciousness(
                     game_state.to_dict(),
                     consciousness_context
@@ -5569,6 +5577,13 @@ Applicable Rules: {len(logic_analysis_brief['applicable_rules'])}"""
                     'screenshot': perception.get('screenshot'),
                     'vision_summary': perception.get('gemini_analysis')
                 }
+                try:
+                    if (cycle_count % 10 == 0) or (scene_type == SceneType.EXPLORATION):
+                        phil = await get_random_philosophical_context(hybrid_llm=getattr(self, 'hybrid_llm', None))
+                        if isinstance(phil, dict):
+                            consciousness_context.update(phil)
+                except Exception:
+                    pass
                 current_consciousness = await self.consciousness_bridge.compute_consciousness(
                     game_state.to_dict(),
                     consciousness_context
@@ -5683,6 +5698,13 @@ Applicable Rules: {len(logic_analysis_brief['applicable_rules'])}"""
                     'screenshot': after_perception.get('screenshot'),
                     'vision_summary': after_perception.get('gemini_analysis')
                 }
+                try:
+                    if (cycle_count % 10 == 0) or (scene_type == SceneType.EXPLORATION):
+                        phil = await get_random_philosophical_context(hybrid_llm=getattr(self, 'hybrid_llm', None))
+                        if isinstance(phil, dict):
+                            post_consciousness_context.update(phil)
+                except Exception:
+                    pass
                 after_consciousness = await self.consciousness_bridge.compute_consciousness(
                     after_state,
                     post_consciousness_context
