@@ -6133,16 +6133,6 @@ Action: {snapshot['action']}""",
                 )
 
                 print(f"\n-> Action: {action}")
-                
-                # Update BeingState with motivation and planned action
-                self._update_being_state_comprehensive(
-                    cycle_count=cycle_count,
-                    game_state=game_state,
-                    perception=perception,
-                    current_consciousness=current_consciousness,
-                    mot_state=mot_state,
-                    action=action
-                )
 
                 # 6. EXECUTE ACTION
                 before_state = game_state.to_dict()
@@ -6209,6 +6199,16 @@ Action: {snapshot['action']}""",
                 after_consciousness = await self.consciousness_bridge.compute_consciousness(
                     after_state,
                     post_consciousness_context
+                )
+                
+                # UPDATE BEINGSTATE WITH POST-ACTION CONSCIOUSNESS (CRITICAL FIX)
+                self._update_being_state_comprehensive(
+                    cycle_count=cycle_count,
+                    game_state=after_perception['game_state'],
+                    perception=after_perception,
+                    current_consciousness=after_consciousness,  # Fresh post-action consciousness
+                    mot_state=after_mot,
+                    action=action
                 )
                 
                 # Show coherence change

@@ -210,38 +210,47 @@ class Phase1Observer:
             actual_action: Action Neo actually took
             actual_outcome: Outcome of Neo's action (for learning)
         """
+        # Validate BeingState is not empty
+        if being_state.coherence_C == 0.0 and being_state.cycle_number == 0:
+            # BeingState not initialized yet, skip observation
+            return None
+        
         print(f"\n[PHASE1] Observing cycle {self.total_observations + 1}")
         
-        # 1. Update field from BeingState
-        self.field.update_from_being_state(being_state)
-        
-        # 2. Update manifold position
-        self.manifold.update_position(being_state)
-        
-        # 3. Create ContinuumState
-        continuum_state = ContinuumState.from_being_state(being_state)
-        continuum_state.manifold_position = self.manifold.current_position
-        continuum_state.field_coherence = self.field.compute_global_coherence()
-        
-        # 4. Ask temporal engine what it would have done
-        advisory_action = await self.temporal_engine.compute_superposition(being_state)
-        
-        # 5. Compute manifold metrics
-        gradient = self.manifold.compute_gradient()
-        curvature = self.manifold.compute_curvature()
-        
-        # 6. Log observation
-        observation = {
-            'cycle': self.total_observations,
-            'actual_action': actual_action,
-            'advisory_action': advisory_action,
-            'field_coherence': continuum_state.field_coherence,
-            'manifold_position_norm': np.linalg.norm(self.manifold.current_position),
-            'gradient_magnitude': np.linalg.norm(gradient),
-            'curvature': curvature,
-            'neo_coherence': being_state.coherence_C,
-            'match': actual_action == advisory_action
-        }
+        try:
+            # 1. Update field from BeingState
+            self.field.update_from_being_state(being_state)
+            
+            # 2. Update manifold position
+            self.manifold.update_position(being_state)
+            
+            # 3. Create ContinuumState
+            continuum_state = ContinuumState.from_being_state(being_state)
+            continuum_state.manifold_position = self.manifold.current_position
+            continuum_state.field_coherence = self.field.compute_global_coherence()
+            
+            # 4. Ask temporal engine what it would have done
+            advisory_action = await self.temporal_engine.compute_superposition(being_state)
+            
+            # 5. Compute manifold metrics
+            gradient = self.manifold.compute_gradient()
+            curvature = self.manifold.compute_curvature()
+            
+            # 6. Log observation
+            observation = {
+                'cycle': self.total_observations,
+                'actual_action': actual_action,
+                'advisory_action': advisory_action,
+                'field_coherence': continuum_state.field_coherence,
+                'manifold_position_norm': np.linalg.norm(self.manifold.current_position),
+                'gradient_magnitude': np.linalg.norm(gradient),
+                'curvature': curvature,
+                'neo_coherence': being_state.coherence_C,
+                'match': actual_action == advisory_action
+            }
+        except Exception as e:
+            print(f"[PHASE1] ⚠️ Observation error: {e}")
+            return None
         
         self.observations.append(observation)
         self.total_observations += 1
