@@ -3331,6 +3331,24 @@ Based on this visual and contextual data, provide:
                 
                 print(f"\n[REASONING] Processing cycle {cycle_count}")
                 
+                # Update BeingState from all subsystems (every cycle)
+                if hasattr(self, 'being_state'):
+                    from .being_state_updater import update_being_state_from_all_subsystems
+                    try:
+                        await update_being_state_from_all_subsystems(self)
+                        
+                        # Compute global coherence
+                        if hasattr(self, 'coherence_engine'):
+                            C_global = self.coherence_engine.compute(self.being_state)
+                            self.being_state.global_coherence = C_global
+                            
+                            # Log every 10 cycles
+                            if cycle_count % 10 == 0:
+                                print(f"[BEING] Cycle {cycle_count}: C_global = {C_global:.3f}")
+                    except Exception as e:
+                        if cycle_count % 20 == 0:  # Only log occasionally to avoid spam
+                            print(f"[BEING] Update error: {e}")
+                
                 # Fix 20: Display performance dashboard every 5 cycles
                 if cycle_count > 0 and cycle_count % self.dashboard_update_interval == 0:
                     self._display_performance_dashboard()
