@@ -25,6 +25,9 @@ if TYPE_CHECKING:
     from .skyrim_agi import SkyrimAGI
     from ..llm.gpt5_orchestrator import GPT5Orchestrator
     from ..core.being_state import BeingState
+    from singularis.bdh.meta_cortex import MetaDecision
+
+from singularis.bdh import BDHMetaCortex, MetaDecisionStrategy
 
 
 class ActionPriority(Enum):
@@ -74,7 +77,8 @@ class ActionArbiter:
         self,
         skyrim_agi: 'SkyrimAGI',
         gpt5_orchestrator: Optional['GPT5Orchestrator'] = None,
-        enable_gpt5_coordination: bool = True
+        enable_gpt5_coordination: bool = True,
+        meta_cortex: Optional[BDHMetaCortex] = None,
     ):
         """
         Initialize action arbiter.
@@ -87,7 +91,8 @@ class ActionArbiter:
         self.agi = skyrim_agi
         self.gpt5 = gpt5_orchestrator
         self.enable_gpt5_coordination = enable_gpt5_coordination and gpt5_orchestrator is not None
-        
+        self.meta_cortex = meta_cortex
+
         # Current execution
         self.current_action: Optional[ActionRequest] = None
         self.action_executing = False
@@ -104,6 +109,13 @@ class ActionArbiter:
             'by_priority': {p: 0 for p in ActionPriority},
             'by_source': {},
             'rejection_reasons': {},
+            'bdh_meta': {
+                'evaluations': 0,
+                'executed': 0,
+                'escalations': 0,
+                'replans': 0,
+                'deferrals': 0,
+            },
         }
         
         # Callbacks for requesting systems
@@ -113,6 +125,7 @@ class ActionArbiter:
         self.gpt5_coordination_count = 0
         self.gpt5_coordination_time = 0.0
         self.local_coordination_count = 0  # Fast local arbitration count
+        self.meta_decisions: List['MetaDecision'] = []
         
         # Periodic GPT-5 coordination (every 6-11 steps)
         self.steps_since_gpt5 = 0
@@ -414,7 +427,49 @@ class ActionArbiter:
         
         # Otherwise, use fast local arbitration
         return False
-    
+
+    def _consult_meta_cortex(
+        self,
+        being_state: 'BeingState',
+        candidate_actions: List[Dict[str, Any]]
+    ) -> Optional['MetaDecision']:
+        """Run BDH MetaCortex evaluation if available."""
+
+        if not self.meta_cortex:
+            return None
+
+        decision = self.meta_cortex.evaluate(being_state, candidate_actions)
+        self.stats['bdh_meta']['evaluations'] += 1
+        self.meta_decisions.append(decision)
+
+        if decision.strategy == MetaDecisionStrategy.REPLAN:
+            self.stats['bdh_meta']['replans'] += 1
+            logger.info("[ARBITER] BDH MetaCortex requested replanning")
+            return decision
+
+        if decision.strategy == MetaDecisionStrategy.DEFER:
+            self.stats['bdh_meta']['deferrals'] += 1
+            logger.info("[ARBITER] BDH MetaCortex deferred action execution")
+            return decision
+
+        if decision.strategy == MetaDecisionStrategy.EXECUTE:
+            self.stats['bdh_meta']['executed'] += 1
+            logger.info(
+                f"[ARBITER] 🤖 BDH MetaCortex selected action "
+                f"{decision.selected_action} (confidence={decision.confidence:.2f})"
+            )
+            return decision
+
+        if decision.strategy == MetaDecisionStrategy.ESCALATE:
+            self.stats['bdh_meta']['escalations'] += 1
+            logger.info(
+                f"[ARBITER] BDH MetaCortex escalated (reason={decision.escalate_reason}, "
+                f"stress={decision.stress:.2f})"
+            )
+            return decision
+
+        return decision
+
     async def coordinate_action_decision(
         self,
         being_state: 'BeingState',
@@ -435,10 +490,37 @@ class ActionArbiter:
         Returns:
             Selected action with reasoning, or None if coordination fails
         """
+        meta_decision = self._consult_meta_cortex(being_state, candidate_actions)
+        if meta_decision:
+            if meta_decision.strategy == MetaDecisionStrategy.EXECUTE and meta_decision.selected_action:
+                selected = next(
+                    (a for a in candidate_actions if a.get('action') == meta_decision.selected_action),
+                    None
+                )
+                if selected:
+                    selected = dict(selected)
+                    selected['coordination_method'] = 'bdh_meta'
+                    self.steps_since_gpt5 += 1
+                    return selected
+                # Fall through to GPT if no matching candidate
+            elif meta_decision.strategy in {MetaDecisionStrategy.REPLAN, MetaDecisionStrategy.DEFER}:
+                return None
+
         if not self.enable_gpt5_coordination or not self.gpt5:
-            logger.debug("[ARBITER] GPT-5 coordination disabled, skipping")
+            if meta_decision and meta_decision.strategy == MetaDecisionStrategy.ESCALATE:
+                logger.warning("[ARBITER] MetaCortex requested escalation but GPT-5 coordination is disabled")
+            else:
+                logger.debug("[ARBITER] GPT-5 coordination disabled, skipping")
             return None
-        
+
+        meta_context = ""
+        if meta_decision and meta_decision.strategy == MetaDecisionStrategy.ESCALATE:
+            meta_context = (
+                f"\nBDH Meta Decision: {meta_decision.strategy.value}"
+                f" (confidence={meta_decision.confidence:.2f}, stress={meta_decision.stress:.2f})"
+                f"\nJustification: {meta_decision.justification}"
+            )
+
         # Hybrid mode: Check if GPT-5 coordination is needed
         if not self._should_use_gpt5_coordination(being_state, candidate_actions):
             # Fast local arbitration - select highest confidence action
@@ -454,7 +536,7 @@ class ActionArbiter:
                 )
                 return selected
             return None
-        
+
         start_time = time.time()
         
         try:
@@ -495,12 +577,14 @@ class ActionArbiter:
             # Build coordination request
             actions_text = "\n".join(actions_summary)
             content = f"""Action Coordination Request:
-            
+
 Current Cycle: {being_state.cycle_number}
 Global Coherence: {being_state.global_coherence:.3f}
 Temporal Coherence: {being_state.temporal_coherence:.3f}
 Unclosed Bindings: {being_state.unclosed_bindings}
 Stuck Loop Count: {being_state.stuck_loop_count}
+
+BDH Meta Summary:{meta_context}
 
 Subsystem Status:
 - Sensorimotor: {subsystem_states['sensorimotor'].get('status', 'UNKNOWN')} (age: {subsystem_states['sensorimotor'].get('age', 999):.1f}s)
