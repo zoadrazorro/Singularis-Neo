@@ -10,9 +10,14 @@ not parallel streams. This is how biological perception works.
 import time
 import asyncio
 import numpy as np
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, TYPE_CHECKING
 from dataclasses import dataclass
 from loguru import logger
+
+from singularis.bdh import BDHPerceptionSynthNanon, PerceptionSynthesisResult
+
+if TYPE_CHECKING:  # pragma: no cover - type hints only
+    from singularis.core.being_state import BeingState
 
 try:
     from sentence_transformers import SentenceTransformer
@@ -62,6 +67,9 @@ class UnifiedPerceptionLayer:
         self.video = video_interpreter
         self.voice = voice_system
         self.temporal = temporal_tracker
+
+        # BDH perception synth Nanon (fast-weight reasoning layer)
+        self.perception_nanon = BDHPerceptionSynthNanon()
         
         # Fusion weights (can be learned over time)
         self.fusion_weights = {
@@ -99,7 +107,8 @@ class UnifiedPerceptionLayer:
         frame: Optional[Any],
         audio_chunk: Optional[bytes],
         text_context: str,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
+        being_state: Optional["BeingState"] = None,
     ) -> UnifiedPercept:
         """
         Create unified cross-modal percept.
@@ -142,6 +151,21 @@ class UnifiedPerceptionLayer:
         # Identify dominant modality
         dominant = self._identify_dominant(visual_emb, audio_emb, text_emb)
         
+        metadata = metadata or {}
+
+        # Run BDH perception synth to produce actionable summary
+        bdh_result: Optional[PerceptionSynthesisResult] = None
+        try:
+            bdh_result = await self.perception_nanon.process(
+                visual_emb,
+                audio_emb,
+                text_emb,
+                metadata=metadata,
+                being_state=being_state,
+            )
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.error(f"[UNIFIED] BDH perception synth failed: {exc}")
+
         percept = UnifiedPercept(
             unified_embedding=unified_emb,
             visual_embedding=visual_emb,
@@ -154,7 +178,13 @@ class UnifiedPerceptionLayer:
                 'frame': frame,
                 'audio': audio_chunk,
                 'text': text_context,
-                'metadata': metadata or {}
+                'metadata': metadata,
+                'bdh_perception': {
+                    'situation_vector': bdh_result.situation_vector.tolist() if bdh_result else [],
+                    'affordance_scores': bdh_result.affordance_scores if bdh_result else {},
+                    'loop_likelihood': bdh_result.loop_likelihood if bdh_result else 0.0,
+                    'confidence': bdh_result.confidence if bdh_result else 0.0,
+                }
             }
         )
         

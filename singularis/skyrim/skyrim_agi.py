@@ -86,6 +86,7 @@ from ..llm import (
 )
 from ..llm.openrouter_client import OpenRouterClient
 from ..llm.perplexity_client import PerplexityClient
+from ..bdh import BDHPolicyHead, BDHMetaCortex
 
 
 @dataclass
@@ -1199,6 +1200,7 @@ class SkyrimAGI:
             'action_source_heuristic': 0,  # Heuristic fallback
             'action_source_timeout': 0,  # Timeout fallback
             'random_academic_thoughts': 0,  # Brownian motion memory retrievals
+            'bdh_policy_adjustments': 0,
             # Phase 1.2: Action validation stats
             'action_rejected_count': 0,  # Total rejected actions
             'action_rejected_stale': 0,  # Rejected due to stale perception
@@ -1211,7 +1213,9 @@ class SkyrimAGI:
         # Phase 2.3: Action Arbiter - Single point of action execution
         print("  [PHASE 2] Initializing Action Arbiter...")
         from .action_arbiter import ActionArbiter, ActionPriority
-        self.action_arbiter = ActionArbiter(self)
+        self.bdh_policy_head = BDHPolicyHead()
+        self.bdh_meta_cortex = BDHMetaCortex()
+        self.action_arbiter = ActionArbiter(self, meta_cortex=self.bdh_meta_cortex)
         self.ActionPriority = ActionPriority  # Make enum accessible
         print("    [OK] Action Arbiter initialized with priority system")
 
@@ -2234,7 +2238,43 @@ class SkyrimAGI:
         # Session ID
         if hasattr(self, 'main_brain') and self.main_brain:
             self.being_state.session_id = self.main_brain.session_id
-    
+
+    def _prepare_bdh_policy_inputs(self, perception: Dict[str, Any], fallback_action: str) -> tuple[np.ndarray, Dict[str, float]]:
+        """Construct inputs for the BDH policy head."""
+
+        bdh_payload = perception.get('bdh_perception', {})
+        vector_source = bdh_payload.get('situation_vector') or perception.get('unified_embedding')
+
+        if isinstance(vector_source, np.ndarray):
+            vector = vector_source.astype(np.float32)
+        elif isinstance(vector_source, (list, tuple)):
+            vector = np.asarray(vector_source, dtype=np.float32)
+        else:
+            vector = np.zeros(32, dtype=np.float32)
+
+        if vector.size == 0:
+            vector = np.zeros(32, dtype=np.float32)
+
+        affordances = dict(bdh_payload.get('affordance_scores', {}))
+        if fallback_action:
+            affordances.setdefault(fallback_action, 1.0)
+
+        return vector, affordances
+
+    def _build_bdh_sigma_snapshots(self, policy_proposal) -> Dict[str, Any]:
+        """Aggregate BDH sigma snapshots for temporal binding."""
+
+        snapshots: Dict[str, Any] = {}
+        if policy_proposal and getattr(policy_proposal, 'sigma_snapshot', None):
+            snapshots['policy'] = policy_proposal.sigma_snapshot
+
+        if getattr(self.action_arbiter, 'meta_decisions', None):
+            meta_decision = self.action_arbiter.meta_decisions[-1] if self.action_arbiter.meta_decisions else None
+            if meta_decision and getattr(meta_decision, 'sigma_snapshot', None):
+                snapshots['meta'] = meta_decision.sigma_snapshot
+
+        return snapshots
+
     async def _register_systems_with_gpt5(self):
         """Register all subsystems with GPT-5 orchestrator."""
         if not self.gpt5_orchestrator:
@@ -6024,8 +6064,34 @@ Top Predicates:
                     self.last_visual_embedding = perception.get('visual_embedding').copy()
                 
                 self.last_successful_action = action
-                
+
                 print(f"[REASONING] Planned action: {action} ({planning_duration:.3f}s)")
+
+                policy_proposal = None
+                try:
+                    policy_vector, policy_affordances = self._prepare_bdh_policy_inputs(perception, action)
+                    policy_proposal = self.bdh_policy_head.propose_candidates(
+                        situation_vector=policy_vector,
+                        affordance_scores=policy_affordances,
+                        goals=[self.current_goal] if getattr(self, 'current_goal', None) else [],
+                        recent_actions=self.action_history[-10:] if hasattr(self, 'action_history') else [],
+                        being_state=self.being_state,
+                    )
+                    if (
+                        policy_proposal.candidates
+                        and policy_proposal.candidates[0]['action'] != action
+                        and policy_proposal.certainty >= 0.5
+                    ):
+                        proposed_action = policy_proposal.candidates[0]['action']
+                        print(
+                            f"[BDH-POLICY] Adjusting action {action} → {proposed_action} "
+                            f"(certainty={policy_proposal.certainty:.2f})"
+                        )
+                        action = proposed_action
+                        self.stats['bdh_policy_adjustments'] += 1
+                except Exception as exc:
+                    print(f"[BDH-POLICY] Error generating candidates: {exc}")
+                    policy_proposal = None
                 
                 # ═══════════════════════════════════════════════════════════
                 # VOICE SYSTEM - Vocalize decision
@@ -6150,7 +6216,8 @@ Applicable Rules: {len(logic_analysis_brief['applicable_rules'])}"""
                             action=action,
                             gemini_visual=gemini_vis,
                             hyperbolic_visual=hyperbolic_vis,
-                            video_interpretation=video_interp
+                            video_interpretation=video_interp,
+                            bdh_sigma_snapshots=self._build_bdh_sigma_snapshots(policy_proposal)
                         )
                         
                         # Immediately close the loop with outcome
@@ -6238,6 +6305,8 @@ Applicable Rules: {len(logic_analysis_brief['applicable_rules'])}"""
                             'consciousness': current_consciousness,
                             'binding_id': binding_id,
                             'cycle': cycle_count,
+                            'bdh_policy_candidates': policy_proposal.candidates if policy_proposal else [],
+                            'bdh_policy_certainty': policy_proposal.certainty if policy_proposal else 0.0,
                         },
                         callback=self._handle_action_result
                     )

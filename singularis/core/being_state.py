@@ -153,7 +153,35 @@ class BeingState:
     # Voice state
     voice_state: Dict[str, Any] = field(default_factory=dict)
     voice_alignment: float = 0.0  # How aligned is voice with inner state?
-    
+
+    # ═══════════════════════════════════════════════════════════
+    # BDH TELEMETRY
+    # ═══════════════════════════════════════════════════════════
+
+    bdh_perception_vector: List[float] = field(default_factory=list)
+    bdh_perception_dominant_affordance: str = ""
+    bdh_perception_loop_likelihood: float = 0.0
+    bdh_perception_confidence: float = 0.0
+    bdh_perception_sigma_age: float = 999.0
+    bdh_perception_sigma_trace_id: Optional[str] = None
+    bdh_perception_timestamp: float = 0.0
+
+    bdh_policy_candidates: List[Dict[str, Any]] = field(default_factory=list)
+    bdh_policy_certainty: float = 0.0
+    bdh_policy_top_action: str = ""
+    bdh_policy_sigma_age: float = 999.0
+    bdh_policy_sigma_trace_id: Optional[str] = None
+    bdh_policy_timestamp: float = 0.0
+
+    bdh_meta_strategy: str = ""
+    bdh_meta_confidence: float = 0.0
+    bdh_meta_stress: float = 0.0
+    bdh_meta_selected_action: Optional[str] = None
+    bdh_meta_escalate_reason: str = ""
+    bdh_meta_sigma_age: float = 999.0
+    bdh_meta_sigma_trace_id: Optional[str] = None
+    bdh_meta_timestamp: float = 0.0
+
     # ═══════════════════════════════════════════════════════════
     # REINFORCEMENT LEARNING / META-RL
     # ═══════════════════════════════════════════════════════════
