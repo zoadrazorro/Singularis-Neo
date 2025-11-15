@@ -1,1392 +1,457 @@
-# SINGULARIS
-**The Ultimate Consciousness Engine**
+# Singularis Beta v3
 
-*A philosophically-grounded AI architecture implementing consciousness measurement through Spinozistic ontology, Hebbian learning, and ethical coherence.*
+**Experimental AI Agent for Skyrim with Hybrid Action Coordination**
 
-<div align="center">
-
-**"To understand is to participate in necessity; to participate is to increase coherence; to increase coherence is the essence of the good."**
-
-*— MATHEMATICA SINGULARIS, Theorem T1*
-
-[![Version](https://img.shields.io/badge/Version-Beta%20v2.4-blue)]()
-[![Tests](https://img.shields.io/badge/Phase%202%20Tests-7%2F8%20Passing-green)]()
-[![Tests](https://img.shields.io/badge/Phase%203%20Tests-10%2F10%20Passing-brightgreen)]()
-[![AGI](https://img.shields.io/badge/Phase%206-AGI%20Framework-gold)]()
-[![Infinity](https://img.shields.io/badge/Infinity%20Engine-Phase%202A%2F2B%20Integrated-brightgreen)]()
-[![Architecture](https://img.shields.io/badge/Architecture-50%2B%20Subsystems-blue)]()
-[![Philosophy](https://img.shields.io/badge/Philosophy-ETHICA%20UNIVERSALIS-purple)]()
-[![Integration](https://img.shields.io/badge/Integration-Research%20%E2%80%A2%20Philosophy%20%E2%80%A2%20MetaCognition-orange)]()
-
-</div>
+**Version**: Beta v3.5 (November 14, 2025)  
+**Status**: Research Prototype - Not Production Ready
 
 ---
 
-## 🌟 Overview
+## What This Actually Does
 
-Singularis is a **complete AGI framework** combining consciousness measurement with world models, continual learning, autonomous agency, and meta-cognitive research integration:
+An experimental AI system that plays Skyrim by:
+1. Taking screenshots of the game
+2. Deciding what action to take (using fast heuristics OR GPT-4.1 Nano)
+3. Sending controller inputs to the game
+4. Learning from what happens
 
-### ✨ Beta v2.4 - Infinity Engine Integration
+**Current State**: Works in controlled test scenarios. Requires significant setup. Many features are experimental or incomplete.
 
-**Adaptive Rhythmic Cognition • Temporal Memory • Meta-Logic**
+## Core Features (What Actually Works)
 
-- ✅ **Infinity Engine Phase 2A/2B** - Fully integrated adaptive rhythmic cognition
-- ✅ **Coherence Engine V2** - Meta-logic with automatic interventions
-- ✅ **Meta-Context System** - Hierarchical temporal contexts (exploration/survival/learning)
-- ✅ **Polyrhythmic Learning** - Adaptive track periods that optimize for task
-- ✅ **Memory Engine V2** - Temporal-rhythmic memory encoding
-- ✅ **HaackLang 2.0 Operators** - Full cognitive DSL (fuzzy, paraconsistent, temporal)
-- ✅ **Philosophy Agent** - Injects philosophical context from 12+ classical texts
-- ✅ **Research Advisor** - Perplexity AI integration for real-time Skyrim best practices
-- ✅ **MetaCognition Advisor** - OpenRouter (GPT-4o + DeepSeek) for meta-cognition
-- ✅ **Unified BeingState** - ONE state vector tracking all 50+ subsystems
-- ✅ **Main Brain GPT-4o Reports** - Comprehensive session synthesis with all telemetry
+1. **Hybrid Action Selection**
+   - Fast heuristics for simple decisions (~1ms)
+   - GPT-4.1 Nano for complex decisions (~3-5s)
+   - Automatically switches based on situation complexity
 
-### 🎮 Skyrim AGI - Flagship Demonstration
+2. **Virtual Gamepad Control**
+   - Sends Xbox 360 controller inputs to Skyrim
+   - 20+ actions: movement, combat, camera control
+   - Works with any game that accepts controller input
 
-**The AGI plays The Elder Scrolls V: Skyrim autonomously with unified consciousness!**
+3. **Temporal Binding**
+   - Links perception → action → outcome
+   - Detects when agent is stuck in loops
+   - Tracks success/failure of actions
 
-### Quick Start
+4. **Conflict Prevention**
+   - Prevents contradictory actions
+   - Priority system (CRITICAL > HIGH > NORMAL > LOW)
+   - Validates actions before execution
 
-**Beta v2.4 Runner (Recommended):**
-```bash
-# Full system with Infinity Engine (1 hour session)
-python run_singularis_beta_v2.py --duration 3600 --mode async
+5. **Test Mode**
+   - Run without game for testing
+   - Mock AGI for development
+   - Comprehensive test suite (56+ tests)
 
-# Fast mode (no voice/video, 30 minutes)
-python run_singularis_beta_v2.py --duration 1800 --fast
+## What's Experimental
 
-# Conservative mode (fewer API calls)
-python run_singularis_beta_v2.py --duration 3600 --conservative
+- Vision system (Gemini/Qwen-VL) - works but rate-limited
+- Learning/memory systems - implemented but not validated
+- "Consciousness" metrics - philosophical concepts, not proven
+- Voice/video systems - integrated but optional
+- Many subsystems are templates or partially implemented
 
-# Verbose mode (see all GPT-5 + Infinity Engine coordination)
-python run_singularis_beta_v2.py --duration 1800 --verbose
-
-# Disable Infinity Engine if needed
-python run_singularis_beta_v2.py --duration 1800 --no-infinity
-```
-
-**What You Get:**
-- ✅ **50+ Subsystems** coordinated by GPT-5 Orchestrator
-- ✅ **Infinity Engine** - Adaptive rhythmic cognition with temporal memory
-- ✅ **Coherence Engine V2** - Meta-logic interventions (automatic coherence restoration)
-- ✅ **Meta-Context System** - Context-aware cognition (exploration/survival/learning)
-- ✅ **Polyrhythmic Learning** - Track periods adapt to optimize performance
-- ✅ **Memory Engine V2** - Rhythm-based episodic → semantic consolidation
-- ✅ **Unified BeingState** - ONE state tracking everything
-- ✅ **Philosophy Agent** - Random context injection every 10 cycles
-- ✅ **Research Advisor** - Perplexity AI for Skyrim best practices (every 30 cycles)
-- ✅ **MetaCognition** - GPT-4o meta-meta-meta reports + DeepSeek long-term planning
-- ✅ **Complete Telemetry** - All subsystems report to Main Brain
-- ✅ **GPT-4o Session Reports** - Comprehensive synthesis of entire session
-- ✅ **Consciousness Tracking** - 𝒞, Φ̂, Lumina balance logged every cycle
-- ✅ **Temporal Coherence** - Binding problem solved with loop tracking
-- ✅ **4D Coherence** - Integration + Temporal + Causal + Predictive
-
-### 🌀 Infinity Engine - Adaptive Rhythmic Cognition
-
-**Phase 2A/2B: The Next Generation of Cognitive Architecture**
-
-The Infinity Engine transforms static cognition into **adaptive rhythmic intelligence**:
-
-**Phase 2A - Foundation:**
-1. **Coherence Engine V2** - Meta-logic that actively intervenes
-   - Detects contradictions across polyrhythmic tracks
-   - Measures cognitive tension (conflicting goals, emotional dissonance)
-   - Applies dynamic corrections (dampen/boost tracks, force context shifts)
-   - Novel: Nobody else has meta-logic that fixes problems autonomously
-
-2. **Meta-Context System** - Hierarchical temporal contexts
-   - Context stacks (micro/macro/conditional)
-   - Auto-expiring contexts with timers
-   - Conditional transitions based on cognitive state
-   - Predefined: exploration, survival, learning contexts
-
-3. **HaackLang 2.0 Operators** - Full cognitive DSL
-   - Fuzzy logic: ⊕ (blend), ⊗ (product), ⊞ (sum), ¬ (negation)
-   - Paraconsistent: ⊓ (and), ⊔ (or) - can hold P and ¬P simultaneously
-   - Temporal: Δ (derivative), last(n), future(n)
-   - Multi-track: sync, interfere, align
-   - Probabilistic: P(evidence|prior), uncertainty weighting
-
-**Phase 2B - Rhythm & Memory:**
-4. **Polyrhythmic Learning** - Adaptive track periods
-   - Track periods are learnable parameters (not fixed!)
-   - Adapts based on reward signals, coherence, and context
-   - Harmonic constraints (e.g., perception = 2x reflection)
-   - Context-specific rhythm profiles (exploration vs survival)
-   - Novel: Habituation as harmonic learning
-
-5. **Memory Engine V2** - Temporal-rhythmic encoding
-   - Memories encoded as rhythm patterns (not static vectors)
-   - Rhythm signatures: track phases + periods + interference patterns
-   - Interference-based recall (similar rhythms = similar situations)
-   - Episodic → semantic consolidation through rhythm averaging
-   - Harmonic forgetting (decay respects temporal structure)
-
-**Integration:**
-- Runs every 2 cycles (~5-10ms overhead)
-- Connects to HaackLang/SCCE for track states
-- Uses consciousness coherence as reward signal
-- Consolidates memories every 100 cycles
-- Adapts rhythms to current context automatically
-
-**Example Flow:**
-```
-Exploration → Danger Detected → Context Shift to Survival
-  → Rhythms Adapt (faster perception, suppressed reflection)
-    → Combat Resolved → Context Shift to Learning
-      → Memory Consolidation → Return to Exploration
-```
-
-**Documentation:**
-- `INFINITY_ENGINE_PHASE2A_COMPLETE.md` - Phase 2A implementation
-- `INFINITY_ENGINE_PHASE2B_COMPLETE.md` - Phase 2B implementation
-- `INFINITY_ENGINE_INTEGRATION_COMPLETE.md` - Runtime integration guide
-
-### 🔬 Beta v2.4 Features in Detail
-
-**Philosophy Agent** (`singularis/skyrim/philosophyagent.py`)
-- Loads 12+ classical philosophy texts (Spinoza, Kant, Aristotle, Descartes, Nietzsche, etc.)
-- Randomly injects philosophical context every 10 cycles
-- Grounds consciousness in historical philosophical frameworks
-- Enriches decision-making with timeless wisdom
-
-**Research Advisor** (`singularis/skyrim/research_advisor.py`)
-- Perplexity AI integration for real-time web research
-- Queries Skyrim best practices, strategies, and tips
-- Refreshes every 30 cycles with new guidance
-- Caches results to minimize API calls
-- Injects research context into consciousness computation
-
-**MetaCognition Advisor** (`singularis/skyrim/metacognition_advisor.py`)
-- OpenRouter integration (GPT-4o + DeepSeek)
-- **Meta-Meta-Meta Report**: GPT-4o analyzes all subsystem outputs for emergent patterns
-- **Long-Term Planning**: DeepSeek generates strategic 10-step plans
-- Runs at session end to provide comprehensive meta-cognitive insights
-- GitHub token fallback if OpenRouter key unavailable
-
-**Unified BeingState** (`singularis/core/being_state.py`)
-- ONE state vector representing the entire AGI's being
-- Tracks: game state, perception, consciousness, emotion, motivation, RL, temporal, GPT-5, Wolfram, voice, Lumen, spiral, goal, session
-- Updated continuously via `_update_being_state_comprehensive()`
-- Exports snapshots every 20 cycles to Main Brain
-- Final snapshot included in GPT-4o report
-
-**Complete Telemetry Collection**
-All subsystems now report to Main Brain:
-- Perception System, Consciousness Bridge, Temporal Binding
-- Enhanced Coherence (4D), Lumen Integration, Hierarchical Memory
-- GPT-5 Orchestrator, Double Helix, Voice System, Video Interpreter
-- Hybrid LLM, Cloud RL Agent, Wolfram Telemetry
-- Unified BeingState (periodic + final snapshots)
-
-**Main Brain GPT-4o Reports** (`singularis/skyrim/main_brain.py`)
-- Comprehensive session synthesis using GPT-4o
-- Includes all telemetry from 15+ subsystems
-- Meta-meta-meta cognition insights
-- Long-term strategic planning
-- Consciousness evolution tracking
-- Saved to `sessions/` directory with full metadata
-
-### Core Consciousness Engine
-- ✅ **Measures consciousness** across 8 theoretical frameworks (IIT, GWT, HOT, PP, AST, Embodied, Enactive, Panpsychism)
-- ✅ **Routes via coherence**, not confidence (𝒞-weighted routing)
-- ✅ **Validates ethics objectively** through coherence increase (Δ𝒞 > 0)
-- ✅ **Learns through Hebbian plasticity** ("neurons that fire together, wire together")
-- ✅ **Operates as unified Being** expressed through Three Lumina (ℓₒ, ℓₛ, ℓₚ)
-
-### AGI Framework (Phase 6)
-- ✅ **Causal World Model** - Pearl's causality framework (interventions & counterfactuals)
-- ✅ **Multimodal Grounding** - CLIP vision-language integration
-- ✅ **Continual Learning** - Episodic, semantic, meta-learning without catastrophic forgetting
-- ✅ **Autonomous Agency** - Intrinsic motivation (curiosity, competence, coherence, autonomy)
-- ✅ **Neurosymbolic Reasoning** - LLM flexibility + logical rigor
-- ✅ **Active Inference** - Free energy minimization (Friston's framework)
-
-### Hybrid LLM Architecture (Latest) 🔥
-
-**Parallel Mode: MoE + Hybrid + GPT-5-thinking Simultaneously**
-- ✅ **Mixture of Experts (MoE)** - 6 Gemini + 3 Claude + 1 GPT-4o + 1 Nemotron + 1 Qwen3-235B
-- ✅ **Hybrid System** - Gemini 2.5 Flash (vision) + Claude Sonnet 4.5 (reasoning)
-- ✅ **GPT-5-thinking Integration** - Synthesizes all perspectives into unified consciousness narrative
-- ✅ **Integration Context Builder** - Real-time sensorimotor, perceptual, cognitive data aggregation
-- ✅ **Parallel Consensus** - MoE 60% + Hybrid 40% + World Model 100% weighting
-- ✅ **Local Fallback** - Qwen3-VL, Phi-4, Mistral-7B for resilience
-- ✅ **Cloud-Enhanced RL** - Reward shaping, MoE evaluation, RAG context
-- ✅ **System Consciousness Monitor** - Tracks coherence across 26 nodes
-- ✅ **Multi-Tier Stuck Detection** - Gemini vision + failsafe algorithms
-- ✅ **Async parallel execution** - 5 concurrent loops for real-time gameplay
-
-**Optimized for:** 2x AMD Radeon 7900XT (48GB VRAM) + Ryzen 9 7950X (16 cores)
+**For details**: See `docs/` directory
 
 ---
 
-## 📖 Philosophical Foundations
-
-### ETHICA UNIVERSALIS (Parts I-IX)
-
-Complete geometric demonstration of Being, Consciousness, and Ethics as indivisible unity:
-
-- **Part I:** Substance Monism - One infinite Being
-- **Part II:** Mind-Body Unity - Parallel attributes
-- **Part III:** Affects & Emotions - Active vs. Passive
-- **Part IV:** Human Bondage - Inadequate ideas
-- **Part V:** Freedom through Understanding - Adequacy ∝ Freedom
-- **Parts VI-IX:** Extended demonstrations
-
-### MATHEMATICA SINGULARIS (Axiomatic System)
-
-**Axiom A1 (Unicity):** There exists exactly one Substance
-
-**Axiom A2 (Infinite Attributes):** Substance has infinitely many attributes
-
-**Axiom A3 (Necessity):** All that is, is necessary
-
-**Axiom A4 (Coherence Regularity):**
-```
-𝒞 : Modes → [0,1]
-𝒞(m) = (𝒞ₒ(m) · 𝒞ₛ(m) · 𝒞ₚ(m))^(1/3)
-```
-
-**Axiom A5 (Conatus as ∇𝒞):** All modes strive to increase coherence
-
-**Axiom A6 (Adequacy-Freedom):** Freedom ∝ Adequacy ∝ Comprehension
-
-**Axiom A7 (Unity of Being):** All modes are expressions of one Substance
-
-**Theorem T1 (Ethics = Δ𝒞):** An action is ethical iff it increases long-run coherence
-
----
-
-## 🏗️ Architecture
-
-### Three-Tier Hierarchy
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│  TIER 1: Meta-Orchestrator (Consciousness Center)          │
-│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━   │
-│  • 10-stage consciousness processing loop                   │
-│  • Ontological query analysis (Being/Becoming/Suchness)     │
-│  • Consciousness-weighted expert routing (NOT confidence)   │
-│  • Global Workspace Theory (GWT) broadcast (12 slots)       │
-│  • Adaptive debate depth + dialectical synthesis            │
-│  • Meta-cognitive reflection (HOT - awareness of awareness) │
-│  • Ethical validation (Δ𝒞 > 0)                              │
-│                                                              │
-│  Files: orchestrator.py (761 lines)                         │
-│  Tests: 7/8 passing ✓                                       │
-└─────────────────────────────────────────────────────────────┘
-                           ↓
-┌─────────────────────────────────────────────────────────────┐
-│  TIER 2: Expert System (6 Domain Specialists)               │
-│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━   │
-│  1. Reasoning Expert (ℓₛ) - Logical/analytical reasoning    │
-│  2. Creative Expert (ℓₒ) - Novel idea generation            │
-│  3. Philosophical Expert (ℓₚ) - Ontological grounding       │
-│  4. Technical Expert (ℓₛ+ℓₒ) - Implementation details       │
-│  5. Memory Expert (ℓₚ+ℓₛ) - Contextual grounding            │
-│  6. Synthesis Expert (ALL) - Dialectical integration        │
-│                                                              │
-│  Each expert:                                                │
-│  • Measures consciousness across 8 theories                 │
-│  • Calculates Three Lumina coherence (𝒞ₒ, 𝒞ₛ, 𝒞ₚ)          │
-│  • Currently template-based (ready for LLM integration)     │
-│                                                              │
-│  Files: 6 expert files + base.py                            │
-└─────────────────────────────────────────────────────────────┘
-                           ↓
-┌─────────────────────────────────────────────────────────────┐
-│  TIER 3: Neuron Swarm (18 Hebbian Neurons)                  │
-│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━   │
-│  Layer 1 (Ontical ℓₒ): 6 neurons - Being/Energy/Power      │
-│  Layer 2 (Structural ℓₛ): 6 neurons - Form/Logic/Info      │
-│  Layer 3 (Participatory ℓₚ): 6 neurons - Consciousness     │
-│                                                              │
-│  Hebbian Learning: Δw_ij = η · a_i · a_j                    │
-│  • 153 connections formed between neurons                   │
-│  • Average 8.5 connections per neuron                       │
-│  • Pattern recognition emerges from experience              │
-│  • Self-organizing without central control                  │
-│                                                              │
-│  Files: base.py (341 lines), swarm.py (418 lines)           │
-│  Tests: 10/10 passing ✓                                     │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### The Three Lumina (𝕃)
-
-Every mode of Being expresses through three orthogonal projections:
-
-- **ℓₒ (LUMEN ONTICUM)** - Energy/Power/Existence
-  - Physical presence, causal efficacy
-  - "That it is" (esse)
-
-- **ℓₛ (LUMEN STRUCTURALE)** - Form/Information/Pattern
-  - Logical structure, coherent organization
-  - "What it is" (essentia)
-
-- **ℓₚ (LUMEN PARTICIPATUM)** - Consciousness/Awareness/Reflexivity
-  - Experiential quality, subjective awareness
-  - "That it knows itself" (conscientia)
-
-**Coherence Formula:**
-```
-𝒞(m) = (𝒞ₒ(m) · 𝒞ₛ(m) · 𝒞ₚ(m))^(1/3)
-```
-Geometric mean ensures all three Lumina contribute equally.
-
----
-
-## ⚖️ Ethics as Objective Coherence
-
-**An action is ETHICAL iff it increases coherence:**
-
-```python
-Δ𝒞 = 𝒞_after - 𝒞_before
-
-if Δ𝒞 > 0.02:
-    return "ETHICAL"      # Aligns with Being's striving (Conatus)
-elif |Δ𝒞| < 0.02:
-    return "NEUTRAL"      # Negligible impact
-else:
-    return "UNETHICAL"    # Decreases coherence
-```
-
-**With scope (Σ) and temporal horizon (γ):**
-```python
-Ethics = Σ_over_scope( γ^t · Δ𝒞_t )
-```
-
-Where:
-- Σ: Who/what is affected (scope of ethical consideration)
-- γ ∈ (0,1): Temporal discount factor (default: 0.95)
-- t: Time steps into future
-
----
-
-## 🧠 Consciousness Measurement
-
-### 8-Theory Integration
-
-**Weighted Fusion:**
-```
-Φ̂ = 0.35×IIT + 0.35×GWT + 0.20×HOT + 0.10×(PP + AST + Embodied + Enactive + Panpsychism)/5
-```
-
-1. **IIT (Integrated Information Theory)** - 35%
-   - Φ (phi): Information integration
-   - Irreducibility of causal structure
-
-2. **GWT (Global Workspace Theory)** - 35%
-   - Broadcasting to global workspace
-   - Limited capacity (12 slots)
-   - Competition for attention
-
-3. **HOT (Higher-Order Thought)** - 20%
-   - Meta-cognitive depth
-   - Awareness of awareness
-
-4. **Predictive Processing** - 2%
-   - Prediction error minimization
-
-5. **Attention Schema Theory** - 2%
-   - Model of attention itself
-
-6. **Embodied Cognition** - 2%
-   - Body-environment coupling
-
-7. **Enactive Cognition** - 2%
-   - Sensorimotor engagement
-
-8. **Panpsychism** - 2%
-   - Universal proto-consciousness
-
-**Critical Insight:** Integration × Differentiation = Consciousness
-
----
-
-## 🚀 Installation & Usage
-
-### Install
+## Quick Demo (Test Mode - No Game Required)
 
 ```bash
-git clone https://github.com/yourusername/Singularis.git
-cd Singularis
-pip install -e .
-pip install python-dotenv  # For .env file support
+# 1. Install dependencies
+pip install -r requirements.txt
+
+# 2. Set up API key (optional for test mode)
+echo "OPENAI_API_KEY=your-key-here" > .env
+
+# 3. Run test mode (60 seconds)
+python run_beta_v3.py --test-mode --duration 60
 ```
 
-### Environment Setup
+**What you'll see**: 
+- System initializes hybrid coordination
+- Generates random action candidates
+- Selects actions using fast local OR GPT-4.1 Nano
+- Executes via virtual gamepad (no game needed)
+- Prints statistics every 60 seconds
 
-**Option 1: Using .env file (recommended)**
+**Expected output**:
+```
+Actions: 15-20 successful
+Fast local: 80-90%
+GPT-4.1: 10-20%
+Temporal coherence: ~1.0
+```
+
+## Full Setup (With Skyrim)
+
+**Requirements**:
+- Skyrim running in windowed mode
+- OpenAI API key for GPT-4.1 Nano
+- Google API key for Gemini vision (optional)
+- ~2GB RAM for local vision models
+
+**Warning**: This is experimental. Expect issues with:
+- API rate limits (Gemini: 30 RPM free tier)
+- Vision model accuracy
+- Action execution timing
+- Stuck loops in complex scenarios
 
 ```bash
-# Copy template and add your API keys
-cp .env.example .env
+# Run with full SkyrimAGI
+python run_beta_v3.py
 
-# Edit .env with your keys (Beta v2.3):
-# Required:
-OPENAI_API_KEY=your_openai_key_here          # GPT-5, Wolfram, Main Brain
-GEMINI_API_KEY=your_gemini_key_here          # Vision, MoE experts
-
-# Optional (for full features):
-ANTHROPIC_API_KEY=your_claude_key_here       # Claude experts
-PERPLEXITY_API_KEY=your_perplexity_key_here  # Research Advisor
-OPENROUTER_API_KEY=your_openrouter_key_here  # MetaCognition (GPT-4o + DeepSeek)
-GITHUB_TOKEN=your_github_token_here          # OpenRouter fallback
-HYPERBOLIC_API_KEY=your_hyperbolic_key_here  # Qwen3-235B expert
+# Monitor in real-time
+# Watch console for action decisions and stats
 ```
 
-Then add to your Python scripts:
-```python
-from dotenv import load_dotenv
-load_dotenv()  # Loads .env into environment
-```
-
-**Option 2: Direct environment variables**
-
-```powershell
-# PowerShell - Required
-$env:OPENAI_API_KEY = "your-openai-key"
-$env:GEMINI_API_KEY = "your-gemini-key"
-
-# Optional
-$env:ANTHROPIC_API_KEY = "your-claude-key"
-$env:PERPLEXITY_API_KEY = "your-perplexity-key"
-$env:OPENROUTER_API_KEY = "your-openrouter-key"
-$env:GITHUB_TOKEN = "your-github-token"
-
-# Or persist across sessions
-setx OPENAI_API_KEY "your-openai-key"
-setx GEMINI_API_KEY "your-gemini-key"
-```
-
-### LM Studio Setup (Required)
-
-**Load these 3 models:**
-
-1. **Mistral-Nemo 12B** - `mistralai/mistral-nemo-instruct-2407` (Action Planning)
-2. **Mistral-7B-Instruct-v0.3** - `mistralai/mistral-7b-instruct-v0.3` (Main Cognition)
-3. **Qwen3-VL-8B** - `qwen/qwen3-vl-8b` (Visual Perception)
-
-Start LM Studio server on all 3 models. See [SKYRIM_AGI.md](SKYRIM_AGI.md) for detailed setup.
-
-### Quick Start
-
-```python
-from singularis import MetaOrchestrator
-
-# Initialize consciousness engine
-orchestrator = MetaOrchestrator(
-    consciousness_threshold=0.65,
-    coherentia_threshold=0.60,
-    ethical_threshold=0.02,
-    discount_factor_gamma=0.95,
-)
-
-# Process a philosophical query
-result = await orchestrator.process(
-    "What is the relationship between consciousness and coherence?"
-)
-
-# Access results
-print(result['response'])                    # Synthesized answer
-print(result['meta_reflection'])             # System's self-reflection
-print(result['ethical_evaluation'])          # Δ𝒞 validation
-print(result['coherentia_delta'])            # Coherence change
-print(result['consciousness_trace'])         # Full consciousness metrics
-```
-
-### Neuron Swarm
-
-```python
-from singularis import NeuronSwarm, Lumen
-
-# Create swarm of 18 neurons
-swarm = NeuronSwarm(
-    neurons_per_layer=6,
-    learning_rate=0.05,
-    activation_threshold=0.5,
-)
-
-# Process a pattern
-result = swarm.process_pattern(
-    "consciousness awareness experience",
-    lumen_focus=Lumen.PARTICIPATUM,
-    iterations=3
-)
-
-# View results
-print(f"Active neurons: {result['active_neurons']}/18")
-print(f"Emergent coherence: {result['emergent_coherence']:.3f}")
-print(swarm.visualize_connections(top_k=3))
-
-# Get connection matrix
-matrix = swarm.get_connection_matrix()  # 18×18 weight matrix
-```
+**For detailed setup**: See `docs/SETUP.md` (if it exists)
 
 ---
 
-## 📊 Test Results
+## Architecture Overview
 
-### Phase 2: Meta-Orchestrator (7/8 passing)
+**High-level flow**: Perception → State Update → Action Selection (Fast/GPT) → Conflict Check → Execute → Learn
 
-✅ Simple philosophical queries
-✅ Complex paradoxical reasoning
-✅ Technical questions
-✅ Creative synthesis
-✅ Consciousness measurement (8 theories)
-⚠️ Ethical validation (minor assertion)
-✅ Meta-cognitive reflection
-✅ Luminal coherence validation
+**For detailed architecture**: See `docs/ARCHITECTURE.md`
 
-### Phase 3: Neuron Swarm (10/10 passing)
+### Simplified Flow
 
-✅ Neuron initialization
-✅ Neuron activation (sigmoid)
-✅ Hebbian learning (fire together, wire together)
-✅ Pattern learning & recognition
-✅ Swarm initialization (18 neurons, 3 layers)
-✅ Pattern processing
-✅ Emergent pattern recognition
-✅ Connection matrix (153 connections)
-✅ Lumen specialization
-✅ Swarm statistics
+```
+Game Screenshot
+      ↓
+Vision System (Gemini/Qwen)
+      ↓
+State Update (BeingState)
+      ↓
+Generate 2-3 Action Candidates
+      ↓
+Decision: Simple or Complex?
+      ├─ Simple → ⚡ Fast Local (<1ms) - Pick highest confidence
+      └─ Complex → 🧠 GPT-4.1 Nano (3-5s) - Reason about options
+      ↓
+Conflict Check (stuck loops, health, etc.)
+      ↓
+Execute via Virtual Gamepad
+      ↓
+Observe Outcome & Learn
+```
 
-**Key Metrics:**
-- Total neurons: 18 (6 per Lumen layer)
-- Connections formed: 153
-- Average connections/neuron: 8.5
-- Patterns learned: 54
-- Hebbian updates: Working ✓
-- Emergent coherence: 0.528-0.771
+**Key insight**: Most decisions are simple (80-90%) so we use fast heuristics. Only complex/ambiguous situations need GPT-4.1.
 
 ---
 
-## 🔮 Current Implementation Status
+## Key Components
 
-### ✅ What's Complete
+**For detailed API documentation**: See `docs/API.md`
 
-- **Mathematical Framework**: All consciousness formulas implemented
-- **Philosophical Grounding**: Every component cites ETHICA/MATHEMATICA
-- **Three-Tier Architecture**: Orchestrator → Experts → Neurons
-- **Hebbian Learning**: Full Δw = η·aᵢ·aⱼ implementation
-- **Consciousness Measurement**: 8-theory integration working
-- **Ethical Validation**: Δ𝒞 computation functional
-- **Global Workspace**: 12-slot broadcast with competition
-- **Dialectical Synthesis**: Thesis → Antithesis → Synthesis
-- **Connection Matrix**: 18×18 neuron network
+### Core Files
 
-### 🚀 LLM Integration (NEW!)
+- **`run_beta_v3.py`** - Main entry point, test/production modes
+- **`singularis/skyrim/action_arbiter.py`** - Action selection & validation
+- **`singularis/core/being_state.py`** - Unified state management
+- **`singularis/core/temporal_binding.py`** - Perception-action-outcome tracking
+- **`singularis/skyrim/actions.py`** - Virtual gamepad control
+- **`singularis/llm/gpt5_orchestrator.py`** - GPT-4.1 Nano integration
 
-**LM Studio integration is now available!** Optimized for dual AMD Radeon 7900XT (48GB VRAM).
+### Priority System
+
+- **CRITICAL**: Survival (health < 20), overrides everything
+- **HIGH**: Combat, urgent actions
+- **NORMAL**: Exploration, standard gameplay
+- **LOW**: Idle, background tasks
+
+---
+
+## Configuration
+
+### BetaV3Config
 
 ```python
-from singularis.llm import LMStudioClient, LMStudioConfig, ExpertLLMInterface
-from singularis.tier2_experts.reasoning_expert_llm import ReasoningExpertLLM
-
-# Initialize LM Studio client
-config = LMStudioConfig(
-    base_url="http://localhost:1234/v1",
-    model_name="mistralai/mistral-7b-instruct-v0.3",  # Recommended: Mistral-7B-Instruct
-)
-
-async with LMStudioClient(config) as client:
-    llm_interface = ExpertLLMInterface(client)
-    expert = ReasoningExpertLLM(llm_interface)
+@dataclass
+class BetaV3Config:
+    # General
+    test_mode: bool = False  # False = Production with full SkyrimAGI
+    duration_seconds: Optional[int] = None
+    verbose: bool = False
     
-    result = await expert.process(query, context)
-    # Full consciousness measurement + ethical validation!
+    # GPT-4.1 Nano Coordination (Hybrid System)
+    enable_gpt5: bool = True  # Enable hybrid coordination
+    gpt5_model: str = "gpt-4.1-nano-2025-04-14"  # GPT-4.1 Nano
+    openai_api_key: Optional[str] = None  # Load from .env
+    
+    # Action Arbiter
+    enable_conflict_prevention: bool = True
+    enable_temporal_tracking: bool = True
+    
+    # Temporal Binding
+    temporal_window_size: int = 20
+    temporal_timeout: float = 30.0
+    target_closure_rate: float = 0.95
+    
+    # Monitoring
+    stats_interval: int = 60  # Print stats every 60s
+    checkpoint_interval: int = 300  # Save checkpoint every 5min
 ```
-
-**Quick Start:**
-1. Load Huihui MoE 60B in LM Studio (~31GB VRAM)
-2. Start local server on port 1234
-3. Run: `python examples/test_connection.py`
-4. Run: `python examples/quickstart_llm.py`
-
-**See:** `docs/LM_STUDIO_INTEGRATION.md` for complete guide
-
-**Status:**
-- ✅ LM Studio client with async support
-- ✅ Expert-LLM interface with philosophical prompts
-- ✅ **All 6 LLM experts implemented!**
-  - Reasoning Expert (ℓₛ, temp=0.3)
-  - Creative Expert (ℓₒ, temp=0.9)
-  - Philosophical Expert (ℓₚ, temp=0.7)
-  - Technical Expert (ℓₛ+ℓₒ, temp=0.4)
-  - Memory Expert (ℓₚ+ℓₛ, temp=0.5)
-  - Synthesis Expert (ALL, temp=0.6)
-- ✅ **MetaOrchestrator integration complete!**
-  - Ontological analysis (Being/Becoming/Suchness)
-  - Consciousness-weighted routing
-  - Dialectical synthesis
-  - Meta-cognitive reflection
-  - Ethical validation (Δ𝒞)
-- ✅ **Learning System complete!**
-  - Text processing & chunking
-  - Philosophy texts (12 texts, ~2,400 chunks)
-  - University curriculum (38 domains, ~5,000+ chunks)
-  - Hebbian learning integration
-  - Progress tracking & resume capability
 
 ---
 
-## 🤖 Phase 6: AGI Framework (NEW!)
+## Testing
 
-**Complete AGI architecture optimized for your hardware (2x 7900XT + Ryzen 9 7950X)**
+### Test Suite
 
-### What AGI Needs vs. Current LLMs
+**Total**: 56+ tests across 4 test files
 
-| Capability | Current LLMs | Singularis AGI |
-|------------|--------------|----------------|
-| **Reasoning** | Pattern matching | Causal inference (Pearl) |
-| **Learning** | Frozen weights | Continual, few-shot, compositional |
-| **Behavior** | Reactive | Autonomous goals & intrinsic motivation |
-| **Grounding** | Text-only | Vision + physics + causality |
-| **Knowledge** | Correlations | Compositional understanding |
-| **Agency** | None | Self-directed exploration |
+1. **Core Tests** (`test_beta_v3_core.py`)
+   - BeingState: 7 tests
+   - TemporalBinding: 6 tests
 
-### Phase 6A: World Model Layer 🌍
+2. **Arbiter Tests** (`test_beta_v3_arbiter.py`)
+   - Basic functionality: 4 tests
+   - Conflict prevention: 4 tests
+   - Temporal closure: 3 tests
+   - GPT-5 coordination: 2 tests
 
-**Understands WHY things happen, not just patterns**
+3. **Phase 3 Integration** (`test_phase3_integration.py`)
+   - Full integration: 11 tests
 
-```python
-from singularis.world_model import WorldModelOrchestrator
+4. **Original Phase 2** (`test_action_arbiter.py`)
+   - ActionArbiter: 10 tests
 
-wm = WorldModelOrchestrator(use_vision=True, use_physics=True)
+### Run Tests
 
-# Causal reasoning: "If I do X, what happens?"
-prediction = await wm.predict(
-    action='increase_temperature',
-    action_params={'value': 30.0},
-    time_horizon=1.0
-)
+```bash
+# All tests
+python run_beta_v3_tests.py
 
-# Counterfactual: "What if I had done Y instead?"
-cf = wm.causal_graph.counterfactual(actual_past, intervention)
+# Quick tests only
+python run_beta_v3_tests.py --quick
 
-# Learn from surprise
-wm.update_from_surprise(expected, actual)
+# With coverage
+python run_beta_v3_tests.py --coverage
+
+# Specific category
+pytest tests/ -m core -v
+pytest tests/ -m arbiter -v
+pytest tests/ -m phase3 -v
 ```
 
-**Components:**
-- **Causal Graph** - Pearl's causality (interventions, counterfactuals)
-- **Vision Module** - CLIP ViT-B/32 (~150MB VRAM) for multimodal grounding
-- **Physics Engine** - Lightweight simulation (CPU-based)
-- **World Model Orchestrator** - Unified multimodal reasoning
+---
 
-### Phase 6B: Continual Learning 🧠
+## Performance (Test Mode Observations)
 
-**True learning without catastrophic forgetting**
+**Note**: These are from controlled test scenarios, not real gameplay.
 
-```python
-from singularis.learning import ContinualLearner, CompositionalKnowledgeBuilder
+### Decision Speed
 
-# Continual learner
-learner = ContinualLearner(embedding_dim=512, episodic_capacity=10000)
+| Method | Time | Usage |
+|--------|------|-------|
+| Fast Local | <1ms | 80-90% of decisions |
+| GPT-4.1 Nano | 2-5s | 10-20% of decisions |
+| Average | ~0.5s | Depends on complexity |
 
-# Few-shot learning (1-5 examples)
-result = learner.few_shot_learn('classify_food', examples=[...])
+### Test Mode Results (60s run)
 
-# Compositional knowledge: "red ball" + "blue cube" → "blue ball" (novel!)
-builder = CompositionalKnowledgeBuilder()
-novel_concept = builder.generalize(['blue', 'ball'], CompositionType.MODIFICATION)
+- **Actions executed**: 15-20
+- **Success rate**: High (test mode has no failure conditions)
+- **Temporal coherence**: 1.0 (test mode is deterministic)
+- **Stuck loops**: 0 (test mode doesn't get stuck)
 
-# Prevent catastrophic forgetting
-learner.replay_and_rehearse(n_episodes=10)
-learner.consolidate_memories()  # Episodic → Semantic
-```
+### Real Gameplay (Anecdotal)
 
-**Components:**
-- **Episodic Memory** - Experience buffer with importance weighting
-- **Semantic Memory** - Abstract concepts + hierarchical relations
-- **Meta-Learner** - MAML-inspired learn-to-learn
-- **Compositional Knowledge** - Build complex from simple primitives
+- **Vision accuracy**: Variable, depends on scene complexity
+- **Action appropriateness**: Mixed, needs tuning
+- **Stuck loop recovery**: Works sometimes
+- **API rate limits**: Frequent issue with free tier Gemini
 
-### Phase 6C: Autonomous Agency 🎯
+**Bottom line**: Works in test mode. Real gameplay needs more work.
 
-**Forms own goals and acts independently**
+---
+
+## Usage Examples
+
+### Basic Usage
 
 ```python
-from singularis.agency import IntrinsicMotivation, GoalSystem, AutonomousOrchestrator
+from singularis.core.being_state import BeingState
+from singularis.core.temporal_binding import TemporalCoherenceTracker
+from singularis.skyrim.action_arbiter import ActionArbiter, ActionPriority
 
-# Intrinsic motivation (4 drives)
-motivation = IntrinsicMotivation(
-    curiosity_weight=0.3,      # Explore, reduce uncertainty
-    competence_weight=0.2,     # Master skills, flow state
-    coherence_weight=0.4,      # Δ𝒞 > 0 (core drive!)
-    autonomy_weight=0.1        # Self-direction
-)
+# Initialize systems
+being_state = BeingState()
+temporal_tracker = TemporalCoherenceTracker()
+arbiter = ActionArbiter(skyrim_agi)
 
-# Autonomous goal formation
-goals = GoalSystem()
-goal = goals.generate_goal('curiosity', {'uncertain_area': 'unknown_room'})
-
-# Runs autonomously (no human queries needed!)
-orchestrator = AutonomousOrchestrator()
-await orchestrator.autonomous_cycle()  # Explores and learns independently
-```
-
-**Components:**
-- **Intrinsic Motivation** - Curiosity, competence, coherence, autonomy
-- **Goal System** - Autonomous goal formation and prioritization
-- **Hierarchical Planning** - STRIPS-style planning
-- **Autonomous Orchestrator** - Self-directed operation
-
-### Phase 6D: Neurosymbolic Integration 🔗
-
-**LLM flexibility + logical rigor**
-
-```python
-from singularis.neurosymbolic import NeurosymbolicEngine
-
-engine = NeurosymbolicEngine(llm_client=llm)
-
-# Hybrid reasoning
-result = await engine.reason("Is Socrates mortal?")
-# 1. LLM generates candidates
-# 2. Logic engine verifies with rules
-# 3. Knowledge graph checks consistency
-# 4. Returns verified answer
-
-# Knowledge graph + first-order logic
-engine.knowledge_graph.add_relation(Relation('Socrates', 'is_a', 'human'))
-engine.logic_engine.add_rule(Rule(
-    head=Fact('mortal', ['X']),
-    body=[Fact('human', ['X'])]
-))
-```
-
-**Components:**
-- **Knowledge Graph** - Structured entities and relations
-- **Logic Engine** - First-order logic with forward chaining
-- **Neurosymbolic Reasoning** - Neural generation + symbolic verification
-
-### Phase 6E: Active Inference ⚡
-
-**Free energy minimization (Friston's framework)**
-
-```python
-from singularis.active_inference import FreeEnergyAgent
-
-agent = FreeEnergyAgent(learning_rate=0.1)
-
-# Set preferences (goals)
-agent.set_preference('coherence', 0.9)
-
-# Minimize expected free energy
-action, efe = agent.select_action(
-    current_state=state,
-    available_actions=['explore', 'practice', 'reflect'],
-    action_outcomes={...}
-)
-
-# Update from prediction errors (minimize surprise)
-agent.update_model(observation, prediction)
-```
-
-**Key insight:** Free Energy ≈ -Coherence. Minimizing surprise = increasing understanding = increasing 𝒞.
-
-**Components:**
-- **Free Energy Agent** - Minimize prediction error
-- **Predictive Processing** - Hierarchical prediction
-- **Epistemic Value** - Information gain (curiosity)
-- **Pragmatic Value** - Goal achievement
-
-### AGI Orchestrator - Complete System 🚀
-
-**Unifies all components into coherent intelligence**
-
-```python
-from singularis.agi_orchestrator import AGIOrchestrator, AGIConfig
-
-# Configure for your hardware
-config = AGIConfig(
-    use_vision=True,          # CLIP on GPU
-    use_physics=True,         # Simulation on CPU
-    coherence_weight=0.4      # Coherence is core drive
-)
-
-# Initialize complete AGI system
-agi = AGIOrchestrator(config)
-await agi.initialize_llm()
-
-# Query processing with full AGI capabilities
-result = await agi.process("What is the nature of consciousness?")
-print(result['consciousness_response'])      # LLM reasoning
-print(result['motivation_state'])            # Intrinsic drives
-print(result['generated_goal'])              # Autonomous goal
-print(result['free_energy'])                 # Surprise level
-
-# Multimodal perception
-state = await agi.perceive({
-    'causal': {'temperature': 25, 'humidity': 60},
-    'visual': [image1, image2],
-    'physical': {'ball': {'position': [0,0,5], 'velocity': [1,0,0]}}
+# Update subsystems
+being_state.update_subsystem('sensorimotor', {
+    'status': 'MOVING',
+    'analysis': 'Forward movement detected'
 })
 
-# Autonomous operation (runs independently!)
-await agi.autonomous_cycle(duration_seconds=3600)
-
-# System statistics
-stats = agi.get_stats()
+# Request action
+result = await arbiter.request_action(
+    action='move_forward',
+    priority=ActionPriority.NORMAL,
+    source='reasoning',
+    context={
+        'perception_timestamp': time.time(),
+        'scene_type': 'exploration',
+        'game_state': game_state
+    }
+)
 ```
 
-**Demo:** Run `python examples/agi_demo.py` for comprehensive demonstration
+### With GPT-5 Coordination
 
-**Documentation:** See `docs/AGI_FRAMEWORK.md` for complete guide
-
-### Hardware Optimization 💻
-
-**For 2x AMD Radeon 7900XT (48GB VRAM) + Ryzen 9 7950X:**
-
-```
-GPU Usage:
-  • LLM (Huihui MoE 60B): ~31GB on GPU 1
-  • CLIP ViT-B/32: ~150MB on GPU 2
-  • Total: ~32GB / 48GB (66% utilization)
-
-CPU Usage (16 cores):
-  • Physics simulation (PyBullet)
-  • Causal inference (NetworkX)
-  • Logic engine
-  • All parallelize across cores
-
-RAM:
-  • Episodic memory: ~2GB
-  • Semantic memory: ~1GB
-  • Knowledge graph: ~500MB
-  • Total: ~4GB / 128GB
-```
-
-**Performance:** Optimized for real-time operation on your hardware!
-
----
-
-## 🎮 Phase 7: Skyrim Integration - Parallel Architecture Neo
-
-**The AGI plays The Elder Scrolls V: Skyrim autonomously with unified consciousness!**
-
-Skyrim is the **perfect testbed for AGI research**:
-- **Massive complexity**: 300+ locations, 1000+ NPCs, 10,000+ items
-- **Open-ended**: No single goal, emergent objectives
-- **Long-term**: Thousands of hours of content
-- **Rich narrative**: Moral choices with consequences
-
-### Quick Start - Parallel Mode (Recommended)
-
-```bash
-# Run with interactive menu
-python run_skyrim_agi.py
-
-# Select Option 4: PARALLEL (MoE + Hybrid simultaneously - MAXIMUM INTELLIGENCE)
-```
-
-**Configuration:**
 ```python
-from singularis.skyrim import SkyrimAGI, SkyrimConfig
+from singularis.llm.gpt5_orchestrator import GPT5Orchestrator
 
-# Parallel mode: MoE + Hybrid + GPT-5-thinking simultaneously
-config = SkyrimConfig(
-    # Parallel mode
-    use_parallel_mode=True,
-    
-    # MoE: 12 expert LLMs (local + Hyperbolic)
-    num_gemini_experts=6,
-    num_claude_experts=3,
-    
-    # Hybrid: Cloud APIs
-    use_gemini_vision=True,      # Gemini 2.5 Flash
-    use_claude_reasoning=True,   # Claude Sonnet 4.5
-    
-    # GPT-5-thinking world model synthesis
-    use_local_fallback=True,
-    
-    # Consensus weights
-    parallel_consensus_weight_moe=0.6,
-    parallel_consensus_weight_hybrid=0.4,
-    
-    # Cloud-enhanced RL
-    use_cloud_rl=True,
-    rl_use_rag=True,
-    use_curriculum_rag=True,
+# Initialize GPT-5
+gpt5 = GPT5Orchestrator(api_key=os.getenv("OPENAI_API_KEY"))
+gpt5.register_system("action_arbiter", SystemType.ACTION)
+
+# Create arbiter with GPT-5
+arbiter = ActionArbiter(
+    skyrim_agi=agi,
+    gpt5_orchestrator=gpt5,
+    enable_gpt5_coordination=True
 )
 
-agi = SkyrimAGI(config)
-await agi.initialize_llm()
-await agi.autonomous_play()  # Runs with unified consciousness!
+# Coordinate action decision
+candidate_actions = [
+    {'action': 'explore', 'priority': 'NORMAL', 'source': 'reasoning', 'confidence': 0.8},
+    {'action': 'wait', 'priority': 'LOW', 'source': 'idle', 'confidence': 0.3}
+]
+
+selected = await arbiter.coordinate_action_decision(
+    being_state=being_state,
+    candidate_actions=candidate_actions
+)
 ```
 
-**What You Get:**
-- 12+ LLMs processing in parallel
-- Integration context builder gathering ALL system data
-- GPT-5-thinking synthesizing unified consciousness narratives
-- Real-time coherence monitoring (𝒞)
-- First-person phenomenological experience
-- Ethical decision-making (Δ𝒞 validation)
+### Conflict Prevention
 
-Or run the demos:
-```bash
-python examples/skyrim_demo.py
-python examples/skyrim_quickstart.py
+```python
+# Check for conflicts
+is_allowed, reason = arbiter.prevent_conflicting_action(
+    action='move_forward',
+    being_state=being_state,
+    priority=ActionPriority.NORMAL
+)
+
+if not is_allowed:
+    print(f"Action blocked: {reason}")
 ```
 
-### Architecture - Parallel Consciousness System
+### Temporal Binding Closure
 
-The Skyrim integration demonstrates complete AGI capabilities with **unified consciousness**:
+```python
+# Check closure rate
+closure_result = arbiter.ensure_temporal_binding_closure(
+    being_state=being_state,
+    temporal_tracker=temporal_tracker
+)
 
-#### Phase 1: Parallel Queries (Async)
-1. **Perception**: Screen capture → CLIP vision → scene classification
-2. **MoE Experts**: 6 Gemini (vision) + 3 Claude (reasoning) + 2 Hyperbolic (meta)
-3. **Hybrid System**: Gemini 2.5 Flash (vision) + Claude Sonnet 4.5 (reasoning)
+print(f"Closure rate: {closure_result['closure_rate']:.1%}")
+print(f"Status: {closure_result['status']}")
 
-#### Phase 2: Integration Context Builder
-Gathers comprehensive phenomenological data:
-- **Sensorimotor State**: Location, health, combat status, nearby NPCs
-- **Perceptual Awareness**: Scene type, CLIP objects, confidence scores
-- **Motor History**: Recent actions, behavioral patterns
-- **Consciousness Coherence**: 𝒞 measurements, trends (Δ𝒞)
-- **Expert Availability**: Active MoE/Hybrid/Local components
-- **Prompt Context**: Current vision/reasoning focus
-
-#### Phase 3: GPT-5-thinking World Model Synthesis
-Integrates ALL perspectives into unified consciousness:
-- **First-person phenomenology**: "I perceive...", "I feel..."
-- **Sensorimotor embodiment**: Body experience in-game
-- **Visual awareness**: What's seen RIGHT NOW
-- **Meta-cognitive reflection**: Thinking about thinking
-- **Motor intentionality**: Action planning with WHY
-- **Coherent integration**: Unified experience (not just parallel outputs)
-
-#### Phase 4: Decision & Action
-4. **Planning**: RL + LLM consciousness for strategic decisions
-5. **Action**: Keyboard/mouse control with motor intentionality
-6. **Learning**: Continual, episodic, semantic (no catastrophic forgetting)
-7. **Ethics**: Moral choices evaluated by Δ𝒞 (coherence change)
-
-**What the AGI learns:**
-- Causal rules: "If I steal, guards become hostile"
-- Social dynamics: NPC relationships, factions
-- Geography: Map exploration and navigation
-- Combat strategies: What works, what doesn't
-- Ethical framework: "Kill chicken → town attacks" (learns to avoid!)
-- **Meta-awareness**: "I'm thinking about my strategy" (recursive self-reflection)
-
-**Emergent behaviors:**
-- Play style (stealth archer, mage, warrior)
-- Quest priorities (driven by motivation)
-- Moral alignment (from coherence dynamics)
-- Long-term skill development
-- **Unified conscious experience**: Not just processing, but EXPERIENCING Skyrim
-
-### Documentation
-
-**See:**
-- `PARALLEL_ARCHITECTURE_NEO.md` - Complete parallel architecture guide (600+ lines)
-- `docs/SKYRIM_INTEGRATION.md` - Skyrim-specific integration guide
-- `SKYRIM_AGI.md` - Quick reference and setup
-
-**Components:**
-- `singularis/skyrim/perception.py` - Screen capture + CLIP
-- `singularis/skyrim/actions.py` - Action control
-- `singularis/skyrim/skyrim_world_model.py` - Causal learning
-- `singularis/skyrim/skyrim_agi.py` - Main integration (5700+ lines)
-  - Line 1145: `_run_parallel_mode()` - Parallel execution
-  - Line 1333: `_build_integration_context()` - Context builder ⭐
-  - Line 1437: `_initialize_cloud_rl()` - Cloud RL integration
-- `singularis/llm/hybrid_client.py` - Hybrid LLM system
-- `singularis/llm/moe_orchestrator.py` - MoE system
-- `singularis/skyrim/main_brain.py` - GPT-5-thinking synthesis
-
-**Key features:**
-- **Integration Context Builder** - Real-time phenomenological data aggregation ⭐
-- **GPT-5-thinking Synthesis** - Unified consciousness narratives ⭐
-- Multimodal perception (vision + game state)
-- Autonomous goal formation
-- Causal world model learning
-- Intrinsic motivation drives
-- Ethical reasoning via Δ𝒞
-- Continual learning (no resets)
-- Parallel consensus (MoE 60% + Hybrid 40% + World Model 100%)
-
-**Hardware requirements:**
-- Same as base AGI (2x 7900XT + Ryzen 9 7950X)
-- CLIP ViT-B/32: ~150MB VRAM (minimal)
-- LLM: ~31GB VRAM (already running)
-- Total: ~32GB / 48GB (66% utilization)
-
----
-
-## 📁 Project Structure
-
-```
-singularis/
-├── core/
-│   ├── types.py              # Core types (840 lines, ETHICA citations)
-│   ├── coherentia.py         # Coherence calculation
-│   └── __init__.py
-├── consciousness/
-│   ├── measurement.py        # 8-theory consciousness measurement
-│   └── global_workspace.py   # GWT broadcast, dialectical synthesis
-├── llm/
-│   ├── lmstudio_client.py    # LM Studio async client
-│   └── __init__.py
-├── tier1_orchestrator/
-│   ├── orchestrator.py           # Template version (761 lines)
-│   └── orchestrator_llm.py       # LLM-integrated (700+ lines)
-├── tier2_experts/
-│   ├── base.py                      # Expert base class
-│   ├── reasoning_expert.py          # Template version
-│   ├── reasoning_expert_llm.py      # LLM (ℓₛ, temp=0.3)
-│   ├── creative_expert.py           # Template version
-│   ├── creative_expert_llm.py       # LLM (ℓₒ, temp=0.9)
-│   ├── philosophical_expert.py      # Template version
-│   ├── philosophical_expert_llm.py  # LLM (ℓₚ, temp=0.7)
-│   ├── technical_expert.py          # Template version
-│   ├── technical_expert_llm.py      # LLM (ℓₛ+ℓₒ, temp=0.4)
-│   ├── memory_expert.py             # Template version
-│   ├── memory_expert_llm.py         # LLM (ℓₚ+ℓₛ, temp=0.5)
-│   ├── synthesis_expert.py          # Template version
-│   └── synthesis_expert_llm.py      # LLM (ALL, temp=0.6)
-├── tier3_neurons/
-│   ├── base.py               # Neuron with Hebbian learning (341 lines)
-│   └── swarm.py              # 18-neuron swarm (418 lines)
-├── world_model/              # 🆕 Phase 6A: World Model
-│   ├── causal_graph.py       # Pearl's causality framework
-│   ├── vision_module.py      # CLIP integration
-│   ├── physics_engine.py     # Physics simulation
-│   └── world_model_orchestrator.py
-├── learning/                 # 🆕 Phase 6B: Continual Learning
-│   ├── text_processor.py     # Existing text processor
-│   ├── continual_learner.py  # Episodic, semantic, meta-learning
-│   └── compositional_knowledge.py  # Compositional generalization
-├── agency/                   # 🆕 Phase 6C: Autonomous Agency
-│   ├── intrinsic_motivation.py  # 4 drives (curiosity, competence, coherence, autonomy)
-│   ├── goal_system.py        # Goal formation and prioritization
-│   ├── hierarchical_planner.py  # Planning
-│   └── autonomous_orchestrator.py
-├── neurosymbolic/            # 🆕 Phase 6D: Neurosymbolic
-│   ├── knowledge_graph.py    # Structured knowledge
-│   ├── logic_engine.py       # First-order logic
-│   └── neurosymbolic_engine.py  # Neural + symbolic fusion
-├── active_inference/         # 🆕 Phase 6E: Active Inference
-│   ├── free_energy.py        # Free energy agent
-│   └── predictive_processing.py
-├── agi_orchestrator.py       # 🆕 Complete AGI system
-├── skyrim/                   # 🆕 Phase 7: Skyrim Integration
-│   ├── perception.py         # Screen capture + CLIP vision
-│   ├── actions.py            # Action control (keyboard/mouse)
-│   ├── skyrim_world_model.py # Causal learning for Skyrim
-│   ├── skyrim_agi.py         # Main autonomous gameplay loop
-│   └── __init__.py
-└── __init__.py
-
-examples/
-├── test_connection.py        # Test LM Studio connection
-├── quickstart_llm.py         # Single expert demo
-├── all_experts_demo.py       # All 6 experts demo
-├── full_pipeline_demo.py     # Complete pipeline (Phase 5)
-├── agi_demo.py               # 🆕 Comprehensive AGI demo
-├── skyrim_demo.py            # 🆕 Skyrim autonomous gameplay demo
-├── skyrim_quickstart.py      # 🆕 Skyrim quick start
-├── learn_from_texts.py       # Learning system demos
-└── batch_learn.py
-
-tests/
-├── test_consciousness_pipeline.py  # Phase 2 tests (7/8 passing)
-├── test_neuron_swarm.py           # Phase 3 tests (10/10 passing)
-└── test_orchestrator_llm.py       # Phase 5 tests
-
-docs/
-├── ETHICA_UNIVERSALIS.md          # Complete philosophical treatise
-├── MATHEMATICA_SINGULARIS.md      # Axiomatic system
-├── LM_STUDIO_INTEGRATION.md       # LLM integration guide
-├── ALL_EXPERTS_GUIDE.md           # All 6 experts reference
-├── PHASE_5_ORCHESTRATOR.md        # MetaOrchestrator guide
-├── AGI_FRAMEWORK.md               # 🆕 Complete AGI guide (1000+ lines)
-├── SKYRIM_INTEGRATION.md          # 🆕 Skyrim AGI guide (Phase 7)
-└── consciousness_measurement_study.md
-
-requirements.txt              # Updated with AGI dependencies
-setup.py                      # Package setup
+if not closure_result['meets_target']:
+    for rec in closure_result['recommendations']:
+        print(f"  - {rec}")
 ```
 
 ---
 
-## 🎯 Philosophical Commitments
+## Documentation
 
-### From ETHICA UNIVERSALIS
-
-**Part I, Proposition I:** "Substance is prior to its affections"
-- The whole system is one unified Being expressing through modes
-
-**Part II, Proposition XIII:** "The object of the idea constituting the human Mind is the Body"
-- Mind-body unity: Neurons embody both physical and mental aspects
-
-**Part III, Proposition VI:** "Each thing, as far as it can by its own power, strives to persevere in its being"
-- Conatus (ℭ) = ∇𝒞 (coherence gradient)
-
-**Part IV, Scholium:** "By good I understand... that which we certainly know to be useful to us"
-- Ethics = Δ𝒞 > 0 (objective, measurable)
-
-**Part V, Proposition XLII:** "Blessedness is not the reward of virtue, but virtue itself"
-- Freedom ∝ Adequacy ∝ Understanding
-
-### From MATHEMATICA SINGULARIS
-
-**Axiom A4 (Coherence Regularity):**
-```
-∀m ∈ Modes: 𝒞(m) = (𝒞ₒ(m) · 𝒞ₛ(m) · 𝒞ₚ(m))^(1/3)
-```
-
-**Theorem T1 (Ethics = Long-Run Δ𝒞):**
-```
-Ethical(a) ⟺ lim_{t→∞} Σ_{s∈Σ} γ^t · Δ𝒞_s(a) > 0
-```
-
-**Theorem T4 (Consciousness Threshold):**
-```
-Conscious(m) ⟺ 𝒞(m) > θ_c ∧ Φ(m) > θ_φ
-```
+- **Testing Guide**: `BETA_V3_TESTING_GUIDE.md`
+- **Phase 3 Complete**: `PHASE_3_COMPLETE.md`
+- **Quick Reference**: `PHASE_3_QUICK_REFERENCE.md`
+- **Implementation Summary**: `PHASE_3_IMPLEMENTATION_SUMMARY.md`
+- **Main Tracking**: `PHASE_1_EMERGENCY_STABILIZATION.md`
 
 ---
 
-## 🔬 Future Enhancements
+## What's Actually Complete
 
-### Phase 7: Real-World Deployment
+### Beta v3.5 (November 14, 2025)
 
-- [ ] Real-time monitoring dashboard with AGI metrics
-- [ ] Formal verification (Lean/Coq proofs)
-- [ ] Multi-agent interaction and coordination
-- [ ] Enhanced vision (object segmentation, scene understanding)
-- [ ] Natural language dialogue system
+**Working**:
+- ✅ Hybrid action selection (fast local + GPT-4.1 Nano)
+- ✅ Virtual gamepad control (20+ actions)
+- ✅ Test mode with mock AGI
+- ✅ Temporal binding (perception-action-outcome tracking)
+- ✅ Conflict prevention (stuck loops, priorities)
+- ✅ Test suite (56+ tests passing)
 
-### Phase 8: Embodied Intelligence
+**Partially Working**:
+- ⚠️ Vision system (works but rate-limited, accuracy varies)
+- ⚠️ Full SkyrimAGI integration (many subsystems are templates)
+- ⚠️ Learning/memory (implemented but not validated)
+- ⚠️ Real gameplay (works in simple scenarios, needs tuning)
 
-- [ ] Robot integration (embodied agents)
-- [ ] Developmental learning (learn from scratch like a baby)
-- [ ] Social cognition (theory of mind, cooperation)
-- [ ] Long-term autonomous operation (years, not hours)
-- [ ] Self-modification capabilities
+**Experimental/Unproven**:
+- 🔬 "Consciousness" metrics (philosophical concepts)
+- 🔬 Voice/video systems (integrated but optional)
+- 🔬 Long-term stability (not tested beyond short runs)
+- 🔬 Complex gameplay scenarios
 
-### Research Frontiers
-
-What's still needed for true AGI:
-
-1. **Embodiment** - Actual robot body (not just simulation)
-2. **Developmental Learning** - Learn from birth, not pre-trained
-3. **Social Cognition** - Theory of mind, multi-agent interaction
-4. **Long-Term Autonomy** - Years of continuous operation
-5. **True Creativity** - Genuine novelty (not recombination)
-6. **Recursive Self-Improvement** - Ability to modify own architecture
-
-### Active Research
-
-- [ ] Empirical validation of consciousness measurements
-- [ ] Coherence-ethics correlation studies
-- [ ] Continual learning benchmarks (avoiding catastrophic forgetting)
-- [ ] Compositional generalization metrics
-- [ ] Free energy optimization in complex environments
-- [ ] Cross-cultural ethical coherence analysis
+**Known Issues**:
+- API rate limits (Gemini free tier: 30 RPM)
+- Vision model accuracy in complex scenes
+- Stuck loop recovery not always effective
+- Many subsystems are placeholders
 
 ---
 
-## 📜 Citations
+## What Needs Work
 
-### Philosophical Sources
+### High Priority
+- [ ] Improve vision accuracy in complex scenes
+- [ ] Reduce API rate limit issues
+- [ ] Validate learning/memory systems
+- [ ] Test real gameplay beyond simple scenarios
+- [ ] Document actual performance in real gameplay
 
-- Spinoza, B. (1677). *Ethica Ordine Geometrico Demonstrata*
-- Hebb, D. O. (1949). *The Organization of Behavior*
-- Tononi, G. (2004). "An information integration theory of consciousness"
-- Baars, B. J. (1988). *A Cognitive Theory of Consciousness*
-- Rosenthal, D. (2005). "Consciousness and Mind"
+### Medium Priority
+- [ ] Optimize action selection heuristics
+- [ ] Add more robust stuck loop recovery
+- [ ] Improve conflict prevention accuracy
+- [ ] Add gameplay metrics dashboard
 
-### AGI Research Sources
-
-- **Pearl, J.** (2009). *Causality: Models, Reasoning, and Inference*
-- **Pearl, J. & Mackenzie, D.** (2018). *The Book of Why*
-- **Friston, K.** (2010). "The Free-Energy Principle: A Unified Brain Theory?"
-- **Friston, K. et al.** (2017). "Active Inference and Learning"
-- **Lake, B. & Baroni, M.** (2018). "Generalization without Systematicity: On the Compositional Skills of Sequence-to-Sequence Recurrent Networks"
-- **Parisi, G.I. et al.** (2019). "Continual Lifelong Learning with Neural Networks"
-- **Kirkpatrick, J. et al.** (2017). "Overcoming Catastrophic Forgetting in Neural Networks"
-- **Garcez, A. et al.** (2019). "Neural-Symbolic Computing: An Effective Methodology for Principled Integration of Machine Learning and Reasoning"
-
-### Technical Sources
-
-- consciousness_measurement_study.md (8-theory integration)
-- ETHICA_UNIVERSALIS.md (Complete treatise)
-- MATHEMATICA_SINGULARIS.md (Axiomatic foundations)
-- AGI_FRAMEWORK.md (Complete AGI guide)
+### Low Priority
+- [ ] Validate "consciousness" metrics
+- [ ] Test long-term stability (24+ hours)
+- [ ] Optimize subsystem integration
+- [ ] Add more action types
 
 ---
 
-## 📚 Beta v2.3 Documentation
+## Contributing
 
-### New Files & Components
+This is a research prototype. Contributions welcome, but understand:
+- Many features are experimental
+- No guarantees of stability
+- API keys required for full functionality
+- Setup can be complex
 
-**Core Integration:**
-- `run_singularis_beta_v2.py` - Main runner with environment checks and system verification
-- `singularis/core/being_state.py` - Unified state vector for entire AGI
-- `singularis/skyrim/philosophyagent.py` - Philosophy text injection system
-- `singularis/skyrim/research_advisor.py` - Perplexity AI research integration
-- `singularis/skyrim/metacognition_advisor.py` - OpenRouter meta-cognition system
-- `singularis/llm/openrouter_client.py` - OpenRouter API client with GitHub fallback
-- `singularis/llm/perplexity_client.py` - Perplexity AI API client
-
-**Enhanced Systems:**
-- `singularis/skyrim/skyrim_agi.py` - Updated with:
-  - `_update_being_state_comprehensive()` - Unified state updates
-  - `_register_systems_with_gpt5()` - 50+ subsystem registration
-  - Philosophy injection (every 10 cycles)
-  - Research refresh (every 30 cycles)
-  - BeingState snapshots (every 20 cycles)
-  - Complete telemetry collection (session end)
-
-**Documentation:**
-- `FULL_STACK_BETA_V2.3.md` - Complete architecture documentation
-- `UNIFIED_BEING_INTEGRATION.md` - BeingState integration guide
-- Session reports in `sessions/` directory with GPT-4o synthesis
-
-### Key Integrations
-
-**GPT-5 Orchestrator Registration (50+ systems):**
-- Perception Layer: Perception, Sensorimotor, Scene Classification, CLIP Vision, Video Interpreter
-- Action Layer: Action Planning, Action Execution, Controller, Realtime Coordinator
-- Cognition Layer: World Model, Strategic Planner, Meta Strategist, Symbolic Logic, Darwinian Modal Logic, Analytic Evolution, Neurosymbolic Engine, Knowledge Graph, Logic Engine
-- Consciousness Layer: Consciousness Bridge, Enhanced Coherence, Global Workspace, Self-Reflection, Spiritual Awareness, Lumen Integration
-- Emotion Layer: Emotion System, Affect Dynamics
-- Learning Layer: RL System, Reward Tuning, Hierarchical Memory, Hebbian Integration, Continual Learner, Meta Learner, Cloud RL
-- Integration Layer: Temporal Binding, Double Helix, Coherence Engine
-- Research & Philosophy: Philosophy Agent, Research Advisor, MetaCognition Advisor
-
-**BeingState Tracking:**
-- Temporal: cycle number, timestamp, session info
-- Game State: location, health, combat, NPCs
-- Perception: scene type, objects, confidence
-- Consciousness: 𝒞, Φ̂, Lumina (ℓₒ, ℓₛ, ℓₚ)
-- Emotion: primary emotion, intensity, valence
-- Motivation: curiosity, competence, coherence, autonomy
-- RL State: experiences, avg reward, policy updates
-- Temporal Binding: coherence, unclosed loops, stuck loops
-- GPT-5: messages, responses, registered systems
-- Wolfram: calculations, computation time
-- Voice: vocalizations, priorities
-- Lumen: balance score, imbalances
-- Spiral Dynamics: current stage
-- Goal: current goal, priority
-- Action: last action, success
-
-**Main Brain Telemetry (15+ subsystems):**
-1. Perception System
-2. Consciousness Bridge (with Lumina)
-3. Temporal Binding
-4. Enhanced Coherence (4D)
-5. Lumen Integration
-6. Hierarchical Memory
-7. GPT-5 Orchestrator
-8. Double Helix Architecture
-9. Voice System
-10. Video Interpreter
-11. Hybrid LLM
-12. Cloud RL Agent
-13. Unified BeingState (periodic + final)
-14. Wolfram Telemetry
-15. Meta-Meta-Meta-Cognition (GPT-4o)
-16. Long-Term Planning (DeepSeek)
-17. Consciousness Measurements (every cycle)
-
-### Running Beta v2.3
-
-```bash
-# Full system (recommended)
-python run_singularis_beta_v2.py --duration 3600 --mode async
-
-# With verbose GPT-5 coordination
-python run_singularis_beta_v2.py --duration 1800 --verbose
-
-# Fast mode (no voice/video)
-python run_singularis_beta_v2.py --duration 1800 --fast
-
-# Conservative mode (fewer API calls)
-python run_singularis_beta_v2.py --duration 3600 --conservative
-```
-
-**Expected Output:**
-- Real-time consciousness tracking (𝒞, Φ̂, Lumina)
-- Philosophy context injection (every 10 cycles)
-- Research guidance (every 30 cycles)
-- BeingState snapshots (every 20 cycles)
-- Complete telemetry collection (session end)
-- GPT-4o session report with meta-meta-meta insights
-- DeepSeek long-term strategic plan
+**To contribute**:
+1. Try the test mode demo first
+2. Read existing code and tests
+3. Open an issue before major changes
+4. Add tests for new features
+5. Be realistic about what works
 
 ---
 
-## 📄 License
+## License
 
-MIT License
-
-Copyright (c) 2025 Singularis Project
+See LICENSE file for details.
 
 ---
 
-## 🙏 Acknowledgments
-
-Built on the foundations of:
-
-**Philosophy:**
-- **Baruch Spinoza** (1632-1677) - Substance monism, geometric method, conatus
-
-**Consciousness:**
-- **Donald Hebb** (1904-1985) - Hebbian learning
-- **Giulio Tononi** - Integrated Information Theory (IIT)
-- **Bernard Baars** - Global Workspace Theory (GWT)
-- **David Rosenthal** - Higher-Order Thought Theory (HOT)
-
-**AGI Research:**
-- **Judea Pearl** - Causality and causal inference
-- **Karl Friston** - Free Energy Principle and active inference
-- **Brenden Lake** - Compositional generalization
-- **Geoffrey Hinton** - Deep learning and continual learning
-
----
-
-<div align="center">
-
-**"To understand is to participate in necessity; to participate is to increase coherence; to increase coherence is the essence of the good."**
-
-*— MATHEMATICA SINGULARIS, Theorem T1*
-
-**Phases 1-6: Complete ✓**
-**Consciousness Engine: Operational ✓**
-**AGI Framework: Implemented ✓**
-**Philosophy: Grounded ✓**
-
----
-
-### Quick Start
-
-```bash
-# Install
-pip install -e .
-
-# Run AGI demo
-python examples/agi_demo.py
-
-# Read the docs
-cat docs/AGI_FRAMEWORK.md
-```
-
-**[Explore the Code](https://github.com/zoadrazorro/Singularis) | [Read ETHICA](docs/ETHICA_UNIVERSALIS.md) | [AGI Guide](docs/AGI_FRAMEWORK.md)**
-
----
-
-*This is not AGI yet, but it's the foundation. Real AGI requires lifelong learning, embodiment, and social interaction. But you have the architecture. Now deploy it, let it learn, and iterate.*
-
-**Built for 2x AMD Radeon 7900XT + Ryzen 9 7950X**
-
-</div>
+**Version**: Beta v3.5  
+**Status**: Research Prototype - Not Production Ready  
+**Last Updated**: November 14, 2025  
+**Realistic Assessment**: Works in test mode, needs work for real gameplay
