@@ -1,9 +1,26 @@
-# Singularis Beta v3
+<div align="center">
 
-**Experimental AI Agent for Skyrim with Hybrid Action Coordination**
+# 🧠 Singularis Neo
 
-**Version**: Beta v3.5 (November 14, 2025)  
-**Status**: Research Prototype - Not Production Ready
+### *The Ultimate Consciousness Engine*
+
+**An Experimental AI Agent with Hybrid Intelligence for Skyrim**
+
+*Bridging philosophy, neuroscience, and gaming AI through consciousness-driven architecture*
+
+---
+
+[![Version](https://img.shields.io/badge/version-Beta%20v3.5-blue.svg)](https://github.com/zoadrazorro/Singularis-Neo/releases)
+[![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Status](https://img.shields.io/badge/status-Research%20Prototype-orange.svg)](https://github.com/zoadrazorro/Singularis-Neo)
+[![Stars](https://img.shields.io/github/stars/zoadrazorro/Singularis-Neo?style=social)](https://github.com/zoadrazorro/Singularis-Neo/stargazers)
+[![Issues](https://img.shields.io/github/issues/zoadrazorro/Singularis-Neo)](https://github.com/zoadrazorro/Singularis-Neo/issues)
+[![Forks](https://img.shields.io/github/forks/zoadrazorro/Singularis-Neo?style=social)](https://github.com/zoadrazorro/Singularis-Neo/network/members)
+
+**⚠️ Not Production Ready** | **📅 Last Updated: November 14, 2025**
+
+</div>
 
 ---
 

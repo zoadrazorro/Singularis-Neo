@@ -13,7 +13,7 @@ import asyncio
 import hashlib
 from collections import deque, defaultdict
 from typing import Dict, Any, Optional, List
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from loguru import logger
 
 
@@ -28,12 +28,13 @@ class TemporalBinding:
     coherence_delta: float = 0.0
     success: bool = False
     binding_id: str = ""
-    
+
     # Multi-modal visual analysis
     gemini_visual: Optional[str] = None
     hyperbolic_visual: Optional[str] = None
     video_interpretation: Optional[str] = None
     gpt_video_analysis: Optional[str] = None
+    bdh_sigma_snapshots: Dict[str, Any] = field(default_factory=dict)
     
     def __post_init__(self):
         """Generate unique binding ID."""
@@ -88,7 +89,8 @@ class TemporalCoherenceTracker:
         gemini_visual: Optional[str] = None,
         hyperbolic_visual: Optional[str] = None,
         video_interpretation: Optional[str] = None,
-        gpt_video_analysis: Optional[str] = None
+        gpt_video_analysis: Optional[str] = None,
+        bdh_sigma_snapshots: Optional[Dict[str, Any]] = None
     ) -> str:
         """
         Create perception→action binding with multi-modal visual analysis.
@@ -112,7 +114,8 @@ class TemporalCoherenceTracker:
             gemini_visual=gemini_visual,
             hyperbolic_visual=hyperbolic_visual,
             video_interpretation=video_interpretation,
-            gpt_video_analysis=gpt_video_analysis
+            gpt_video_analysis=gpt_video_analysis,
+            bdh_sigma_snapshots=bdh_sigma_snapshots or {}
         )
         
         self.bindings.append(binding)
@@ -228,6 +231,7 @@ class TemporalCoherenceTracker:
             'stuck_loop_count': self.stuck_loop_count,
             'is_stuck': self.is_stuck(),
             'window_size': len(self.bindings),
+            'bdh_snapshot_count': sum(1 for binding in self.bindings if binding.bdh_sigma_snapshots),
         }
     
     def reset_stuck_counter(self):
