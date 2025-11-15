@@ -69,7 +69,173 @@ An experimental AI system that plays Skyrim by:
 - Voice/video systems - integrated but optional
 - Many subsystems are templates or partially implemented
 
-**For details**: See `docs/` directory
+1. What the architecture is (Singularis Neo / SkyrimAGI)
+
+Think of Singularis Neo as a distributed brain spread across several PCs, each with a specific cognitive role:
+
+Core Pieces
+
+ActionArbiter (on the gaming laptop) – “Prefrontal cortex”
+
+Receives candidate actions from different policies (exploration, combat, dialogue, safety, etc.).
+
+Ranks them by confidence + priority (CRITICAL/HIGH/NORMAL/LOW).
+
+Either:
+
+picks an action locally (fast path), or
+
+escalates to a larger LLM for deeper reasoning (slow path).
+
+GPT Hybrid Coordinator – “Meta-cognition”
+
+Only used for 10–20% of decisions when things are confusing:
+
+conflicting actions, low confidence, temporal weirdness, or periodic check-ins.
+
+Takes full context (BeingState, recent history, candidate actions) and returns a single recommended action plus rationale.
+
+Temporal Binding Engine – “Sense of continuity”
+
+Links perception → chosen action → outcome into bindings.
+
+Tracks which bindings close successfully vs. time out or loop.
+
+Detects stuck patterns (e.g., pacing in circles, camera jitter).
+
+Produces metrics like closure rate and temporal coherence that feed back into arbitration and learning.
+
+BeingState – “Global workspace / self-state”
+
+Unified state object that holds:
+
+game state, perception, memory recalls, health, goals, recent actions, etc.
+
+Updated every cycle with fresh data from perception and memory nodes.
+
+Is what both the local arbiter and LLM “see” when reasoning.
+
+Conflict Prevention System – “Safety & sanity checks”
+
+Checks for:
+
+stuck loops (≥ N cycles)
+
+low temporal coherence
+
+subsystem disagreements
+
+health/safety issues
+
+Applies override rules based on priority (CRITICAL can override almost anything; LOW gets blocked easily).
+
+Perception & Swarm Neurons (AMD tower)
+
+Heavy vision models turn frames into structured scene descriptions and affordances.
+
+Swarm of specialist LLMs (“neurons”) propose actions or evaluations:
+
+navigation, combat, loot choice, dialogue style, risk assessment, etc.
+
+RL / curriculum logic trains and refines these over time.
+
+Memory Server (6900XT machine)
+
+Vector database + embeddings.
+
+Stores episodes, summaries, quest history, world facts, and long-term patterns.
+
+Provides /memory/query and /memory/store style APIs so the core can recall or commit memories.
+
+Control Plane NUC (MSI Cubi)
+
+API gateway, message bus, and metrics stack.
+
+Central place for:
+
+routing requests between nodes
+
+collecting telemetry (coherence, closure rate, conflicts, GPT usage)
+
+managing configs/experiments (exploration rate, thresholds).
+
+Dev/Ops Console (MacBook)
+
+Where you develop, deploy, and watch dashboards.
+
+No heavy compute—just control and observability.
+
+2. What the program actually does in Skyrim
+
+On each cycle, for Skyrim, Singularis Neo basically does:
+
+See the world
+
+Captures the current frame + game state (health, enemies, position, UI).
+
+Optionally ships the frame to the AMD tower for rich vision analysis.
+
+Updates BeingState with perception and any recalled memories.
+
+Propose what to do
+
+Multiple policies (exploration, combat, dialogue, safety, etc.) each propose 1–3 candidate actions (with confidence scores).
+
+Swarm neurons on the AMD box can also propose or critique actions.
+
+Decide how to decide
+
+ActionArbiter checks:
+
+Are candidates high-confidence and non-conflicting?
+
+Is temporal coherence good?
+
+Are we not in a stuck loop?
+
+If “simple case”: pick locally (fast path).
+
+If “hard case”: call the main LLM for deeper reasoning (slow path).
+
+Validate and execute the action
+
+Conflict system verifies:
+
+not unsafe
+
+not obviously looping
+
+priority rules respected
+
+If valid, the action is translated into virtual gamepad inputs and sent to Skyrim (move, attack, talk, loot, etc.).
+
+Bind action to outcome
+
+Temporal Binding Engine:
+
+records the context + action as an open binding,
+
+observes what happens next,
+
+closes the binding when consequences are visible or times out.
+
+Updates metrics: closure rate, loop counts, temporal coherence.
+
+Learn and update memory
+
+Memory server stores the new episode / insight.
+
+RL and swarm components can be updated off-line (on the AMD tower) using recorded gameplay.
+
+Coherence and binding metrics slowly shape which policies are trusted more.
+
+Do it again
+
+The loop repeats, typically with local decisions ~80–90% of the time and LLM escalations only when needed.
+
+3. In one sentence
+
+SkyrimAGI / Singularis Neo is a distributed AGI-style system that watches the game, remembers what worked, proposes multiple possible actions, arbitrates between them using both fast local logic and slower LLM reasoning, executes the chosen action through a virtual controller, and continuously tracks cause-and-effect over time so it can stay coherent, avoid getting stuck, and gradually improve its behavior as an autonomous Skyrim player.
 
 ---
 
