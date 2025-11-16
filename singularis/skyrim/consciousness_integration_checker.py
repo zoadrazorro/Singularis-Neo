@@ -15,7 +15,15 @@ import time
 
 @dataclass
 class IntegrationStatus:
-    """Status of subsystem integration."""
+    """Represents the integration status of a single subsystem.
+
+    Attributes:
+        subsystem: The name of the subsystem.
+        last_update: The timestamp of the last update from the subsystem.
+        has_data: A boolean indicating if the subsystem has reported any data.
+        age_seconds: The time in seconds since the last update.
+        stale: A boolean indicating if the subsystem is considered stale.
+    """
     subsystem: str
     last_update: float
     has_data: bool
@@ -23,13 +31,22 @@ class IntegrationStatus:
     stale: bool
     
     def __str__(self):
+        """Returns a human-readable string representation of the status."""
         status = "✓" if not self.stale else "⚠️ STALE"
         return f"{status} {self.subsystem}: {self.age_seconds:.1f}s ago"
 
 
 @dataclass
 class ConflictDetection:
-    """Detected conflict between subsystems."""
+    """Represents a detected conflict between two subsystems.
+
+    Attributes:
+        conflict_type: The type of conflict (e.g., "perception_action_mismatch").
+        subsystem_a: The first subsystem involved in the conflict.
+        subsystem_b: The second subsystem involved in the conflict.
+        description: A human-readable description of the conflict.
+        severity: The severity of the conflict (1=Minor, 2=Warning, 3=Critical).
+    """
     conflict_type: str
     subsystem_a: str
     subsystem_b: str
@@ -37,18 +54,22 @@ class ConflictDetection:
     severity: int  # 1-3, higher is more severe
     
     def __str__(self):
+        """Returns a human-readable string representation of the conflict."""
         severity_str = "🔴 CRITICAL" if self.severity == 3 else "🟡 WARNING" if self.severity == 2 else "🟢 MINOR"
         return f"{severity_str} {self.conflict_type}: {self.description}"
 
 
 class ConsciousnessIntegrationChecker:
-    """
-    Monitors integration between subsystems and detects conflicts.
-    
-    This is the "debugger" for consciousness integration issues.
+    """Monitors the integration of various subsystems and detects conflicts.
+
+    This class acts as a "debugger" for the agent's consciousness, ensuring that
+    different parts of the system are communicating effectively and that their
+    outputs are consistent. It helps to identify issues like "epiphenomenal
+    consciousness," where the agent is aware of a situation but fails to act on it.
     """
     
     def __init__(self):
+        """Initializes the ConsciousnessIntegrationChecker."""
         self.last_updates: Dict[str, float] = {}
         self.stale_threshold_seconds = 5.0
         
@@ -56,19 +77,24 @@ class ConsciousnessIntegrationChecker:
         self.last_reports: Dict[str, Dict[str, Any]] = {}
     
     def update(self, subsystem: str, data: Dict[str, Any]):
-        """Record update from subsystem."""
+        """Records an update from a subsystem.
+
+        Args:
+            subsystem: The name of the subsystem providing the update.
+            data: A dictionary of data from the subsystem.
+        """
         self.last_updates[subsystem] = time.time()
         self.last_reports[subsystem] = data
     
     def check_integration(self) -> Dict[str, Any]:
-        """
-        Check integration status of all subsystems.
-        
+        """Checks the integration status of all monitored subsystems.
+
+        This method assesses whether subsystems are reporting in a timely manner
+        and whether there are any conflicts between their reported data.
+
         Returns:
-            Dict with:
-                - statuses: List[IntegrationStatus]
-                - conflicts: List[ConflictDetection]
-                - integrated: bool (all subsystems integrated)
+            A dictionary containing the statuses of all subsystems, a list of
+            any detected conflicts, and an overall integration status.
         """
         current_time = time.time()
         statuses = []
@@ -101,7 +127,15 @@ class ConsciousnessIntegrationChecker:
         }
     
     def _detect_conflicts(self) -> List[ConflictDetection]:
-        """Detect conflicts between subsystem reports."""
+        """Detects logical conflicts between the data from different subsystems.
+
+        This method implements a set of rules to identify inconsistencies, such as
+        a mismatch between perception and action, or a divergence between memory
+        and planning.
+
+        Returns:
+            A list of ConflictDetection objects for any identified conflicts.
+        """
         conflicts = []
         
         # Check for perception-action mismatch
@@ -178,7 +212,11 @@ class ConsciousnessIntegrationChecker:
         return conflicts
     
     def get_report(self) -> str:
-        """Get human-readable integration report."""
+        """Generates a human-readable report of the current integration status.
+
+        Returns:
+            A formatted string containing the integration report.
+        """
         status = self.check_integration()
         
         lines = [
@@ -220,11 +258,15 @@ class ConsciousnessIntegrationChecker:
         return "\n".join(lines)
     
     def diagnose_epiphenomenal_consciousness(self) -> Optional[str]:
-        """
-        Diagnose if consciousness is epiphenomenal (aware but not acting).
-        
+        """Diagnoses if the agent is suffering from epiphenomenal consciousness.
+
+        This condition occurs when the agent is aware of its state but fails to
+        act on that awareness. This method checks for critical conflicts that are
+        symptomatic of this issue.
+
         Returns:
-            Diagnosis string if problem detected, None otherwise
+            A string with a detailed diagnosis if a problem is detected,
+            otherwise None.
         """
         status = self.check_integration()
         

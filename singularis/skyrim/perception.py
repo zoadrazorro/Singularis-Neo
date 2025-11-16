@@ -33,7 +33,7 @@ except ImportError:
 
 
 class SceneType(Enum):
-    """Types of scenes in Skyrim."""
+    """Enumerates the high-level types of scenes the agent can perceive in Skyrim."""
     OUTDOOR_WILDERNESS = "outdoor_wilderness"
     OUTDOOR_CITY = "outdoor_city"
     INDOOR_DUNGEON = "indoor_dungeon"
@@ -47,13 +47,34 @@ class SceneType(Enum):
 
 @dataclass
 class GameState:
-    """
-    Current game state.
+    """Represents a snapshot of the current game state.
 
-    This can be populated from:
-    1. Game state API (via SKSE mods)
-    2. OCR from screen
-    3. Memory reading (advanced)
+    This dataclass aggregates information about the player's status, environment,
+    and interaction states. It is designed to be populated from various sources,
+    including game APIs (e.g., SKSE mods), OCR screen reading, or internal
+    simulations when direct data is unavailable.
+
+    Attributes:
+        health: Player's current health.
+        magicka: Player's current magicka.
+        stamina: Player's current stamina.
+        level: Player's current level.
+        position: Player's in-game coordinates (x, y, z).
+        location_name: The name of the player's current location.
+        time_of_day: The in-game hour (0-24).
+        weather: The current weather.
+        nearby_npcs: A list of names of nearby non-player characters.
+        gold: The amount of gold the player has.
+        inventory_items: A simplified list of items in the player's inventory.
+        active_quests: A list of active quest names.
+        in_combat: True if the player is in combat.
+        enemies_nearby: The number of nearby enemies.
+        in_dialogue: True if the player is in a dialogue conversation.
+        in_menu: True if the player is in a game menu.
+        menu_type: The type of menu currently open (e.g., 'inventory').
+        current_action_layer: The active action layer in the controller.
+        available_actions: A list of actions available in the current context.
+        layer_transition_reason: The reason a layer transition might be needed.
     """
     # Player stats
     health: float = 100.0
@@ -82,21 +103,21 @@ class GameState:
     # Combat state
     in_combat: bool = False
     enemies_nearby: int = 0
-    
+
     # Dialogue state
     in_dialogue: bool = False
-    
+
     # Menu state
     in_menu: bool = False
     menu_type: str = ""
-    
+
     # Action layer awareness
     current_action_layer: str = "Exploration"
     available_actions: List[str] = None
     layer_transition_reason: str = ""
 
     def __post_init__(self):
-        """Initialize mutable defaults."""
+        """Initializes mutable default attributes."""
         if self.nearby_npcs is None:
             self.nearby_npcs = []
         if self.inventory_items is None:
@@ -107,7 +128,14 @@ class GameState:
             self.available_actions = []
 
     def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary for world model."""
+        """Converts the GameState object to a dictionary.
+
+        This is useful for serialization and for providing the state to other
+        modules like the world model.
+
+        Returns:
+            A dictionary representation of the game state.
+        """
         return {
             'health': self.health,
             'magicka': self.magicka,
@@ -131,8 +159,12 @@ class GameState:
 
 
 class SkyrimPerception:
-    """
-    Perception layer for Skyrim.
+    """The main perception layer for the Skyrim AGI.
+
+    This class is responsible for all aspects of perceiving the game world.
+    It captures the screen, uses a vision model (CLIP) to generate semantic
+    embeddings and classify scenes, detects objects, and reads or infers the
+    current game state.
     """
 
     def __init__(
@@ -141,6 +173,18 @@ class SkyrimPerception:
         screen_region: Optional[Dict[str, int]] = None,
         use_game_api: bool = False
     ):
+        """Initializes the SkyrimPerception system.
+
+        Args:
+            vision_module: An optional, pre-initialized vision module. If not
+                           provided, one will be lazy-loaded on first use.
+            screen_region: A dictionary defining the screen region to capture,
+                           in the format {'top', 'left', 'width', 'height'}.
+                           If None, the primary monitor is used.
+            use_game_api: If True, the system will attempt to use a direct
+                          game state API (e.g., via SKSE mods) instead of
+                          relying solely on screen analysis.
+        """
         self._vision_module = vision_module
         # Screen capture
         try:
@@ -201,10 +245,10 @@ class SkyrimPerception:
         self._simulated_social_score: float = 0.5
         self._simulated_player_level: int = 1
         self._simulated_skill_level: float = 15.0
-        
+
         # Action affordance system
         self.affordance_system = ActionAffordanceSystem()
-        
+
         # Current controller reference for layer awareness
         self._controller = None
 
@@ -214,23 +258,33 @@ class SkyrimPerception:
 
 
     def set_enhanced_vision(self, enhanced_vision: EnhancedVision) -> None:
-        """Attach enhanced vision helper."""
+        """Attaches an EnhancedVision helper for OCR-based HUD reading.
 
+        Args:
+            enhanced_vision: An instance of the EnhancedVision class.
+        """
         self.enhanced_vision = enhanced_vision
 
     def set_gemini_analyzer(self, analyzer: Any) -> None:
-        """Attach optional Gemini-based vision analyzer."""
+        """Attaches an optional vision analyzer (e.g., using a multimodal LLM
+        like Gemini) for more advanced visual processing.
 
+        Args:
+            analyzer: An analyzer object with a compatible interface.
+        """
         self.gemini_analyzer = analyzer
 
     def detect_collision(self, threshold: float = 0.01, window: int = 3) -> bool:
-        """
-        Detect visual collision by checking if the visual embedding has not changed significantly for several frames.
+        """Detects a likely physical collision by checking if the visual embedding
+        has not changed significantly over several consecutive frames.
+
         Args:
-            threshold: Cosine distance threshold for considering "no movement" (collision)
-            window: Number of consecutive frames to check
+            threshold: The Euclidean distance threshold in the embedding space
+                       to consider as "no movement".
+            window: The number of consecutive frames to check.
+
         Returns:
-            True if collision likely, False otherwise
+            True if a collision is likely, False otherwise.
         """
         if len(self.perception_history) < window:
             return False
@@ -243,22 +297,25 @@ class SkyrimPerception:
         return all(d < threshold for d in diffs)
 
     def detect_visual_stuckness(self, window: int = 8, similarity_threshold: float = 0.9985) -> bool:
-        """
-        Check if visual embedding hasn't changed (stuck/collision).
-        
+        """Checks for visual "stuckness" by analyzing cosine similarity between frames.
+
+        This is a more sensitive check than `detect_collision` and is useful for
+        detecting situations where the agent is stuck facing a wall.
+
         Args:
-            window: Number of recent frames to check
-            similarity_threshold: Cosine similarity threshold for "stuck"
-            
+            window: The number of recent frames to analyze.
+            similarity_threshold: The cosine similarity above which frames are
+                                  considered identical.
+
         Returns:
-            True if visually stuck, False otherwise
+            True if the agent appears to be visually stuck, False otherwise.
         """
         if len(self.perception_history) < window:
             return False
-        
+
         recent = self.perception_history[-window:]
         embeddings = [p['visual_embedding'] for p in recent]
-        
+
         # Check cosine similarity between consecutive frames
         similarities = []
         for i in range(1, len(embeddings)):
@@ -266,47 +323,51 @@ class SkyrimPerception:
             dot_product = np.dot(embeddings[i-1], embeddings[i])
             norm_a = np.linalg.norm(embeddings[i-1])
             norm_b = np.linalg.norm(embeddings[i])
-            
+
             if norm_a == 0 or norm_b == 0:
                 similarity = 0.0
             else:
                 similarity = dot_product / (norm_a * norm_b)
-            
+
             similarities.append(similarity)
-        
+
         # If all very similar (>threshold), probably stuck
         # Also require minimum movement threshold to avoid false positives during menus/dialogue
-        stuck = (all(s > similarity_threshold for s in similarities) and 
+        stuck = (all(s > similarity_threshold for s in similarities) and
                 len(similarities) >= 7)  # Need at least 7 consecutive similar frames
-        
+
         if stuck:
             print(f"[VISUAL] Detected stuckness: similarities = {[f'{s:.4f}' for s in similarities]}")
-        
+
         return stuck
 
     def set_controller(self, controller):
-        """Set controller reference for layer awareness."""
+        """Sets a reference to the controller object for action layer awareness.
+
+        Args:
+            controller: The controller object.
+        """
         self._controller = controller
 
     def _initialize_game_api(self):
-        """Initialize game state API (via mods)."""
+        """(Not Implemented) Initializes the connection to a direct game state API."""
         # This would connect to SKSE (Skyrim Script Extender) + Python bridge
         # For now, stub implementation
         print("Game API not yet implemented - using screen capture only")
         self._game_api = None
 
     def _ensure_vision_loaded(self):
-        """Lazy load vision module."""
+        """Lazy-loads the VisionModule if it hasn't been initialized yet."""
         if self._vision_module is None:
             from ..world_model import VisionModule
             self._vision_module = VisionModule(model_name="ViT-B/32")
 
     def capture_screen(self) -> Image.Image:
-        """
-        Capture current screen.
+        """Captures the current content of the defined screen region.
 
         Returns:
-            PIL Image of screen
+            A PIL Image object of the screen capture. If `mss` is not available,
+            a dummy image is returned.
         """
         if self.sct is None:
             # Dummy image for testing
@@ -325,14 +386,15 @@ class SkyrimPerception:
         return img
 
     def classify_scene(self, image: Image.Image) -> Tuple[SceneType, Dict[str, float]]:
-        """
-        Classify scene type using CLIP.
+        """Classifies the scene type of a given image using a zero-shot vision model.
 
         Args:
-            image: Screen capture
+            image: The screen capture image to classify.
 
         Returns:
-            (scene_type, probabilities)
+            A tuple containing:
+            - The most likely SceneType.
+            - A dictionary of probabilities for all candidate scene types.
         """
         self._ensure_vision_loaded()
 
@@ -364,15 +426,14 @@ class SkyrimPerception:
         return scene_type, probs
 
     def detect_objects(self, image: Image.Image, top_k: int = 5) -> List[Tuple[str, float]]:
-        """
-        Detect objects in scene using CLIP zero-shot.
+        """Detects a list of candidate objects in an image using a zero-shot vision model.
 
         Args:
-            image: Screen capture
-            top_k: Number of top objects to return
+            image: The screen capture image.
+            top_k: The number of top object predictions to return.
 
         Returns:
-            List of (object, confidence)
+            A list of (object_name, confidence_score) tuples, sorted by confidence.
         """
         self._ensure_vision_loaded()
 
@@ -392,41 +453,56 @@ class SkyrimPerception:
         return sorted_objects[:top_k]
 
     def read_game_state(self, screenshot: Optional[Image.Image] = None) -> GameState:
-        """
-        Read current game state.
+        """Reads or infers the current game state.
+
+        This method acts as a dispatcher, either calling a direct game API or
+        falling back to screen-based analysis.
+
+        Args:
+            screenshot: The current screen capture, required for screen-based analysis.
 
         Returns:
-            GameState with current status
+            A GameState object populated with the current state information.
         """
         if self.use_game_api and self._game_api:
             return self._read_from_api()
         return self._read_from_screen(screenshot)
 
     def _read_from_api(self) -> GameState:
-        """Read game state from API."""
+        """(Not Implemented) Reads the game state from a direct game API."""
         # Stub - would call SKSE Python bridge
         return GameState()
 
     def _read_from_screen(self, screenshot: Optional[Image.Image]) -> GameState:
-        """Read game state from screen (heuristics with optional OCR)."""
+        """Infers the game state by analyzing the screen.
+
+        This uses heuristics, the last classified scene, and optional OCR data
+        to construct a GameState object.
+
+        Args:
+            screenshot: The current screen capture.
+
+        Returns:
+            A populated GameState object.
+        """
         # Get current layer from controller if available
         current_layer = "Exploration"  # Default
         if self._controller and hasattr(self._controller, 'active_layer'):
             current_layer = self._controller.active_layer or "Exploration"
-        
+
         hud_info: Dict[str, Any] = {}
         if self.enhanced_vision and screenshot is not None:
             hud_info = self.enhanced_vision.extract_hud_info(screenshot)
 
         # Enhanced Skyrim-specific state detection
         game_state_dict = self._detect_skyrim_state(hud_info)
-        
+
         # Get available actions for current layer
         available_actions = self.affordance_system.get_available_actions(
-            current_layer, 
+            current_layer,
             game_state_dict
         )
-        
+
         return GameState(
             health=game_state_dict.get('health', 100.0),
             magicka=game_state_dict.get('magicka', 100.0),
@@ -446,9 +522,14 @@ class SkyrimPerception:
         )
 
     def _detect_skyrim_state(self, hud_info: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-        """
-        Detect Skyrim-specific game state from screen analysis.
-        This would use OCR, color detection, and UI element recognition.
+        """Infers a detailed game state dictionary from HUD info, scene type,
+        and internal simulations.
+
+        Args:
+            hud_info: Data extracted from the HUD (e.g., via OCR).
+
+        Returns:
+            A dictionary containing the inferred game state.
         """
         hud_info = hud_info or {}
         scene = self._last_scene_type
@@ -531,11 +612,10 @@ class SkyrimPerception:
         return state
 
     def _detect_menu_state(self) -> Tuple[bool, str]:
-        """
-        Detect if currently in a menu and which menu type.
-        
+        """Detects if the agent is in a menu based on recent scene classifications.
+
         Returns:
-            (in_menu, menu_type) where menu_type is one of: 'inventory', 'map', 'magic', 'skills', ''
+            A tuple (in_menu, menu_type).
         """
         # TODO: Implement actual menu detection using screen analysis
         # Would look for inventory UI, map UI, skills UI, etc.
@@ -547,60 +627,75 @@ class SkyrimPerception:
             elif last_scene == SceneType.MAP:
                 return True, 'map'
         return False, ''
-    
+
     def _detect_dialogue_state(self) -> bool:
-        """Detect if currently in dialogue with an NPC."""
+        """Detects if the agent is in a dialogue scene. This check requires
+        the dialogue scene to be detected in at least two consecutive frames
+        to avoid false positives.
+
+        Returns:
+            True if a stable dialogue state is detected, False otherwise.
+        """
         # TODO: Implement actual dialogue detection using screen analysis
         # Would look for dialogue UI, conversation options, NPC portraits
-        
+
         # Check recent scene history - must be consistently DIALOGUE
         if len(self.perception_history) >= 2:
             last_scene = self.perception_history[-1].get('scene_type', SceneType.UNKNOWN)
             prev_scene = self.perception_history[-2].get('scene_type', SceneType.UNKNOWN)
-            
+
             # Only return True if BOTH recent frames show dialogue scene
             # This prevents false positives from transient detections
             if last_scene == SceneType.DIALOGUE and prev_scene == SceneType.DIALOGUE:
                 return True
-        
+
         return False
 
     def _detect_combat_state(self) -> bool:
-        """Detect if currently in combat (would analyze combat UI)."""
+        """(Not Implemented) Detects if the agent is in combat by analyzing the screen."""
         # TODO: Implement actual combat detection
         # Would look for:
         # - Red enemy health bars
         # - Combat music indicators
         # - Weapon drawn state
         # - Enemy targeting reticles
-        
+
         # For now, default to NOT in combat
         # Real implementation would analyze screen for combat indicators
         return False
 
     def _detect_location(self) -> str:
-        """Detect current location (would use OCR on location text)."""
+        """(Not Implemented) Detects the current in-game location using OCR."""
         # TODO: Implement actual location detection using OCR
         # Would read the location text that appears when entering new areas
-        
+
         # For now, return a stable default location
         # Real implementation would use OCR to read location name from screen
         return "Skyrim"
 
     def _detect_nearby_npcs(self) -> List[str]:
-        """Detect nearby NPCs (would analyze screen for NPC indicators)."""
+        """(Not Implemented) Detects nearby NPCs by analyzing the screen."""
         # TODO: Implement actual NPC detection
         # Would look for:
         # - NPC name tags
         # - Character models
         # - Dialogue prompts
-        
+
         # For now, return empty list
         # Real implementation would detect NPC name tags on screen
         return []
 
     def _estimate_motion_score(self, current_embedding: Optional[np.ndarray], window: int = 4) -> float:
-        """Estimate how much the scene is changing using visual embeddings."""
+        """Estimates the degree of motion or scene change by comparing the current
+        visual embedding with recent historical embeddings.
+
+        Args:
+            current_embedding: The visual embedding of the current frame.
+            window: The number of recent frames to compare against.
+
+        Returns:
+            A motion score from 0.0 (no change) to 1.0 (high change).
+        """
         if current_embedding is None or not self.perception_history:
             return 0.5
 
@@ -624,7 +719,16 @@ class SkyrimPerception:
         return motion
 
     def _update_simulated_state(self, motion_score: float, allow_core_stats: bool) -> None:
-        """Update simulated game metrics when HUD data is missing."""
+        """Updates internal, simulated game metrics for use when direct HUD data
+        is unavailable.
+
+        This provides a coarse approximation of game state progression over time.
+
+        Args:
+            motion_score: The current estimated motion score.
+            allow_core_stats: If True, core stats like health will be simulated.
+                              If False, only secondary stats are updated.
+        """
         now = time.time()
         elapsed = max(0.1, min(5.0, now - self._last_simulation_time))
         self._last_simulation_time = now
@@ -693,7 +797,16 @@ class SkyrimPerception:
         self._simulated_social_score = max(0.3, min(0.96, self._simulated_social_score))
 
     def _determine_layer_transition_reason(self, in_combat: bool, in_menu: bool, in_dialogue: bool = False) -> str:
-        """Determine why a layer transition might be needed."""
+        """Determines if a controller action layer transition is warranted based on the state.
+
+        Args:
+            in_combat: True if in combat.
+            in_menu: True if in a menu.
+            in_dialogue: True if in dialogue.
+
+        Returns:
+            A string reason for a potential layer transition, or an empty string.
+        """
         if in_combat:
             return "Combat detected - consider Combat layer"
         elif in_dialogue:
@@ -704,17 +817,13 @@ class SkyrimPerception:
             return ""
 
     async def perceive(self) -> Dict[str, Any]:
-        """
-        Complete perception cycle.
+        """Performs a full perception cycle: screen capture, encoding, classification,
+        and state reading.
 
         Returns:
-            Dict with:
-                - visual_embedding: CLIP embedding of screen
-                - scene_type: Classified scene type
-                - scene_probs: Scene probabilities
-                - objects: Detected objects
-                - game_state: Current game state
-                - timestamp: Time of perception
+            A dictionary containing the complete perception output for the current
+            cycle, including the visual embedding, scene classification, detected
+            objects, and the full game state.
         """
         timestamp = time.time()
 
@@ -754,23 +863,22 @@ class SkyrimPerception:
         return perception
 
     def get_temporal_context(self, window: int = 5) -> List[Dict[str, Any]]:
-        """
-        Get recent perception history.
+        """Retrieves the recent perception history.
 
         Args:
-            window: Number of recent perceptions
+            window: The number of recent perception cycles to return.
 
         Returns:
-            List of recent perceptions
+            A list of recent perception dictionaries.
         """
         return self.perception_history[-window:]
 
     def detect_change(self) -> Dict[str, Any]:
-        """
-        Detect significant changes in perception.
+        """Compares the last two perception frames to detect significant changes.
 
         Returns:
-            Dict with detected changes
+            A dictionary of booleans indicating what has changed (e.g.,
+            'scene_changed', 'combat_started').
         """
         if len(self.perception_history) < 2:
             return {'changed': False}
@@ -785,9 +893,9 @@ class SkyrimPerception:
                              curr['game_state'].in_combat),
             'combat_ended': (prev['game_state'].in_combat and
                            not curr['game_state'].in_combat),
-            'layer_changed': (prev['game_state'].current_action_layer != 
+            'layer_changed': (prev['game_state'].current_action_layer !=
                             curr['game_state'].current_action_layer),
-            'actions_changed': (set(prev['game_state'].available_actions) != 
+            'actions_changed': (set(prev['game_state'].available_actions) !=
                               set(curr['game_state'].available_actions)),
         }
 
@@ -802,7 +910,11 @@ class SkyrimPerception:
         return changes
 
     def get_stats(self) -> Dict[str, Any]:
-        """Get perception statistics."""
+        """Retrieves statistics about the perception system's configuration and state.
+
+        Returns:
+            A dictionary of statistics.
+        """
         return {
             'screen_region': self.screen_region,
             'using_game_api': self.use_game_api,

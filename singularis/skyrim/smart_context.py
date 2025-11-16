@@ -22,7 +22,12 @@ from loguru import logger
 
 @dataclass
 class ContextPriority:
-    """Priority levels for context inclusion."""
+    """Defines priority levels for including different pieces of context in a prompt.
+
+    This class provides a standardized way to rank the importance of information,
+    ensuring that the most critical data is always included within the token budget,
+    while less important data is included only if space allows.
+    """
     CRITICAL = 1.0   # Must include (current state, immediate danger)
     HIGH = 0.8       # Very important (recent actions, goals)
     MEDIUM = 0.5     # Useful (Q-values, scene info)
@@ -32,7 +37,13 @@ class ContextPriority:
 
 @dataclass
 class ContextTemplate:
-    """Template for different context types."""
+    """A template that specifies context priorities for a specific type of task.
+
+    Each attribute corresponds to a category of information, and its value is a
+    priority score from `ContextPriority`. This allows the `SmartContextManager`
+    to tailor the context for different cognitive functions like vision analysis,
+    planning, or strategic thinking.
+    """
     vision_analysis: float = ContextPriority.HIGH
     world_modeling: float = ContextPriority.HIGH
     action_planning: float = ContextPriority.CRITICAL
@@ -41,15 +52,13 @@ class ContextTemplate:
 
 
 class SmartContextManager:
-    """
-    Manages context intelligently for LLM calls.
-    
-    Key features:
-    - Task-specific context selection
-    - Token budget management
-    - Context caching
-    - Relevance scoring
-    - Adaptive compression
+    """Manages and optimizes the context provided to Large Language Model (LLM) calls.
+
+    This class is responsible for constructing a concise yet comprehensive context
+    string that fits within a specified token budget. It uses task-specific templates,
+    relevance scoring, caching, and adaptive compression to ensure the LLM has the
+    most relevant information to perform its task effectively, reducing token usage
+    and improving response quality.
     """
     
     def __init__(
@@ -58,13 +67,13 @@ class SmartContextManager:
         cache_size: int = 50,
         enable_compression: bool = True
     ):
-        """
-        Initialize smart context manager.
-        
+        """Initializes the SmartContextManager.
+
         Args:
-            max_tokens_per_call: Maximum tokens for context
-            cache_size: Size of context cache
-            enable_compression: Enable context compression
+            max_tokens_per_call: The maximum number of tokens allowed for the
+                                 context in a single LLM call.
+            cache_size: The number of generated contexts to cache for reuse.
+            enable_compression: A boolean to enable or disable context compression.
         """
         self.max_tokens = max_tokens_per_call
         self.cache_size = cache_size
@@ -124,20 +133,24 @@ class SmartContextManager:
         curriculum_knowledge: Optional[str] = None,
         memory_context: Optional[str] = None
     ) -> str:
-        """
-        Build smart context for LLM based on task type.
-        
+        """Constructs an optimized context string for a given task.
+
+        This method dynamically assembles the most relevant pieces of information—such
+        as current state, recent history, available actions, and knowledge from RAG
+        systems—into a single string, respecting the token budget. It uses a
+        task-specific template to prioritize what to include.
+
         Args:
-            task_type: 'vision', 'reasoning', 'world_model', or 'action'
-            perception: Current perception data
-            state_dict: Current state
-            q_values: Q-values for actions
-            available_actions: Available actions
-            curriculum_knowledge: Academic knowledge from RAG
-            memory_context: Memory RAG context
-            
+            task_type: The type of task (e.g., 'vision', 'reasoning', 'action').
+            perception: Data from the perception system, including scene analysis.
+            state_dict: The current state of the agent and the environment.
+            q_values: A dictionary of Q-values for available actions.
+            available_actions: A list of actions the agent can currently take.
+            curriculum_knowledge: Knowledge retrieved from the curriculum RAG.
+            memory_context: Context retrieved from the memory RAG.
+
         Returns:
-            Optimized context string
+            A formatted and optimized string to be used as context in an LLM prompt.
         """
         template = self.templates.get(task_type, self.templates['reasoning'])
         
@@ -203,16 +216,15 @@ class SmartContextManager:
         task_type: str,
         **context_kwargs
     ) -> str:
-        """
-        Build complete prompt with smart context.
-        
+        """Combines a base prompt with a dynamically generated smart context.
+
         Args:
-            base_prompt: Base prompt/question
-            task_type: Type of task
-            **context_kwargs: Arguments for build_context
-            
+            base_prompt: The core instruction or question for the LLM.
+            task_type: The type of task, used to build the appropriate context.
+            **context_kwargs: Keyword arguments passed to the `build_context` method.
+
         Returns:
-            Complete prompt with context
+            A complete LLM prompt string, including both context and the task.
         """
         context = self.build_context(task_type, **context_kwargs)
         
@@ -227,7 +239,16 @@ class SmartContextManager:
         action: str,
         outcome: Dict[str, Any]
     ):
-        """Update context history with new information."""
+        """Updates the manager's history with the latest state-action-outcome tuple.
+
+        This information is used to provide recent context for future LLM calls,
+        helping the model understand the immediate sequence of events.
+
+        Args:
+            state: The state before the action was taken.
+            action: The action that was performed.
+            outcome: The resulting outcome or state change.
+        """
         self.recent_states.append({
             'timestamp': time.time(),
             'state': state
@@ -246,7 +267,7 @@ class SmartContextManager:
         state_dict: Dict[str, Any],
         perception: Dict[str, Any]
     ) -> str:
-        """Format current state concisely."""
+        """Formats the current state into a concise string."""
         parts = []
         
         # Critical stats
@@ -277,7 +298,7 @@ class SmartContextManager:
         available_actions: List[str],
         q_values: Optional[Dict[str, float]] = None
     ) -> str:
-        """Format available actions with Q-values."""
+        """Formats the list of available actions, optionally with their Q-values."""
         if not available_actions:
             return "No actions available"
         
@@ -298,7 +319,7 @@ class SmartContextManager:
             return ", ".join(available_actions[:15])
     
     def _format_recent_history(self) -> str:
-        """Format recent history concisely."""
+        """Formats the recent action history into a concise string."""
         if not self.recent_actions:
             return ""
         
@@ -312,7 +333,7 @@ class SmartContextManager:
         return "\n".join(lines)
     
     def _format_scene_context(self, perception: Dict[str, Any]) -> str:
-        """Format scene/environmental context."""
+        """Formats the environmental and scene context from perception data."""
         parts = []
         
         scene_type = perception.get('scene_type', 'unknown')
@@ -326,7 +347,7 @@ class SmartContextManager:
         return "\n".join(parts) if parts else ""
     
     def _compress_knowledge(self, knowledge: str, max_length: int = 400) -> str:
-        """Compress academic knowledge to key points."""
+        """Compresses academic knowledge by extracting key sentences."""
         if len(knowledge) <= max_length:
             return knowledge
         
@@ -353,18 +374,18 @@ class SmartContextManager:
         return compressed
     
     def _compress_text(self, text: str, max_length: int = 300) -> str:
-        """Simple text compression by truncation."""
+        """Compresses text by simple truncation."""
         if len(text) <= max_length:
             return text
         return text[:max_length-3] + "..."
     
     def _estimate_tokens(self, text: str) -> int:
-        """Estimate token count (rough approximation)."""
+        """Estimates the token count of a string using a simple heuristic."""
         # Simple heuristic: ~4 chars per token
         return len(text) // 4
     
     def _cache_context(self, task_type: str, context: str):
-        """Cache context for reuse."""
+        """Caches a generated context string for potential reuse."""
         cache_key = hashlib.md5(f"{task_type}:{context[:100]}".encode()).hexdigest()
         
         # Prune old cache entries
@@ -377,7 +398,12 @@ class SmartContextManager:
         self.context_cache[cache_key] = (context, time.time())
     
     def get_stats(self) -> Dict[str, Any]:
-        """Get context manager statistics."""
+        """Retrieves statistics about the context manager's performance.
+
+        Returns:
+            A dictionary containing cache statistics (hits, misses, hit rate)
+            and the size of the history deques.
+        """
         total_requests = self.cache_hits + self.cache_misses
         hit_rate = self.cache_hits / max(1, total_requests)
         

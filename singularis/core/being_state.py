@@ -26,18 +26,27 @@ class LuminaKey(str, Enum):
 @dataclass
 class LuminaState:
     """
-    The Three Lumina - fundamental dimensions of Being.
-    
-    ℓₒ (Ontic): Being as such - raw existence, presence
-    ℓₛ (Structural): Being as structure - form, pattern, organization
-    ℓₚ (Participatory): Being as participation - engagement, interaction
+    Represents the Three Lumina, the fundamental dimensions of Being.
+
+    Attributes:
+        ontic (float): Represents ℓₒ, Being as such—raw existence and presence.
+        structural (float): Represents ℓₛ, Being as structure—form, pattern, and organization.
+        participatory (float): Represents ℓₚ, Being as participation—engagement and interaction.
     """
     ontic: float = 0.0          # ℓₒ
     structural: float = 0.0     # ℓₛ
     participatory: float = 0.0  # ℓₚ
     
     def balance_score(self) -> float:
-        """How balanced are the three Lumina?"""
+        """
+        Calculates the balance between the three Lumina.
+
+        A score of 1.0 indicates perfect balance, where each Lumina is equal.
+        A score of 0.0 indicates maximum imbalance.
+
+        Returns:
+            float: The balance score, ranging from 0.0 to 1.0.
+        """
         if self.ontic == 0 and self.structural == 0 and self.participatory == 0:
             return 0.0
         
@@ -61,7 +70,15 @@ class LuminaState:
         return 1.0 - (sum(deviations) / (2 * total))  # Normalize
     
     def geometric_mean(self) -> float:
-        """Geometric mean of the three Lumina."""
+        """
+        Calculates the geometric mean of the three Lumina.
+
+        This provides a measure of the central tendency of the Lumina values.
+        A small epsilon is added to avoid issues with zero values.
+
+        Returns:
+            float: The geometric mean of the Lumina.
+        """
         vals = [
             max(1e-6, self.ontic),
             max(1e-6, self.structural),
@@ -274,7 +291,12 @@ class BeingState:
     consciousness_timestamp: float = 0.0
     
     def __repr__(self) -> str:
-        """Human-readable representation."""
+        """
+        Provides a human-readable representation of the BeingState.
+
+        Returns:
+            str: A string summarizing the key components of the BeingState.
+        """
         return f"""BeingState(
     cycle={self.cycle_number},
     global_coherence={self.global_coherence:.3f},
@@ -286,7 +308,12 @@ class BeingState:
 )"""
     
     def export_snapshot(self) -> Dict[str, Any]:
-        """Export complete snapshot for logging/analysis."""
+        """
+        Exports a complete snapshot of the BeingState for logging and analysis.
+
+        Returns:
+            Dict[str, Any]: A dictionary containing the full state of the being.
+        """
         return {
             'timestamp': self.timestamp,
             'cycle': self.cycle_number,
@@ -361,13 +388,15 @@ class BeingState:
     
     def update_subsystem(self, subsystem: str, data: Dict[str, Any]):
         """
-        Update subsystem data with timestamp.
-        
-        Phase 3.1: Central method for subsystems to write their outputs
-        
+        Updates the data for a specific subsystem and sets the update timestamp.
+
+        This is the primary method for subsystems to write their outputs to the BeingState,
+        ensuring that all subsystem data is timestamped.
+
         Args:
-            subsystem: Name of subsystem (e.g., 'sensorimotor', 'action_plan', 'memory', 'emotion')
-            data: Dict of field_name: value pairs
+            subsystem (str): The name of the subsystem to update (e.g., 'sensorimotor', 'action_plan').
+            data (Dict[str, Any]): A dictionary where keys are the field names (without the subsystem prefix)
+                                   and values are the new data.
         """
         timestamp_field = f"{subsystem}_timestamp"
         setattr(self, timestamp_field, time.time())
@@ -379,13 +408,16 @@ class BeingState:
     
     def get_subsystem_age(self, subsystem: str) -> float:
         """
-        Get age of subsystem data in seconds.
-        
+        Gets the age of a subsystem's data in seconds.
+
+        The age is calculated as the time since the subsystem's data was last updated.
+
         Args:
-            subsystem: Name of subsystem
-            
+            subsystem (str): The name of the subsystem.
+
         Returns:
-            Age in seconds (999 if never updated)
+            float: The age of the data in seconds. Returns 999.0 if the subsystem
+                   has never been updated.
         """
         timestamp_field = f"{subsystem}_timestamp"
         timestamp = getattr(self, timestamp_field, 0.0)
@@ -395,26 +427,32 @@ class BeingState:
     
     def is_subsystem_fresh(self, subsystem: str, max_age: float = 5.0) -> bool:
         """
-        Check if subsystem data is fresh.
-        
+        Checks if a subsystem's data is fresh based on a maximum age.
+
         Args:
-            subsystem: Name of subsystem
-            max_age: Maximum age in seconds (default 5.0)
-            
+            subsystem (str): The name of the subsystem.
+            max_age (float, optional): The maximum age in seconds for the data to be
+                                     considered fresh. Defaults to 5.0.
+
         Returns:
-            True if fresh, False if stale
+            bool: True if the subsystem's data is younger than `max_age`, False otherwise.
         """
         return self.get_subsystem_age(subsystem) < max_age
     
     def get_subsystem_data(self, subsystem: str) -> Dict[str, Any]:
         """
-        Get all data for a subsystem.
-        
+        Retrieves all data associated with a specific subsystem.
+
+        This method collects all attributes of the BeingState that are prefixed
+        with the subsystem's name. It also includes the age of the data and
+        a freshness indicator.
+
         Args:
-            subsystem: Name of subsystem
-            
+            subsystem (str): The name of the subsystem.
+
         Returns:
-            Dict with all subsystem fields
+            Dict[str, Any]: A dictionary containing all data for the subsystem,
+                            including its age and freshness.
         """
         result = {}
         prefix = f"{subsystem}_"

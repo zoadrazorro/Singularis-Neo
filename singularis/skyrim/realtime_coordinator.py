@@ -20,7 +20,15 @@ from ..llm.gpt_realtime_client import (
 
 @dataclass
 class CoordinationResult:
-    """Result from realtime coordination."""
+    """Represents the outcome of a single real-time coordination cycle.
+
+    Attributes:
+        decision: The RealtimeDecision object from the GPT-4 Realtime API.
+        subsystem_results: A dictionary containing the results from all executed subsystems.
+        final_action: The final action chosen after synthesis.
+        confidence: The confidence score for the final action.
+        processing_time: The total time taken for the coordination cycle.
+    """
     decision: RealtimeDecision
     subsystem_results: Dict[str, Any]
     final_action: Optional[str] = None
@@ -29,22 +37,20 @@ class CoordinationResult:
 
 
 class RealtimeCoordinator:
-    """
-    Coordinates real-time decision-making across all Skyrim AGI subsystems.
+    """Coordinates real-time decision-making across all Skyrim AGI subsystems.
     
-    Uses GPT-4 Realtime API to:
-    1. Receive streaming game state
-    2. Make fast decisions about delegation
-    3. Execute subsystems in parallel
-    4. Synthesize results
+    This class acts as the central hub for the AGI's rapid, in-game decision loop.
+    It uses the GPT-4 Realtime API to receive streaming game state, make fast
+    decisions about which specialized subsystems to delegate tasks to, executes
+    those subsystems in parallel, and synthesizes their results into a final,
+    actionable command.
     """
     
-    def __init__(self, skyrim_agi):
-        """
-        Initialize realtime coordinator.
+    def __init__(self, skyrim_agi: Any):
+        """Initializes the RealtimeCoordinator.
         
         Args:
-            skyrim_agi: Reference to SkyrimAGI instance
+            skyrim_agi: A reference to the main SkyrimAGI instance to access its subsystems.
         """
         self.agi = skyrim_agi
         
@@ -69,8 +75,8 @@ class RealtimeCoordinator:
         
         logger.info("[REALTIME] Coordinator initialized")
     
-    def _register_handlers(self):
-        """Register handlers for all subsystems."""
+    def _register_handlers(self) -> None:
+        """Registers the handler methods for each subsystem type with the realtime client."""
         
         # Sensorimotor Claude 4.5
         self.realtime.register_subsystem_handler(
@@ -122,16 +128,20 @@ class RealtimeCoordinator:
         game_state: Dict[str, Any],
         context: Optional[Dict[str, Any]] = None
     ) -> CoordinationResult:
-        """
-        Coordinate a decision using realtime API.
-        
+        """Coordinates a single, complete decision-making cycle.
+
+        This is the main entry point for the coordinator. It takes the current
+        situation, streams a decision from the GPT-4 Realtime API, executes the
+        decision by calling the appropriate subsystems, and synthesizes the
+        results into a final action.
+
         Args:
-            situation: Current situation description
-            game_state: Game state dict
-            context: Additional context
-        
+            situation: A string describing the current in-game situation.
+            game_state: A dictionary representing the current state of the game.
+            context: An optional dictionary for any additional context.
+
         Returns:
-            CoordinationResult with decision and subsystem results
+            A CoordinationResult object containing the outcome of the cycle.
         """
         start_time = asyncio.get_event_loop().time()
         
@@ -175,7 +185,20 @@ class RealtimeCoordinator:
         decision: RealtimeDecision,
         results: Dict[str, Any]
     ) -> tuple[Optional[str], float]:
-        """Determine final action from decision and results."""
+        """Synthesizes the final action from the LLM's decision and subsystem results.
+
+        This method applies a set of rules to determine the best course of action.
+        Immediate decisions from the LLM are taken directly. For delegated or
+        coordinated decisions, it prioritizes results from the action planning
+        subsystem, but allows for overrides from the emotion system (e.g., to retreat).
+
+        Args:
+            decision: The decision object from the realtime API.
+            results: The dictionary of results from the various subsystems.
+
+        Returns:
+            A tuple containing the final action string (or None) and a confidence score.
+        """
         
         # Immediate decision
         if decision.decision_type == "immediate":
@@ -205,7 +228,14 @@ class RealtimeCoordinator:
     # Subsystem handlers
     
     async def _handle_sensorimotor(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """Handle sensorimotor delegation."""
+        """Handles a delegation call to the sensorimotor subsystem.
+
+        Args:
+            params: A dictionary of parameters from the realtime API decision.
+
+        Returns:
+            A dictionary containing the analysis from the sensorimotor LLM.
+        """
         query = params.get('query', '')
         include_visual = params.get('include_visual', True)
         
@@ -235,7 +265,14 @@ Provide spatial reasoning and visual context."""
         return {'error': 'Sensorimotor system not available'}
     
     async def _handle_emotion(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """Handle emotion delegation."""
+        """Handles a delegation call to the emotion subsystem.
+
+        Args:
+            params: A dictionary of parameters from the realtime API decision.
+
+        Returns:
+            A dictionary containing the current emotional state of the AGI.
+        """
         if not self.agi.emotion_integration:
             return {'error': 'Emotion system not available'}
         
@@ -267,7 +304,14 @@ Provide spatial reasoning and visual context."""
             return {'error': str(e)}
     
     async def _handle_spiritual(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """Handle spiritual delegation."""
+        """Handles a delegation call to the spiritual awareness subsystem.
+
+        Args:
+            params: A dictionary of parameters from the realtime API decision.
+
+        Returns:
+            A dictionary containing the results of the spiritual contemplation.
+        """
         if not self.agi.spiritual:
             return {'error': 'Spiritual system not available'}
         
@@ -286,7 +330,14 @@ Provide spatial reasoning and visual context."""
             return {'error': str(e)}
     
     async def _handle_symbolic_logic(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """Handle symbolic logic delegation."""
+        """Handles a delegation call to the symbolic logic subsystem.
+
+        Args:
+            params: A dictionary of parameters from the realtime API decision.
+
+        Returns:
+            A dictionary containing the results of the logical analysis.
+        """
         game_state = params.get('game_state', {})
         
         try:
@@ -302,7 +353,14 @@ Provide spatial reasoning and visual context."""
             return {'error': str(e)}
     
     async def _handle_action_planning(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """Handle action planning delegation."""
+        """Handles a delegation call to the action planning subsystem.
+
+        Args:
+            params: A dictionary of parameters from the realtime API decision.
+
+        Returns:
+            A dictionary containing the planned action and associated metadata.
+        """
         goal = params.get('goal', '')
         constraints = params.get('constraints', [])
         
@@ -323,7 +381,14 @@ Provide spatial reasoning and visual context."""
             return {'error': str(e)}
     
     async def _handle_world_model(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """Handle world model delegation."""
+        """Handles a delegation call to the world model subsystem.
+
+        Args:
+            params: A dictionary of parameters from the realtime API decision.
+
+        Returns:
+            A dictionary containing a summary of the current world model state.
+        """
         try:
             world_state = self.agi.skyrim_world.get_state()
             
@@ -337,7 +402,14 @@ Provide spatial reasoning and visual context."""
             return {'error': str(e)}
     
     async def _handle_consciousness(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """Handle consciousness delegation."""
+        """Handles a delegation call to the consciousness subsystem.
+
+        Args:
+            params: A dictionary of parameters from the realtime API decision.
+
+        Returns:
+            A dictionary containing key metrics from the consciousness bridge.
+        """
         try:
             if self.agi.consciousness_bridge:
                 state = self.agi.consciousness_bridge.get_state()
@@ -352,18 +424,22 @@ Provide spatial reasoning and visual context."""
         
         return {'error': 'Consciousness system not available'}
     
-    async def connect(self):
-        """Connect to realtime API."""
+    async def connect(self) -> None:
+        """Connects to the GPT-4 Realtime API websocket."""
         await self.realtime.connect()
         logger.info("[REALTIME] Connected and ready")
     
-    async def disconnect(self):
-        """Disconnect from realtime API."""
+    async def disconnect(self) -> None:
+        """Disconnects from the GPT-4 Realtime API websocket."""
         await self.realtime.disconnect()
         logger.info("[REALTIME] Disconnected")
     
     def get_stats(self) -> Dict[str, Any]:
-        """Get coordinator statistics."""
+        """Retrieves performance statistics for the coordinator and the realtime client.
+
+        Returns:
+            A dictionary of statistics.
+        """
         return {
             'total_decisions': self.total_decisions,
             'immediate_decisions': self.immediate_decisions,

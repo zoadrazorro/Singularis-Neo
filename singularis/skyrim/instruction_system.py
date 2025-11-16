@@ -15,33 +15,39 @@ from collections import deque
 
 @dataclass
 class Instruction:
-    """A user instruction given to the AGI."""
+    """Represents a single natural language instruction given by a user.
+
+    Attributes:
+        text: The content of the instruction.
+        timestamp: The time the instruction was given.
+        priority: The priority level ('high', 'medium', 'low').
+        context: The game state at the time the instruction was given.
+        active: A boolean indicating if the instruction is currently active.
+        fulfilled: A boolean indicating if the instruction has been completed.
+    """
     text: str
     timestamp: datetime
-    priority: str  # 'high', 'medium', 'low'
-    context: Dict[str, Any]  # Game state when instruction was given
+    priority: str
+    context: Dict[str, Any]
     active: bool = True
     fulfilled: bool = False
 
 
 class InstructionSystem:
-    """
-    Manages user instructions and integrates them into AGI decision-making.
-    
-    Features:
-    - Real-time instruction queue
-    - Priority-based instruction handling
-    - Context-aware instruction interpretation
-    - Instruction memory and learning
-    - Feedback loop for instruction effectiveness
+    """Manages the lifecycle of user instructions and integrates them into the AGI.
+
+    This system handles receiving, prioritizing, and queuing instructions. It
+    provides a formatted context string of active instructions for the LLM's
+    reasoning process and tracks the success of instructions to learn over time.
+    It also includes a (simplified) mechanism for real-time console input.
     """
     
     def __init__(self, max_active_instructions: int = 5):
-        """
-        Initialize instruction system.
-        
+        """Initializes the instruction system.
+
         Args:
-            max_active_instructions: Max number of active instructions to consider
+            max_active_instructions: The maximum number of instructions to
+                                     consider active at any given time.
         """
         self.instruction_queue: deque = deque(maxlen=100)
         self.active_instructions: List[Instruction] = []
@@ -56,7 +62,11 @@ class InstructionSystem:
         self.running = False
         
     def start_console_input(self):
-        """Start background task for console input."""
+        """Starts a background asyncio task to listen for console input.
+
+        This provides a simple command-line interface for giving instructions
+        to the AGI in real-time.
+        """
         if not self.running:
             self.running = True
             self.input_task = asyncio.create_task(self._console_input_loop())
@@ -69,13 +79,17 @@ class InstructionSystem:
             print()
     
     def stop_console_input(self):
-        """Stop console input task."""
+        """Stops the background console input task."""
         self.running = False
         if self.input_task:
             self.input_task.cancel()
     
     async def _console_input_loop(self):
-        """Background loop for reading console input."""
+        """The background loop for reading console input.
+
+        Note: This is a simplified implementation. A production system would
+        use a more robust library like `aioconsole` for non-blocking input.
+        """
         try:
             while self.running:
                 # Use asyncio to avoid blocking
@@ -99,13 +113,15 @@ class InstructionSystem:
         priority: str = 'medium',
         context: Optional[Dict[str, Any]] = None
     ):
-        """
-        Add a new instruction from the user.
-        
+        """Adds a new instruction to the system.
+
+        The instruction is added to a queue and then processed to determine if
+        it should become active immediately.
+
         Args:
-            text: Instruction text
-            priority: 'high', 'medium', or 'low'
-            context: Current game state context
+            text: The natural language text of the instruction.
+            priority: The priority of the instruction ('high', 'medium', 'low').
+            context: The game state context at the time of instruction.
         """
         instruction = Instruction(
             text=text,
@@ -121,7 +137,11 @@ class InstructionSystem:
         print(f"[INSTRUCTION] Active instructions: {len(self.active_instructions)}")
     
     def _update_active_instructions(self):
-        """Update list of active instructions based on priority and relevance."""
+        """Updates the list of active instructions from the queue.
+
+        This method ensures the active list contains the highest-priority and
+        most recent instructions, up to the maximum limit.
+        """
         # Add new instructions from queue
         while self.instruction_queue and len(self.active_instructions) < self.max_active:
             instruction = self.instruction_queue.popleft()
@@ -142,14 +162,15 @@ class InstructionSystem:
                 self.instruction_queue.append(instr)
     
     def get_instruction_context(self, current_state: Dict[str, Any]) -> str:
-        """
-        Get formatted instruction context for LLM reasoning.
-        
+        """Formats the active instructions into a string for the LLM prompt.
+
         Args:
-            current_state: Current game state
-            
+            current_state: The current game state (used for future context-
+                           aware filtering, currently unused).
+
         Returns:
-            Formatted instruction context string
+            A formatted string containing the list of active instructions for
+            the LLM to consider.
         """
         if not self.active_instructions:
             return ""
@@ -173,12 +194,12 @@ class InstructionSystem:
         return context
     
     def mark_instruction_fulfilled(self, instruction_text: str, success: bool = True):
-        """
-        Mark an instruction as fulfilled.
-        
+        """Marks an active instruction as fulfilled, moving it to the history.
+
         Args:
-            instruction_text: Text of the instruction
-            success: Whether it was successfully fulfilled
+            instruction_text: The text of the instruction to mark. The match is
+                              case-insensitive and partial.
+            success: Whether the instruction was fulfilled successfully.
         """
         for instr in self.active_instructions:
             if instruction_text.lower() in instr.text.lower():
@@ -198,13 +219,13 @@ class InstructionSystem:
                 break
     
     def clear_instructions(self):
-        """Clear all active instructions."""
+        """Clears all active and queued instructions."""
         self.active_instructions.clear()
         self.instruction_queue.clear()
         print("[INSTRUCTION] 🗑️ All instructions cleared")
     
     def list_instructions(self):
-        """Print all active instructions."""
+        """Prints a list of all currently active instructions to the console."""
         if not self.active_instructions:
             print("[INSTRUCTION] No active instructions")
             return
@@ -216,7 +237,12 @@ class InstructionSystem:
         print()
     
     def get_stats(self) -> Dict[str, Any]:
-        """Get instruction system statistics."""
+        """Retrieves statistics about the instruction system's performance.
+
+        Returns:
+            A dictionary containing stats like the number of active instructions,
+            total instructions given, and the average success rate.
+        """
         avg_success = 0.0
         if self.instruction_outcomes:
             all_outcomes = [o for outcomes in self.instruction_outcomes.values() for o in outcomes]

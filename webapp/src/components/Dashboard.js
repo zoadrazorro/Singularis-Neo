@@ -1,7 +1,19 @@
+/**
+ * @fileoverview This component renders the main dashboard for monitoring the
+ * Singularis AGI's learning progress. It displays key metrics, charts, and a
+ * table of recent learning chunks.
+ */
+
 import React from 'react';
 import './Dashboard.css';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
+/**
+ * The main dashboard component for displaying learning progress.
+ * @param {object} props - The component's props.
+ * @param {object} props.progress - The learning progress data object received from the WebSocket.
+ * @returns {React.Component} The rendered dashboard.
+ */
 function Dashboard({ progress }) {
   const {
     currentChunk,

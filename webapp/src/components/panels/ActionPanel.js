@@ -1,8 +1,19 @@
+/**
+ * @fileoverview This file contains the React component for the Action Panel,
+ * which displays information about the AGI's current and past actions, action
+ * sources, and diversity metrics.
+ */
+
 import React from 'react';
 import './ActionPanel.css';
 
 /**
- * Action history and planning panel
+ * A panel component that displays detailed information about the AGI's action system.
+ * It includes the current action, a timeline of recent actions, action source
+ * distribution, and diversity metrics.
+ * @param {object} props - The component's props.
+ * @param {object} props.data - The live AGI state data object.
+ * @returns {React.Component} The rendered Action Panel.
  */
 function ActionPanel({ data }) {
   const currentAction = data.current_action || 'idle';
@@ -98,10 +109,20 @@ function ActionPanel({ data }) {
   );
 }
 
+/**
+ * Formats an action name string for display (e.g., "move_forward" -> "Move Forward").
+ * @param {string} action - The action name string.
+ * @returns {string} The formatted action name.
+ */
 function formatAction(action) {
   return action.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 }
 
+/**
+ * Formats an action source string for display, handling specific abbreviations.
+ * @param {string} source - The action source string.
+ * @returns {string} The formatted source name.
+ */
 function formatSource(source) {
   if (source === 'moe') return 'MoE';
   if (source === 'hybrid') return 'Hybrid';
@@ -110,6 +131,11 @@ function formatSource(source) {
   return source.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 }
 
+/**
+ * Formats a Unix timestamp into a locale-specific time string.
+ * @param {number} timestamp - The Unix timestamp.
+ * @returns {string} The formatted time string.
+ */
 function formatTime(timestamp) {
   if (!timestamp) return '';
   const date = new Date(timestamp * 1000);

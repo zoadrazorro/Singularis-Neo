@@ -24,7 +24,7 @@ import json
 
 
 class ObjectType(Enum):
-    """Types of physical objects."""
+    """Enumerates the types of physical objects that can exist in the simulation."""
     RIGID_BODY = "rigid"
     SOFT_BODY = "soft"
     FLUID = "fluid"
@@ -33,17 +33,19 @@ class ObjectType(Enum):
 
 @dataclass
 class PhysicalObject:
-    """
-    A physical object in the simulation.
+    """Represents a physical object within the simulation environment.
 
     Attributes:
-        name: Unique identifier
-        position: (x, y, z) in meters
-        velocity: (vx, vy, vz) in m/s
-        mass: kg
-        shape: "box", "sphere", "cylinder"
-        size: Dimensions (shape-dependent)
-        object_type: Rigid, soft, fluid, or static
+        name: A unique identifier for the object.
+        position: A NumPy array representing the (x, y, z) coordinates in meters.
+        velocity: A NumPy array representing the (vx, vy, vz) velocity in m/s.
+        mass: The mass of the object in kilograms.
+        shape: The geometric shape of the object (e.g., "box", "sphere").
+        size: A tuple representing the dimensions of the object.
+        object_type: The physical type of the object, from the `ObjectType` enum.
+        acceleration: The current acceleration of the object.
+        angular_velocity: The current angular velocity of the object.
+        forces: A list of force vectors currently being applied to the object.
     """
     name: str
     position: np.ndarray  # (x, y, z)
@@ -59,6 +61,7 @@ class PhysicalObject:
     forces: List[np.ndarray] = None
 
     def __post_init__(self):
+        """Initializes mutable default attributes."""
         if self.acceleration is None:
             self.acceleration = np.zeros(3)
         if self.angular_velocity is None:
@@ -68,17 +71,14 @@ class PhysicalObject:
 
 
 class PhysicsEngine:
-    """
-    Lightweight physics engine for world model predictions.
+    """A lightweight physics engine for the world model to make physical predictions.
 
-    Capabilities:
-    1. Forward simulation: predict future states
-    2. Inverse physics: infer forces from motion
-    3. Counterfactual physics: "what if object had different mass?"
-    4. Intuitive physics: does a configuration make sense?
-
-    Note: This is a SIMPLIFIED physics engine for fast predictions.
-    For high-fidelity sim, use PyBullet directly.
+    This class provides a simplified physics simulation that allows the AGI to
+    reason about the physical consequences of actions. It can perform forward
+    simulations to predict future states, infer forces from observed motion (inverse
+    physics), and analyze the stability of physical configurations. While it can
+    optionally use PyBullet for higher fidelity, its primary purpose is to provide
+    fast, "intuitive" physical reasoning without the overhead of a full-fidelity simulator.
     """
 
     def __init__(
@@ -87,13 +87,13 @@ class PhysicsEngine:
         time_step: float = 0.01,
         use_pybullet: bool = False
     ):
-        """
-        Initialize physics engine.
+        """Initializes the PhysicsEngine.
 
         Args:
-            gravity: Gravitational acceleration (m/s²)
-            time_step: Simulation time step (seconds)
-            use_pybullet: Use PyBullet for high-fidelity simulation
+            gravity: The gravitational acceleration in m/s^2 on the z-axis.
+            time_step: The duration of a single simulation step in seconds.
+            use_pybullet: A boolean flag to enable the use of the PyBullet library
+                          for more accurate simulation (if installed).
         """
         self.gravity = gravity
         self.time_step = time_step
@@ -109,7 +109,7 @@ class PhysicsEngine:
         self.collision_pairs: List[Tuple[str, str]] = []
 
     def _ensure_pybullet(self):
-        """Lazy load PyBullet."""
+        """Lazily loads the PyBullet library if it's enabled and not already loaded."""
         if self.use_pybullet and self._pybullet_client is None:
             try:
                 import pybullet as p
@@ -136,7 +136,19 @@ class PhysicsEngine:
         shape: str = "box",
         size: Tuple[float, ...] = (1.0, 1.0, 1.0)
     ) -> PhysicalObject:
-        """Add object to simulation."""
+        """Adds a new physical object to the simulation.
+
+        Args:
+            name: A unique name for the object.
+            position: The initial (x, y, z) position.
+            velocity: The initial (vx, vy, vz) velocity.
+            mass: The mass of the object in kg.
+            shape: The shape of the object (e.g., "box", "sphere").
+            size: The dimensions of the object.
+
+        Returns:
+            The created `PhysicalObject` instance.
+        """
         obj = PhysicalObject(
             name=name,
             position=np.array(position),
@@ -153,15 +165,17 @@ class PhysicsEngine:
         steps: int = 100,
         return_trajectory: bool = False
     ) -> Dict[str, Any]:
-        """
-        Forward simulate physics for N steps.
+        """Runs the physics simulation forward for a specified number of steps.
 
         Args:
-            steps: Number of simulation steps
-            return_trajectory: Return full trajectory vs final state
+            steps: The number of time steps to simulate.
+            return_trajectory: If True, returns the position and velocity of each
+                               object at every time step. If False, returns only
+                               the final state.
 
         Returns:
-            Final state or trajectory of all objects
+            A dictionary containing either the final states of all objects or
+            their full trajectories.
         """
         if self.use_pybullet:
             return self._forward_simulate_pybullet(steps, return_trajectory)
@@ -173,10 +187,7 @@ class PhysicsEngine:
         steps: int,
         return_trajectory: bool
     ) -> Dict[str, Any]:
-        """
-        Simplified physics simulation (no PyBullet).
-        Uses basic Newtonian mechanics.
-        """
+        """Performs a simplified physics simulation using basic Newtonian mechanics."""
         trajectories = {name: [] for name in self.objects}
 
         for step in range(steps):
@@ -232,7 +243,7 @@ class PhysicsEngine:
         steps: int,
         return_trajectory: bool
     ) -> Dict[str, Any]:
-        """High-fidelity simulation with PyBullet."""
+        """Performs a high-fidelity physics simulation using the PyBullet library."""
         self._ensure_pybullet()
 
         if not self.use_pybullet:
@@ -248,19 +259,20 @@ class PhysicsEngine:
         intervention_params: Dict[str, Any],
         steps: int = 100
     ) -> Dict[str, Any]:
-        """
-        Predict outcome of physical intervention.
+        """Predicts the physical outcome of a specific intervention.
+
+        This method allows for "what-if" scenarios by applying a force, changing
+        a velocity, or teleporting an object, and then simulating the consequences.
 
         Args:
-            intervention: Type of intervention
-                - "apply_force": Apply force to object
-                - "set_velocity": Set object velocity
-                - "teleport": Change object position
-            intervention_params: Parameters for intervention
-            steps: Simulation steps
+            intervention: The type of intervention to perform (e.g., "apply_force",
+                          "set_velocity", "teleport").
+            intervention_params: A dictionary of parameters for the intervention,
+                                 such as the target object and the force/velocity/position values.
+            steps: The number of simulation steps to run after the intervention.
 
         Returns:
-            Predicted final state
+            A dictionary representing the predicted final state of the system.
         """
         # Apply intervention
         if intervention == "apply_force":
@@ -285,13 +297,14 @@ class PhysicsEngine:
         return self.forward_simulate(steps, return_trajectory=False)
 
     def check_stability(self) -> Dict[str, bool]:
-        """
-        Check if current configuration is physically stable.
+        """Checks if the current configuration of objects is physically stable.
 
-        Intuitive physics: Can objects rest in this configuration?
+        This provides a form of "intuitive physics" by determining if objects are
+        at rest or likely to fall. The current implementation uses a simple check
+        for ground support and low velocity.
 
         Returns:
-            Dict mapping object names to stability (True/False)
+            A dictionary mapping object names to a boolean indicating their stability.
         """
         stability = {}
 
@@ -305,11 +318,14 @@ class PhysicsEngine:
         return stability
 
     def detect_collisions(self) -> List[Tuple[str, str]]:
-        """
-        Detect collisions between objects.
+        """Detects collisions between objects in the current state.
+
+        This implementation uses a simplified bounding sphere approximation for
+        fast collision checking.
 
         Returns:
-            List of (object1, object2) collision pairs
+            A list of tuples, where each tuple contains the names of two
+            colliding objects.
         """
         collisions = []
 
@@ -326,10 +342,7 @@ class PhysicsEngine:
         obj1: PhysicalObject,
         obj2: PhysicalObject
     ) -> bool:
-        """
-        Check collision between two objects (simplified).
-        Uses bounding sphere approximation.
-        """
+        """Checks for a collision between two objects using bounding spheres."""
         # Compute distance between centers
         dist = np.linalg.norm(obj1.position - obj2.position)
 
@@ -341,14 +354,29 @@ class PhysicsEngine:
         return dist < (radius1 + radius2)
 
     def compute_momentum(self, obj_name: str) -> np.ndarray:
-        """Compute momentum p = m*v."""
+        """Computes the momentum (p = mv) of a specific object.
+
+        Args:
+            obj_name: The name of the object.
+
+        Returns:
+            A NumPy array representing the momentum vector, or a zero vector if
+            the object is not found.
+        """
         if obj_name in self.objects:
             obj = self.objects[obj_name]
             return obj.mass * obj.velocity
         return np.zeros(3)
 
     def compute_kinetic_energy(self, obj_name: str) -> float:
-        """Compute kinetic energy KE = 0.5*m*v²."""
+        """Computes the kinetic energy (KE = 0.5 * m * v^2) of an object.
+
+        Args:
+            obj_name: The name of the object.
+
+        Returns:
+            The kinetic energy in Joules, or 0.0 if the object is not found.
+        """
         if obj_name in self.objects:
             obj = self.objects[obj_name]
             v_squared = np.dot(obj.velocity, obj.velocity)
@@ -356,7 +384,14 @@ class PhysicsEngine:
         return 0.0
 
     def compute_potential_energy(self, obj_name: str) -> float:
-        """Compute gravitational potential energy PE = m*g*h."""
+        """Computes the gravitational potential energy (PE = mgh) of an object.
+
+        Args:
+            obj_name: The name of the object.
+
+        Returns:
+            The potential energy in Joules, or 0.0 if the object is not found.
+        """
         if obj_name in self.objects:
             obj = self.objects[obj_name]
             height = obj.position[2]
@@ -364,7 +399,11 @@ class PhysicsEngine:
         return 0.0
 
     def total_energy(self) -> float:
-        """Compute total energy of system."""
+        """Computes the total mechanical energy (KE + PE) of the entire system.
+
+        Returns:
+            The total energy in Joules.
+        """
         total = 0.0
         for name in self.objects:
             total += self.compute_kinetic_energy(name)
@@ -376,15 +415,17 @@ class PhysicsEngine:
         obj_name: str,
         time_horizon: float
     ) -> List[np.ndarray]:
-        """
-        Predict future trajectory of object.
+        """Predicts the future trajectory of an object assuming only gravity.
+
+        This method calculates a simple ballistic trajectory.
 
         Args:
-            obj_name: Object to predict
-            time_horizon: Seconds into future
+            obj_name: The name of the object to predict.
+            time_horizon: The duration of the prediction in seconds.
 
         Returns:
-            List of predicted positions
+            A list of NumPy arrays, where each array is a predicted (x, y, z)
+            position at each time step.
         """
         if obj_name not in self.objects:
             return []
@@ -422,14 +463,19 @@ class PhysicsEngine:
         final_state: Dict[str, np.ndarray],
         time_elapsed: float
     ) -> np.ndarray:
-        """
-        Infer force that caused motion.
+        """Infers the net force that must have been applied to cause an observed change in motion.
 
-        Given: initial state, final state, time
-        Find: force applied
+        This "inverse physics" capability allows the system to reason backward from
+        an effect to its likely cause.
+
+        Args:
+            obj_name: The name of the object.
+            initial_state: A dictionary with the 'position' and 'velocity' at the start.
+            final_state: A dictionary with the 'position' and 'velocity' at the end.
+            time_elapsed: The time duration between the initial and final states.
 
         Returns:
-            Inferred force vector
+            A NumPy array representing the inferred constant force vector.
         """
         # Extract states
         pos0 = initial_state['position']
@@ -454,12 +500,16 @@ class PhysicsEngine:
         return force
 
     def reset(self):
-        """Reset simulation."""
+        """Resets the simulation by removing all objects."""
         self.objects.clear()
         self.collision_pairs.clear()
 
     def to_dict(self) -> Dict[str, Any]:
-        """Export state for serialization."""
+        """Serializes the current state of the physics engine to a dictionary.
+
+        Returns:
+            A dictionary containing the properties of all objects and the simulation parameters.
+        """
         return {
             'objects': {
                 name: {
@@ -477,7 +527,14 @@ class PhysicsEngine:
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'PhysicsEngine':
-        """Load from serialized data."""
+        """Creates a PhysicsEngine instance from a serialized dictionary.
+
+        Args:
+            data: A dictionary containing the serialized state.
+
+        Returns:
+            A new `PhysicsEngine` instance initialized with the provided state.
+        """
         engine = cls(
             gravity=data['gravity'],
             time_step=data['time_step']

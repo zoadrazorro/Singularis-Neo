@@ -22,7 +22,15 @@ import time
 
 @dataclass
 class PerceptualMemory:
-    """A memory of what was perceived."""
+    """Represents a memory of a perceived scene or event.
+
+    Attributes:
+        visual_embedding: A CLIP embedding vector of the visual input.
+        scene_type: The classified type of the scene (e.g., 'dungeon', 'city').
+        location: The in-game location where the perception occurred.
+        timestamp: The time the memory was recorded.
+        context: A dictionary of additional context about the perception.
+    """
     visual_embedding: np.ndarray
     scene_type: str
     location: str
@@ -32,7 +40,16 @@ class PerceptualMemory:
 
 @dataclass
 class CognitiveMemory:
-    """A memory of a decision and its outcome."""
+    """Represents a memory of a decision-making process and its outcome.
+
+    Attributes:
+        situation: A dictionary describing the situation that prompted the decision.
+        action_taken: The action that the agent chose to take.
+        outcome: A dictionary describing the result of the action.
+        success: A boolean indicating whether the outcome was considered a success.
+        reasoning: The reasoning or justification for the action taken.
+        timestamp: The time the memory was recorded.
+    """
     situation: Dict[str, Any]
     action_taken: str
     outcome: Dict[str, Any]
@@ -42,10 +59,14 @@ class CognitiveMemory:
 
 
 class MemoryRAG:
-    """
-    Retrieval-Augmented Generation for game memories.
-    
-    Stores and retrieves relevant memories to inform decision-making.
+    """A Retrieval-Augmented Generation (RAG) system for managing game memories.
+
+    This system stores and retrieves two types of memories:
+    1.  **Perceptual Memories:** What the agent has seen (using visual embeddings).
+    2.  **Cognitive Memories:** What the agent has done and what the outcomes were.
+
+    It retrieves relevant past experiences to augment the context provided to the
+    LLM, enabling more informed, experience-based decision-making.
     """
     
     def __init__(
@@ -53,12 +74,11 @@ class MemoryRAG:
         perceptual_capacity: int = 1000,
         cognitive_capacity: int = 500
     ):
-        """
-        Initialize memory RAG system.
-        
+        """Initializes the MemoryRAG system.
+
         Args:
-            perceptual_capacity: Max perceptual memories
-            cognitive_capacity: Max cognitive memories
+            perceptual_capacity: The maximum number of perceptual memories to store.
+            cognitive_capacity: The maximum number of cognitive memories to store.
         """
         self.perceptual_capacity = perceptual_capacity
         self.cognitive_capacity = cognitive_capacity
@@ -80,14 +100,13 @@ class MemoryRAG:
         location: str,
         context: Dict[str, Any]
     ):
-        """
-        Store a perceptual memory.
-        
+        """Stores a new perceptual memory.
+
         Args:
-            visual_embedding: CLIP embedding of what was seen
-            scene_type: Type of scene
-            location: Location name
-            context: Additional context
+            visual_embedding: The CLIP embedding of the perceived visual scene.
+            scene_type: The classified type of the scene.
+            location: The in-game location.
+            context: A dictionary of additional contextual information.
         """
         memory = PerceptualMemory(
             visual_embedding=visual_embedding,
@@ -112,15 +131,14 @@ class MemoryRAG:
         success: bool,
         reasoning: str = ""
     ):
-        """
-        Store a cognitive memory (decision + outcome).
-        
+        """Stores a new cognitive memory of a decision and its outcome.
+
         Args:
-            situation: Situation that prompted decision
-            action_taken: Action that was taken
-            outcome: What happened
-            success: Whether it was successful
-            reasoning: Why this action was chosen
+            situation: The situation that prompted the decision.
+            action_taken: The action that was performed.
+            outcome: The outcome resulting from the action.
+            success: Whether the outcome was successful.
+            reasoning: The reasoning behind the decision.
         """
         memory = CognitiveMemory(
             situation=situation,
@@ -147,16 +165,16 @@ class MemoryRAG:
         top_k: int = 5,
         similarity_threshold: float = 0.7
     ) -> List[Tuple[PerceptualMemory, float]]:
-        """
-        Retrieve perceptual memories similar to query.
-        
+        """Retrieves perceptual memories that are visually similar to a query embedding.
+
         Args:
-            query_embedding: Visual embedding to match
-            top_k: Number of memories to retrieve
-            similarity_threshold: Minimum similarity
-            
+            query_embedding: The visual embedding of the current scene to match against.
+            top_k: The maximum number of memories to return.
+            similarity_threshold: The minimum cosine similarity for a memory to be considered.
+
         Returns:
-            List of (memory, similarity_score) tuples
+            A list of tuples, each containing a PerceptualMemory and its
+            similarity score, sorted by similarity.
         """
         if not self.perceptual_embeddings:
             return []
@@ -185,16 +203,16 @@ class MemoryRAG:
         top_k: int = 3,
         only_successful: bool = False
     ) -> List[Tuple[CognitiveMemory, float]]:
-        """
-        Retrieve cognitive memories of similar situations.
-        
+        """Retrieves cognitive memories from situations similar to the current one.
+
         Args:
-            current_situation: Current situation
-            top_k: Number of memories to retrieve
-            only_successful: Only retrieve successful decisions
-            
+            current_situation: A dictionary describing the current situation.
+            top_k: The maximum number of memories to return.
+            only_successful: If True, only retrieve memories of successful decisions.
+
         Returns:
-            List of (memory, similarity_score) tuples
+            A list of tuples, each containing a CognitiveMemory and its
+            similarity score, sorted by similarity.
         """
         if not self.cognitive_embeddings:
             return []
@@ -232,16 +250,16 @@ class MemoryRAG:
         current_situation: Dict[str, Any],
         max_memories: int = 3
     ) -> str:
-        """
-        Create context string augmented with relevant memories.
-        
+        """Constructs a formatted string of relevant memories to augment an LLM prompt.
+
         Args:
-            current_visual: Current visual embedding
-            current_situation: Current situation dict
-            max_memories: Max memories to include
-            
+            current_visual: The visual embedding of the current scene.
+            current_situation: A dictionary describing the current situation.
+            max_memories: The maximum number of memories (of each type) to include.
+
         Returns:
-            Formatted memory context string
+            A formatted string containing relevant past perceptions and decisions,
+            or an empty string if no relevant memories are found.
         """
         context_parts = []
         
@@ -280,14 +298,16 @@ class MemoryRAG:
         return "\n".join(context_parts) if context_parts else ""
     
     def _create_situation_embedding(self, situation: Dict[str, Any]) -> np.ndarray:
-        """
-        Create embedding from situation dict.
-        
+        """Creates a simple vector embedding from a situation dictionary.
+
+        Note: This is a basic implementation. A more advanced system would use
+        a learned model to create more meaningful embeddings.
+
         Args:
-            situation: Situation dictionary
-            
+            situation: The dictionary describing the situation.
+
         Returns:
-            Embedding vector
+            A numpy array representing the situation embedding.
         """
         # Simple hash-based embedding
         # In production, would use learned embeddings
@@ -306,15 +326,14 @@ class MemoryRAG:
         return np.array(features[:16])
     
     def _cosine_similarity(self, a: np.ndarray, b: np.ndarray) -> float:
-        """
-        Calculate cosine similarity between two vectors.
-        
+        """Calculates the cosine similarity between two numpy vectors.
+
         Args:
-            a: First vector
-            b: Second vector
-            
+            a: The first vector.
+            b: The second vector.
+
         Returns:
-            Similarity score (0-1)
+            The cosine similarity score, clamped between 0.0 and 1.0.
         """
         dot_product = np.dot(a, b)
         norm_a = np.linalg.norm(a)
@@ -326,14 +345,13 @@ class MemoryRAG:
         return max(0.0, min(1.0, dot_product / (norm_a * norm_b)))
     
     def _summarize_outcome(self, outcome: Dict[str, Any]) -> str:
-        """
-        Summarize outcome for display.
-        
+        """Creates a brief, human-readable summary of an outcome dictionary.
+
         Args:
-            outcome: Outcome dictionary
-            
+            outcome: The outcome dictionary to summarize.
+
         Returns:
-            Summary string
+            A summary string.
         """
         parts = []
         
@@ -349,11 +367,10 @@ class MemoryRAG:
         return ", ".join(parts) if parts else "outcome recorded"
     
     def get_stats(self) -> Dict[str, Any]:
-        """
-        Get memory statistics.
-        
+        """Retrieves statistics about the current state of the memory system.
+
         Returns:
-            Statistics dictionary
+            A dictionary containing the number and capacity of stored memories.
         """
         return {
             'perceptual_memories': len(self.perceptual_memories),
@@ -364,14 +381,13 @@ class MemoryRAG:
         }
     
     def get_recent_successes(self, n: int = 5) -> List[CognitiveMemory]:
-        """
-        Get recent successful decisions.
-        
+        """Retrieves the most recent successful cognitive memories.
+
         Args:
-            n: Number of successes to retrieve
-            
+            n: The number of recent successes to retrieve.
+
         Returns:
-            List of successful cognitive memories
+            A list of the most recent successful CognitiveMemory objects.
         """
         successes = [
             mem for mem in self.cognitive_memories
@@ -380,11 +396,10 @@ class MemoryRAG:
         return list(successes)[-n:]
     
     def clear_old_memories(self, age_threshold_seconds: float = 3600):
-        """
-        Clear memories older than threshold.
-        
+        """Removes memories that are older than a specified threshold.
+
         Args:
-            age_threshold_seconds: Age threshold in seconds
+            age_threshold_seconds: The maximum age of memories to keep, in seconds.
         """
         current_time = time.time()
         

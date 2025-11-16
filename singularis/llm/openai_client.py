@@ -9,7 +9,12 @@ import aiohttp
 
 
 class OpenAIClient:
-    """Async wrapper around OpenAI API."""
+    """
+    An asynchronous client for the OpenAI API.
+
+    This class provides a thin wrapper around the OpenAI chat completions API,
+    with support for asynchronous requests.
+    """
 
     def __init__(
         self,
@@ -18,6 +23,18 @@ class OpenAIClient:
         base_url: str = "https://api.openai.com/v1",
         timeout: int = 120,
     ) -> None:
+        """
+        Initializes the OpenAIClient.
+
+        Args:
+            api_key (Optional[str], optional): The OpenAI API key. If not provided,
+                                             it will be read from the OPENAI_API_KEY
+                                             environment variable. Defaults to None.
+            model (str, optional): The OpenAI model to use. Defaults to "gpt-4o".
+            base_url (str, optional): The base URL for the OpenAI API.
+                                      Defaults to "https://api.openai.com/v1".
+            timeout (int, optional): The request timeout in seconds. Defaults to 120.
+        """
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
         self.model = model
         self.base_url = base_url.rstrip("/")
@@ -30,10 +47,17 @@ class OpenAIClient:
         return self._session
 
     async def close(self) -> None:
+        """Closes the aiohttp session."""
         if self._session and not self._session.closed:
             await self._session.close()
 
     def is_available(self) -> bool:
+        """
+        Checks if the client is available to make requests.
+
+        Returns:
+            bool: True if an API key is configured, False otherwise.
+        """
         return bool(self.api_key)
 
     async def generate(
@@ -44,7 +68,27 @@ class OpenAIClient:
         max_tokens: int = 4096,
         messages: Optional[List[Dict[str, str]]] = None,
     ) -> Dict[str, Any]:
-        """Send a chat completion request to OpenAI."""
+        """
+        Sends a chat completion request to the OpenAI API.
+
+        Args:
+            prompt (str): The user prompt.
+            system_prompt (Optional[str], optional): An optional system prompt.
+                                                          Defaults to None.
+            temperature (float, optional): The sampling temperature. Defaults to 0.7.
+            max_tokens (int, optional): The maximum number of tokens to generate.
+                                      Defaults to 4096.
+            messages (Optional[List[Dict[str, str]]], optional): A list of messages
+                                                                   to use instead of the
+                                                                   prompt. Defaults to None.
+
+        Raises:
+            RuntimeError: If the API key is not configured.
+
+        Returns:
+            Dict[str, Any]: A dictionary containing the generated content, usage
+                            statistics, and the raw API response.
+        """
 
         if not self.is_available():
             raise RuntimeError("OpenAI API key not configured (OPENAI_API_KEY)")
@@ -92,7 +136,20 @@ class OpenAIClient:
         temperature: float = 0.7,
         max_tokens: int = 4096,
     ) -> str:
-        """Convenience helper returning only the generated text."""
+        """
+        A convenience method that calls the `generate` method and returns only
+        the generated text content.
+
+        Args:
+            prompt (str): The user prompt.
+            system_prompt (Optional[str], optional): The system prompt. Defaults to None.
+            temperature (float, optional): The sampling temperature. Defaults to 0.7.
+            max_tokens (int, optional): The maximum number of tokens to generate.
+                                      Defaults to 4096.
+
+        Returns:
+            str: The generated text.
+        """
 
         response = await self.generate(
             prompt=prompt,

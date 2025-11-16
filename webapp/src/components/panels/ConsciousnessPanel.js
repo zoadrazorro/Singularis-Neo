@@ -1,8 +1,18 @@
+/**
+ * @fileoverview This file contains the React component for the Consciousness Panel,
+ * which provides a deep dive into the AGI's consciousness metrics, including
+ * global coherence, the Three Lumina, integrated information (Phi), and self-awareness.
+ */
+
 import React from 'react';
 import './ConsciousnessPanel.css';
 
 /**
- * Consciousness Panel - Deep dive into consciousness metrics
+ * A panel component that visualizes detailed metrics related to the AGI's consciousness.
+ * @param {object} props - The component's props.
+ * @param {object} props.data - The live AGI state data object, which should contain
+ * a `consciousness` field with detailed metrics.
+ * @returns {React.Component} The rendered Consciousness Panel.
  */
 function ConsciousnessPanel({ data }) {
   const consciousness = data.consciousness || {};
@@ -199,6 +209,11 @@ function ConsciousnessPanel({ data }) {
   );
 }
 
+/**
+ * Returns a color based on the type of the consciousness node.
+ * @param {string} type - The type of the node (e.g., 'perception', 'action').
+ * @returns {string} A hex color code for the node type.
+ */
 function getNodeColor(type) {
   const colors = {
     perception: '#00d9ff',

@@ -30,10 +30,26 @@ class CognitiveDimension(Enum):
 
 @dataclass
 class SkyrimCognitiveState:
-    """
-    Represents the agent's cognitive evaluation of the current game state.
-    
-    This replaces abstract "coherence" with concrete game metrics.
+    """Represents the agent's cognitive evaluation of the current game state.
+
+    This dataclass provides a structured, game-specific representation of the
+    agent's understanding of its situation in Skyrim. It translates raw game
+    data into a set of normalized (0.0 to 1.0) cognitive dimensions, such as
+    survival, progression, and resources. This replaces abstract philosophical
+    concepts like "coherence" with concrete, measurable metrics derived directly
+    from gameplay mechanics.
+
+    Attributes:
+        survival: A score from 0.0 (critical danger) to 1.0 (full health/safe).
+        progression: A score indicating skill levels, player level, and quest
+            completion.
+        resources: A score reflecting wealth, item inventory, and equipment quality.
+        knowledge: A score representing map exploration, NPC interactions, and
+            understanding of game mechanics.
+        effectiveness: A score measuring success rates in combat, stealth, and
+            social interactions.
+        overall_quality: A weighted average of all dimensions, representing the
+            holistic quality of the current game state.
     """
     # Core dimensions (0.0 to 1.0 normalized)
     survival: float  # 1.0 = full health/safe, 0.0 = critical danger
@@ -47,14 +63,20 @@ class SkyrimCognitiveState:
     
     @classmethod
     def from_game_state(cls, state: Dict[str, Any]) -> 'SkyrimCognitiveState':
-        """
-        Compute cognitive evaluation from raw game state.
-        
+        """Computes a cognitive evaluation from a raw game state dictionary.
+
+        This class method serves as a factory to create a `SkyrimCognitiveState`
+        instance from a dictionary of raw game data. It normalizes various game
+        metrics (like health, gold, skill levels) into the five core cognitive
+        dimensions and calculates the overall state quality.
+
         Args:
-            state: Raw game state dict with health, gold, skills, etc.
-            
+            state: A dictionary containing raw game state data, such as 'health',
+                'gold', 'average_skill_level', etc.
+
         Returns:
-            SkyrimCognitiveState with normalized evaluations
+            An instance of `SkyrimCognitiveState` with all dimensions populated
+            and normalized based on the input state.
         """
         # Survival: Based on health ratio and threat level
         health_ratio = state.get('health', 50) / state.get('max_health', 100)
@@ -111,22 +133,37 @@ class SkyrimCognitiveState:
         )
     
     def quality_change(self, previous: 'SkyrimCognitiveState') -> float:
-        """
-        Calculate change in overall game state quality.
-        
-        This replaces the philosophical "Δ𝒞" (coherence change) with
-        concrete game state improvement.
-        
+        """Calculates the change in overall game state quality compared to a previous state.
+
+        This method provides a concrete, game-specific replacement for the more
+        abstract philosophical concept of "Δ𝒞" (change in coherence). It serves
+        as a primary metric for evaluating the outcome of an action by measuring
+        the tangible improvement or degradation of the game state.
+
         Args:
-            previous: Previous cognitive state
-            
+            previous: The `SkyrimCognitiveState` object from a previous time step
+                to compare against.
+
         Returns:
-            Change in quality (-1.0 to 1.0)
+            A float between -1.0 and 1.0 representing the change in overall
+            quality. A positive value indicates improvement.
         """
         return self.overall_quality - previous.overall_quality
     
     def dimension_changes(self, previous: 'SkyrimCognitiveState') -> Dict[str, float]:
-        """Get changes in each cognitive dimension."""
+        """Calculates the change for each individual cognitive dimension.
+
+        This method provides a more granular view of how the game state has
+        changed, breaking down the overall quality change into its constituent
+        parts (survival, progression, etc.).
+
+        Args:
+            previous: The `SkyrimCognitiveState` object from a previous time step.
+
+        Returns:
+            A dictionary where keys are the names of the cognitive dimensions
+            and values are the float changes for each dimension.
+        """
         return {
             'survival': self.survival - previous.survival,
             'progression': self.progression - previous.progression,
@@ -137,11 +174,14 @@ class SkyrimCognitiveState:
 
 
 class SkyrimActionEvaluator:
-    """
-    Evaluates actions based on game-specific criteria.
-    
-    This replaces philosophical "ethical evaluation" (Δ𝒞 > 0)
-    with practical game evaluation (improves game state?).
+    """Evaluates the outcome of actions based on game-specific criteria.
+
+    This class provides a practical, in-game alternative to the more abstract,
+    philosophical "ethical evaluation" (i.e., whether Δ𝒞 > 0). Instead of
+    evaluating actions based on a change in consciousness coherence, it assesses
+    them based on their tangible impact on the `SkyrimCognitiveState`, determining
+    whether an action was beneficial, detrimental, or neutral to the agent's
+    progress in the game.
     """
     
     @staticmethod
@@ -150,16 +190,23 @@ class SkyrimActionEvaluator:
         state_after: SkyrimCognitiveState,
         action: str
     ) -> Dict[str, Any]:
-        """
-        Evaluate whether an action improved the game state.
-        
+        """Evaluates the outcome of an action by comparing cognitive states.
+
+        This method analyzes the change in `SkyrimCognitiveState` before and
+        after an action to determine its impact. It calculates the overall
+        change in game state quality and provides a qualitative assessment
+        (BENEFICIAL, DETRIMENTAL, or NEUTRAL). It also breaks down which
+        specific cognitive dimensions were improved or degraded by the action.
+
         Args:
-            state_before: State before action
-            state_after: State after action
-            action: Action taken
-            
+            state_before: The `SkyrimCognitiveState` before the action was taken.
+            state_after: The `SkyrimCognitiveState` after the action was completed.
+            action: The string name of the action that was taken.
+
         Returns:
-            Dict with evaluation results
+            A dictionary containing a detailed evaluation, including the numerical
+            'quality_change', a qualitative 'assessment', and lists of
+            'improved_dimensions' and 'degraded_dimensions'.
         """
         quality_change = state_after.quality_change(state_before)
         dimension_changes = state_after.dimension_changes(state_before)
@@ -187,11 +234,21 @@ class SkyrimActionEvaluator:
 
 
 class SkyrimMotivation:
-    """
-    Game-specific motivation system.
-    
-    This replaces abstract "intrinsic motivation" (curiosity, coherence, etc.)
-    with concrete game motivations.
+    """A motivation system tailored to the specific goals and mechanics of Skyrim.
+
+    This class replaces the AGI's abstract, intrinsic motivations (like
+    curiosity and competence) with a set of concrete, game-specific drives:
+    survival, progression, exploration, wealth, and mastery. It provides
+    methods to calculate a motivation score for a given action and to determine
+    the agent's currently dominant motivation based on the game state.
+
+    Attributes:
+        survival_weight: The importance of staying alive and safe.
+        progression_weight: The drive to level up, improve skills, and complete quests.
+        exploration_weight: The desire to discover new locations and map areas.
+        wealth_weight: The motivation to acquire gold and valuable items.
+        mastery_weight: The drive to improve performance in combat, stealth, and
+            other skills.
     """
     
     def __init__(
@@ -202,15 +259,14 @@ class SkyrimMotivation:
         wealth_weight: float = 0.10,
         mastery_weight: float = 0.10
     ):
-        """
-        Initialize with motivation weights.
-        
+        """Initializes the Skyrim-specific motivation system with a set of weights.
+
         Args:
-            survival_weight: How much to value staying alive
-            progression_weight: How much to value leveling/skills
-            exploration_weight: How much to value discovering new areas
-            wealth_weight: How much to value gold/loot
-            mastery_weight: How much to value combat/stealth mastery
+            survival_weight: The weight assigned to the survival motivation.
+            progression_weight: The weight assigned to the progression motivation.
+            exploration_weight: The weight assigned to the exploration motivation.
+            wealth_weight: The weight assigned to the wealth motivation.
+            mastery_weight: The weight assigned to the mastery motivation.
         """
         self.survival_weight = survival_weight
         self.progression_weight = progression_weight
@@ -224,16 +280,23 @@ class SkyrimMotivation:
         current_state: SkyrimCognitiveState,
         context: Dict[str, Any]
     ) -> float:
-        """
-        Compute how motivated the agent is to take this action.
-        
+        """Computes a motivation score for a specific action.
+
+        This method calculates how strongly a given action aligns with the agent's
+        current motivations. The score is determined by checking if the action
+        serves a dominant drive (e.g., a 'heal' action when survival is low) and
+        weighting it accordingly.
+
         Args:
-            action: Action to evaluate
-            current_state: Current cognitive state
-            context: Additional context (threats, opportunities, etc.)
-            
+            action: The string name of the action to be evaluated.
+            current_state: The current `SkyrimCognitiveState` of the agent.
+            context: A dictionary of additional contextual information, such as
+                whether there are 'unexplored_nearby' areas or 'valuable_nearby'
+                items.
+
         Returns:
-            Motivation score (0.0 to 1.0)
+            A motivation score between 0.0 and 1.0, where higher values indicate
+            a stronger motivation to perform the action.
         """
         score = 0.0
         
@@ -268,14 +331,20 @@ class SkyrimMotivation:
         return np.clip(score, 0.0, 1.0)
     
     def get_dominant_motivation(self, current_state: SkyrimCognitiveState) -> str:
-        """
-        Determine the currently dominant motivation.
-        
+        """Determines the agent's currently dominant motivation.
+
+        This method identifies which of the five game-specific motivations is most
+        pressing, based on the current `SkyrimCognitiveState`. Survival is always
+        prioritized when the agent is in danger. Otherwise, the dominant
+        motivation is the one corresponding to the cognitive dimension with the
+        most room for improvement.
+
         Args:
-            current_state: Current cognitive state
-            
+            current_state: The current `SkyrimCognitiveState` of the agent.
+
         Returns:
-            Name of dominant motivation
+            A string representing the name of the dominant motivation (e.g.,
+            "SURVIVAL", "PROGRESSION").
         """
         # Survival always dominant when in danger
         if current_state.survival < 0.4:

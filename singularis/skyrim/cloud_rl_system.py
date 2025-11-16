@@ -44,7 +44,39 @@ except ImportError as e:
 
 @dataclass
 class Experience:
-    """Single RL experience with rich context."""
+    """Represents a single step of interaction within the RL environment.
+
+    This data class captures a comprehensive snapshot of a state-action-reward
+    cycle, including rich contextual information from the game, feedback from
+    cloud-based LLMs, and metrics related to the agent's consciousness model.
+
+    Attributes:
+        state_vector: A numerical representation of the game state.
+        state_description: A natural language description of the game state.
+        scene_type: The type of scene (e.g., "combat", "dialogue").
+        location: The in-game location.
+        health: The player's health.
+        stamina: The player's stamina.
+        magicka: The player's magicka.
+        enemies_nearby: The number of nearby enemies.
+        in_combat: A boolean indicating if the player is in combat.
+        action: The action taken by the agent.
+        action_type: The category of the action (e.g., "melee", "magic").
+        reward: The numerical reward received for the action.
+        next_state_vector: The numerical representation of the subsequent state.
+        next_state_description: A natural language description of the subsequent state.
+        done: A boolean indicating if the episode has ended.
+        llm_evaluation: Feedback from a cloud-based LLM on the action.
+        llm_reward_adjustment: A reward adjustment suggested by the LLM.
+        moe_consensus: The consensus evaluation from the Mixture of Experts (MoE) system.
+        moe_coherence: The coherence score of the MoE evaluation.
+        coherence_before: The agent's coherence score before the action.
+        coherence_after: The agent's coherence score after the action.
+        coherence_delta: The change in coherence resulting from the action.
+        timestamp: The time at which the experience was recorded.
+        episode_id: The identifier for the episode.
+        step_id: The step number within the episode.
+    """
     # State information
     state_vector: np.ndarray
     state_description: str  # Natural language description
@@ -83,7 +115,11 @@ class Experience:
     step_id: int = 0
     
     def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary for storage."""
+        """Converts the Experience object to a dictionary for serialization.
+
+        Returns:
+            A dictionary representation of the experience.
+        """
         return {
             'state_description': self.state_description,
             'scene_type': self.scene_type,
@@ -113,7 +149,21 @@ class Experience:
 
 @dataclass
 class RLMemoryConfig:
-    """Configuration for RL memory system."""
+    """Configuration settings for the reinforcement learning memory system.
+
+    Attributes:
+        memory_dir: The directory for storing memory files.
+        max_experiences: The maximum number of experiences to store in the replay buffer.
+        batch_size: The number of experiences to sample in each training batch.
+        use_rag: A boolean indicating whether to use Retrieval-Augmented Generation (RAG).
+        rag_top_k: The number of similar experiences to retrieve for RAG.
+        rag_similarity_threshold: The minimum similarity score for RAG retrieval.
+        use_cloud_reward_shaping: A boolean indicating whether to use cloud LLMs for reward shaping.
+        reward_shaping_frequency: The frequency at which to perform reward shaping.
+        use_moe_evaluation: A boolean indicating whether to use the MoE system for evaluation.
+        save_frequency: The frequency at which to save the memory to disk.
+        auto_save: A boolean indicating whether to automatically save the memory.
+    """
     memory_dir: str = "skyrim_rl_memory"
     max_experiences: int = 100000
     batch_size: int = 32
@@ -134,15 +184,26 @@ class RLMemoryConfig:
 
 
 class CloudRLMemory:
-    """
-    RL Memory system with cloud LLM integration and RAG.
-    
-    Features:
-    - Persistent experience storage
-    - Semantic similarity search via ChromaDB
-    - Cloud LLM reward shaping
-    - MoE consensus integration
-    - Consciousness-guided learning
+    """A sophisticated experience replay buffer for reinforcement learning.
+
+    This class integrates a traditional experience replay buffer with modern AI
+    techniques, including:
+    - Persistent storage of experiences.
+    - Retrieval-Augmented Generation (RAG) for finding semantically similar past
+      experiences, enabling more effective learning from relevant history.
+    - Reward shaping through cloud-based LLMs, which provide strategic feedback on
+      the agent's actions.
+    - Integration with a Mixture of Experts (MoE) system for consensus-based
+      evaluation of actions.
+    - Consciousness-guided learning, where changes in the agent's coherence
+      score can be used as a an additional reward signal.
+
+    Attributes:
+        config: An RLMemoryConfig object with configuration settings.
+        hybrid_llm: An instance of a hybrid LLM for cloud-based evaluations.
+        moe: An instance of the Mixture of Experts system.
+        experiences: A deque serving as the main experience replay buffer.
+        stats: A dictionary for tracking performance metrics.
     """
     
     def __init__(
@@ -151,7 +212,13 @@ class CloudRLMemory:
         hybrid_llm=None,
         moe=None,
     ):
-        """Initialize cloud RL memory system."""
+        """Initializes the CloudRLMemory system.
+
+        Args:
+            config: Configuration settings for the memory system.
+            hybrid_llm: The hybrid LLM for cloud-based evaluations.
+            moe: The Mixture of Experts system.
+        """
         self.config = config or RLMemoryConfig()
         self.hybrid_llm = hybrid_llm
         self.moe = moe
@@ -186,7 +253,7 @@ class CloudRLMemory:
         logger.info(f"Cloud RL Memory initialized: {len(self.experiences)} experiences loaded")
     
     def _initialize_chromadb(self):
-        """Initialize RAG backend (ChromaDB or FAISS)."""
+        """Initializes the RAG backend, supporting ChromaDB or FAISS."""
         if CHROMADB_AVAILABLE:
             try:
                 self.chroma_client = chromadb.PersistentClient(
@@ -219,7 +286,7 @@ class CloudRLMemory:
         logger.warning("No RAG backend available")
     
     def _initialize_faiss(self):
-        """Initialize FAISS for semantic search."""
+        """Initializes FAISS as the backend for semantic search."""
         # Initialize sentence transformer for embeddings
         self.sentence_model = SentenceTransformer('all-MiniLM-L6-v2')
         self.embedding_dim = 384  # Dimension for all-MiniLM-L6-v2
@@ -248,12 +315,14 @@ class CloudRLMemory:
         experience: Experience,
         request_cloud_evaluation: bool = False
     ):
-        """
-        Add experience to memory with optional cloud LLM evaluation.
-        
+        """Adds a new experience to the memory buffer.
+
+        This method can optionally trigger cloud-based LLM and MoE evaluations to
+        provide additional feedback and reward shaping for the experience.
+
         Args:
-            experience: Experience to add
-            request_cloud_evaluation: Whether to request cloud LLM feedback
+            experience: The experience object to add.
+            request_cloud_evaluation: Whether to request feedback from cloud services.
         """
         # Cloud LLM reward shaping
         if request_cloud_evaluation and self.config.use_cloud_reward_shaping:
@@ -292,7 +361,7 @@ class CloudRLMemory:
             self.save()
     
     async def _cloud_reward_shaping(self, experience: Experience):
-        """Use cloud LLM to evaluate and shape reward."""
+        """Uses a cloud-based LLM to evaluate an action and adjust its reward."""
         if not self.hybrid_llm:
             return
         
@@ -357,7 +426,7 @@ Provide constructive feedback to help the AI learn better strategies."""
             logger.error(f"Cloud reward shaping failed: {e}")
     
     async def _moe_evaluation(self, experience: Experience):
-        """Use MoE expert consensus to evaluate action."""
+        """Uses the Mixture of Experts system to get a consensus evaluation of an action."""
         if not self.moe:
             return
         
@@ -391,7 +460,7 @@ Was this a good decision? Rate 0-10 and explain briefly."""
             logger.error(f"MoE evaluation failed: {e}")
     
     def _add_to_chromadb(self, experience: Experience):
-        """Add experience to RAG backend (ChromaDB or FAISS)."""
+        """Adds an experience to the RAG backend for semantic search."""
         if not self.collection:
             return
         
@@ -427,7 +496,7 @@ Was this a good decision? Rate 0-10 and explain briefly."""
             logger.error(f"Failed to add to RAG backend: {e}")
     
     def _save_faiss_index(self):
-        """Save FAISS index and metadata to disk."""
+        """Saves the FAISS index and metadata to disk."""
         try:
             index_path = self.memory_path / "faiss_index.bin"
             metadata_path = self.memory_path / "faiss_metadata.pkl"
@@ -446,16 +515,18 @@ Was this a good decision? Rate 0-10 and explain briefly."""
         top_k: int = None,
         similarity_threshold: float = None
     ) -> List[Experience]:
-        """
-        Retrieve similar experiences using RAG.
-        
+        """Retrieves experiences that are semantically similar to a query state.
+
+        This method uses the RAG backend (ChromaDB or FAISS) to find past
+        experiences that are relevant to the current situation.
+
         Args:
-            query_state: Natural language description of current state
-            top_k: Number of similar experiences to retrieve
-            similarity_threshold: Minimum similarity score
-            
+            query_state: A natural language description of the current state.
+            top_k: The maximum number of similar experiences to retrieve.
+            similarity_threshold: The minimum similarity score for an experience to be considered relevant.
+
         Returns:
-            List of similar experiences
+            A list of similar experiences.
         """
         if not self.collection:
             # Fallback to random sampling
@@ -515,7 +586,14 @@ Was this a good decision? Rate 0-10 and explain briefly."""
             return []
     
     def sample_batch(self, batch_size: int = None) -> List[Experience]:
-        """Sample random batch for training."""
+        """Samples a random batch of experiences from the replay buffer.
+
+        Args:
+            batch_size: The number of experiences to sample.
+
+        Returns:
+            A list of randomly sampled experiences.
+        """
         batch_size = batch_size or self.config.batch_size
         
         if len(self.experiences) < batch_size:
@@ -530,7 +608,20 @@ Was this a good decision? Rate 0-10 and explain briefly."""
         prioritize_high_reward: bool = True,
         prioritize_high_coherence: bool = True
     ) -> List[Experience]:
-        """Sample batch with prioritization."""
+        """Samples a batch of experiences using prioritized replay.
+
+        This method gives a higher probability of being selected to experiences with
+        high rewards or significant changes in coherence, as well as those that have
+        been evaluated by cloud services.
+
+        Args:
+            batch_size: The number of experiences to sample.
+            prioritize_high_reward: Whether to prioritize experiences with high rewards.
+            prioritize_high_coherence: Whether to prioritize experiences with high coherence deltas.
+
+        Returns:
+            A list of prioritized sampled experiences.
+        """
         batch_size = batch_size or self.config.batch_size
         
         if len(self.experiences) < batch_size:
@@ -572,7 +663,7 @@ Was this a good decision? Rate 0-10 and explain briefly."""
         return [self.experiences[i] for i in indices]
     
     def save(self):
-        """Save experiences to disk."""
+        """Saves the entire memory buffer and statistics to disk."""
         try:
             # Save experiences as pickle
             exp_file = self.memory_path / "experiences.pkl"
@@ -590,7 +681,7 @@ Was this a good decision? Rate 0-10 and explain briefly."""
             logger.error(f"Failed to save experiences: {e}")
     
     def _load_experiences(self):
-        """Load experiences from disk."""
+        """Loads the memory buffer and statistics from disk."""
         try:
             exp_file = self.memory_path / "experiences.pkl"
             if exp_file.exists():
@@ -611,7 +702,11 @@ Was this a good decision? Rate 0-10 and explain briefly."""
             logger.error(f"Failed to load experiences: {e}")
     
     def get_stats(self) -> Dict[str, Any]:
-        """Get memory statistics."""
+        """Retrieves the current statistics of the memory system.
+
+        Returns:
+            A dictionary of performance metrics.
+        """
         return {
             **self.stats,
             'buffer_size': len(self.experiences),
@@ -623,20 +718,27 @@ Was this a good decision? Rate 0-10 and explain briefly."""
         }
     
     async def close(self):
-        """Close and cleanup."""
+        """Saves the memory and performs any necessary cleanup."""
         self.save()
         logger.info("Cloud RL Memory closed")
 
 
 class CloudRLAgent:
-    """
-    RL Agent with cloud LLM guidance and MoE integration.
-    
-    Combines:
-    - Traditional RL (Q-learning, policy gradients)
-    - Cloud LLM strategic guidance
-    - MoE expert consensus
-    - Consciousness-guided learning (Δ𝒞)
+    """A reinforcement learning agent enhanced with cloud-based AI services.
+
+    This agent combines traditional RL techniques with strategic guidance from
+    large language models and consensus-based evaluations from a Mixture of Experts
+    system. It also incorporates the agent's "consciousness" (coherence score)
+    into its learning process, treating changes in coherence as a reward signal.
+
+    Attributes:
+        state_dim: The dimensionality of the state space.
+        action_dim: The dimensionality of the action space.
+        memory: An instance of CloudRLMemory for experience replay.
+        learning_rate: The learning rate for the Q-network updates.
+        gamma: The discount factor for future rewards.
+        epsilon: The current exploration rate for the epsilon-greedy policy.
+        q_network: A simple Q-network for approximating action-value functions.
     """
     
     def __init__(
@@ -650,7 +752,18 @@ class CloudRLAgent:
         epsilon_end: float = 0.01,
         epsilon_decay: float = 0.995,
     ):
-        """Initialize cloud RL agent."""
+        """Initializes the CloudRLAgent.
+
+        Args:
+            state_dim: The dimensionality of the state space.
+            action_dim: The dimensionality of the action space.
+            memory: The experience replay memory system.
+            learning_rate: The learning rate for Q-network updates.
+            gamma: The discount factor for future rewards.
+            epsilon_start: The initial exploration rate.
+            epsilon_end: The minimum exploration rate.
+            epsilon_decay: The rate at which the exploration rate decays.
+        """
         self.state_dim = state_dim
         self.action_dim = action_dim
         self.memory = memory
@@ -677,7 +790,18 @@ class CloudRLAgent:
         state: np.ndarray,
         explore: bool = True
     ) -> int:
-        """Select action using epsilon-greedy policy."""
+        """Selects an action using an epsilon-greedy policy.
+
+        With a probability of epsilon, a random action is chosen (exploration).
+        Otherwise, the action with the highest Q-value is chosen (exploitation).
+
+        Args:
+            state: The current state vector.
+            explore: Whether to allow exploration.
+
+        Returns:
+            The index of the selected action.
+        """
         if explore and np.random.random() < self.epsilon:
             # Explore: random action
             return np.random.randint(self.action_dim)
@@ -693,11 +817,16 @@ class CloudRLAgent:
         available_actions: List[str],
         context: Dict[str, Any]
     ) -> Tuple[int, str]:
-        """
-        Select action with cloud LLM strategic guidance.
-        
+        """Selects an action by combining Q-values with strategic guidance from a cloud-based LLM.
+
+        Args:
+            state: The current state vector.
+            state_description: A natural language description of the state.
+            available_actions: A list of available actions.
+            context: Additional context for the decision.
+
         Returns:
-            (action_index, llm_reasoning)
+            A tuple containing the selected action index and any reasoning provided by the LLM.
         """
         # Get Q-values
         q_values = state @ self.q_network
@@ -750,7 +879,14 @@ REASONING: <text>"""
         return action_idx, llm_suggestion
     
     async def train_step(self, batch_size: int = 32):
-        """Perform one training step using experience replay."""
+        """Performs a single training step on a batch of experiences.
+
+        This method samples a batch from the memory, calculates the target Q-values,
+        and updates the Q-network using a simple gradient descent step.
+
+        Args:
+            batch_size: The size of the batch to train on.
+        """
         if len(self.memory.experiences) < batch_size:
             return
         
@@ -780,7 +916,11 @@ REASONING: <text>"""
         self.training_steps += 1
     
     def save(self, path: str):
-        """Save agent state."""
+        """Saves the agent's state to a file.
+
+        Args:
+            path: The path to save the agent state to.
+        """
         try:
             save_dict = {
                 'q_network': self.q_network,
@@ -797,7 +937,11 @@ REASONING: <text>"""
             logger.error(f"Failed to save agent: {e}")
     
     def load(self, path: str):
-        """Load agent state."""
+        """Loads the agent's state from a file.
+
+        Args:
+            path: The path to load the agent state from.
+        """
         try:
             if Path(path).exists():
                 with open(path, 'rb') as f:

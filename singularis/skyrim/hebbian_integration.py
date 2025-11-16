@@ -16,17 +16,37 @@ import numpy as np
 
 @dataclass
 class SystemActivation:
-    """Records when a system was active and its contribution."""
+    """Records an instance of a system's activation.
+
+    Attributes:
+        system_name: The name of the system that was activated.
+        timestamp: The time of the activation.
+        success: A boolean indicating whether the activation contributed to a
+                 successful outcome.
+        contribution_strength: A float (0.0-1.0) indicating the perceived
+                               contribution of this activation to the outcome.
+        context: An optional dictionary for storing metadata about the activation.
+    """
     system_name: str
     timestamp: float
     success: bool
-    contribution_strength: float  # 0.0-1.0
+    contribution_strength: float
     context: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class SystemCorrelation:
-    """Tracks correlation between two systems."""
+    """Tracks the learned correlation between two systems.
+
+    Attributes:
+        system_a: The name of the first system.
+        system_b: The name of the second system.
+        joint_activations: The total number of times these systems were active
+                           within the same temporal window.
+        joint_successes: The number of times their joint activation was successful.
+        correlation_strength: The learned Hebbian weight between the two systems.
+        last_updated: The timestamp of the last update to this correlation.
+    """
     system_a: str
     system_b: str
     joint_activations: int = 0
@@ -36,22 +56,32 @@ class SystemCorrelation:
 
 
 class HebbianIntegrator:
-    """
-    Implements Hebbian learning across AGI systems.
-    
-    Key Principles:
-    1. Systems that produce successful outcomes together get stronger connections
-    2. Temporal proximity matters (systems active within same window)
-    3. Success reinforces, failure weakens
-    4. Adaptive weights for system cooperation
+    """Implements Hebbian learning ("neurons that fire together, wire together")
+    across different high-level AGI systems.
+
+    This class tracks the co-activation of different modules (e.g., combat tactics,
+    perception, emotion). When systems are active together within a defined time
+    window and their activation leads to a successful outcome, the "synaptic"
+    connection between them is strengthened. This allows the AGI to learn which
+    systems are most effective when used in combination for certain tasks.
     """
     
     def __init__(
         self,
-        temporal_window: float = 30.0,  # 30 seconds for co-activation
+        temporal_window: float = 30.0,
         learning_rate: float = 0.1,
         decay_rate: float = 0.01,
     ):
+        """Initializes the HebbianIntegrator.
+
+        Args:
+            temporal_window: The time in seconds within which two system
+                             activations are considered to be co-active.
+            learning_rate: The rate at which correlation strengths and system
+                           weights are updated.
+            decay_rate: The rate at which all correlation strengths and weights
+                        decay over time (simulating synaptic pruning).
+        """
         self.temporal_window = temporal_window
         self.learning_rate = learning_rate
         self.decay_rate = decay_rate
@@ -79,7 +109,16 @@ class HebbianIntegrator:
         contribution_strength: float = 1.0,
         context: Optional[Dict[str, Any]] = None
     ) -> None:
-        """Record that a system was active."""
+        """Records the activation of a system and updates the Hebbian network.
+
+        This is the main entry point for the learning process.
+
+        Args:
+            system_name: The name of the system that was activated.
+            success: Whether the outcome of the activation was successful.
+            contribution_strength: The strength of the system's contribution.
+            context: Optional metadata about the activation context.
+        """
         activation = SystemActivation(
             system_name=system_name,
             timestamp=time.time(),
@@ -108,7 +147,14 @@ class HebbianIntegrator:
         self._cleanup_old_activations()
         
     def _update_correlations(self, new_activation: SystemActivation) -> None:
-        """Update correlations between this system and recently active systems."""
+        """Updates the correlation strengths based on a new system activation.
+
+        Compares the new activation with all other activations in the recent
+        temporal window and applies the Hebbian learning rule.
+
+        Args:
+            new_activation: The SystemActivation to process.
+        """
         current_time = new_activation.timestamp
         
         # Find systems active within temporal window
@@ -151,7 +197,7 @@ class HebbianIntegrator:
             corr.last_updated = current_time
             
     def _normalize_weights(self) -> None:
-        """Normalize system weights to prevent unbounded growth."""
+        """Normalizes the system importance weights to keep their average around 1.0."""
         if not self.system_weights:
             return
             
@@ -164,7 +210,7 @@ class HebbianIntegrator:
                     self.system_weights[system] /= avg
                     
     def _cleanup_old_activations(self) -> None:
-        """Remove activations outside temporal window."""
+        """Removes activations from the history that are outside the temporal window."""
         current_time = time.time()
         self.recent_activations = [
             act for act in self.recent_activations
@@ -172,17 +218,40 @@ class HebbianIntegrator:
         ]
         
     def get_system_weight(self, system_name: str) -> float:
-        """Get learned importance weight for a system."""
+        """Gets the learned importance weight for a given system.
+
+        Args:
+            system_name: The name of the system.
+
+        Returns:
+            The learned weight, or a default of 1.0 if the system is unknown.
+        """
         return self.system_weights.get(system_name, 1.0)
         
     def get_correlation(self, system_a: str, system_b: str) -> float:
-        """Get correlation strength between two systems."""
+        """Gets the learned correlation strength between two systems.
+
+        Args:
+            system_a: The name of the first system.
+            system_b: The name of the second system.
+
+        Returns:
+            The correlation strength, or 0.0 if no correlation has been learned.
+        """
         systems = tuple(sorted([system_a, system_b]))
         corr = self.correlations.get(systems)
         return corr.correlation_strength if corr else 0.0
         
     def get_synergistic_pairs(self, threshold: float = 1.0) -> List[Tuple[str, str, float]]:
-        """Get pairs of systems with strong positive correlations."""
+        """Finds all pairs of systems with a correlation strength above a given threshold.
+
+        Args:
+            threshold: The minimum correlation strength to be considered synergistic.
+
+        Returns:
+            A list of tuples, each containing the two system names and their
+            correlation strength, sorted from strongest to weakest.
+        """
         pairs = []
         for (sys_a, sys_b), corr in self.correlations.items():
             if corr.correlation_strength >= threshold:
@@ -194,7 +263,19 @@ class HebbianIntegrator:
         active_system: str,
         top_k: int = 3
     ) -> List[Tuple[str, float]]:
-        """Get systems that work well with the given active system."""
+        """Recommends other systems that are highly correlated with a given active system.
+
+        This can be used to decide which other modules to activate to support
+        the currently active one.
+
+        Args:
+            active_system: The name of the system that is currently active.
+            top_k: The maximum number of recommendations to return.
+
+        Returns:
+            A sorted list of tuples, each containing a recommended system name
+            and its correlation strength with the active system.
+        """
         recommendations = []
         
         for (sys_a, sys_b), corr in self.correlations.items():
@@ -206,7 +287,11 @@ class HebbianIntegrator:
         return sorted(recommendations, key=lambda x: x[1], reverse=True)[:top_k]
         
     def apply_hebbian_decay(self) -> None:
-        """Apply decay to all connections (synaptic pruning)."""
+        """Applies a decay factor to all correlation strengths and system weights.
+
+        This simulates synaptic pruning, where connections and neurons that are not
+        regularly reinforced will gradually weaken and may be removed.
+        """
         for corr in self.correlations.values():
             corr.correlation_strength *= (1.0 - self.decay_rate)
             
@@ -217,7 +302,12 @@ class HebbianIntegrator:
                 del self.system_weights[system]
                 
     def get_statistics(self) -> Dict[str, Any]:
-        """Get integration statistics."""
+        """Retrieves a dictionary of key statistics about the Hebbian network.
+
+        Returns:
+            A dictionary containing metrics like total activations, success rate,
+            and the number of tracked correlations.
+        """
         success_rate = (
             self.successful_integrations / self.total_activations
             if self.total_activations > 0
@@ -235,7 +325,7 @@ class HebbianIntegrator:
         }
         
     def print_status(self) -> None:
-        """Print current integration status."""
+        """Prints a formatted, human-readable status report of the Hebbian network to the console."""
         stats = self.get_statistics()
         
         print("\n" + "="*70)

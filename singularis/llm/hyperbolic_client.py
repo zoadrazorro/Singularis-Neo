@@ -10,7 +10,10 @@ from loguru import logger
 
 
 class HyperbolicClient:
-    """Async wrapper around Hyperbolic API."""
+    """
+    An asynchronous client for the Hyperbolic API, which provides access to
+    advanced language and vision models.
+    """
 
     def __init__(
         self,
@@ -20,6 +23,22 @@ class HyperbolicClient:
         base_url: str = "https://api.hyperbolic.xyz/v1",
         timeout: int = 300,  # Increased to 300s (5 minutes) for 235B parameter models
     ) -> None:
+        """
+        Initializes the HyperbolicClient.
+
+        Args:
+            api_key (Optional[str], optional): The Hyperbolic API key. If not
+                                             provided, it is read from the
+                                             HYPERBOLIC_API_KEY environment
+                                             variable. Defaults to None.
+            model (str, optional): The language model to use for text generation.
+                                   Defaults to "Qwen/Qwen3-235B-A22B-Instruct-2507".
+            vlm_model (str, optional): The vision-language model to use for image
+                                       analysis. Defaults to "Qwen/Qwen2.5-VL-72B-Instruct".
+            base_url (str, optional): The base URL for the Hyperbolic API.
+                                      Defaults to "https://api.hyperbolic.xyz/v1".
+            timeout (int, optional): The request timeout in seconds. Defaults to 300.
+        """
         self.api_key = api_key or os.getenv("HYPERBOLIC_API_KEY")
         self.model = model
         self.vlm_model = vlm_model
@@ -33,10 +52,17 @@ class HyperbolicClient:
         return self._session
 
     async def close(self) -> None:
+        """Closes the aiohttp session."""
         if self._session and not self._session.closed:
             await self._session.close()
 
     def is_available(self) -> bool:
+        """
+        Checks if the client is available to make requests.
+
+        Returns:
+            bool: True if an API key is configured, False otherwise.
+        """
         return bool(self.api_key)
 
     async def generate(
@@ -47,7 +73,27 @@ class HyperbolicClient:
         max_tokens: int = 4096,
         messages: Optional[List[Dict[str, str]]] = None,
     ) -> Dict[str, Any]:
-        """Send a chat completion request to Hyperbolic."""
+        """
+        Sends a chat completion request to the Hyperbolic API.
+
+        Args:
+            prompt (str): The user prompt.
+            system_prompt (Optional[str], optional): An optional system prompt.
+                                                          Defaults to None.
+            temperature (float, optional): The sampling temperature. Defaults to 0.7.
+            max_tokens (int, optional): The maximum number of tokens to generate.
+                                      Defaults to 4096.
+            messages (Optional[List[Dict[str, str]]], optional): A list of messages
+                                                                   to use instead of the
+                                                                   prompt. Defaults to None.
+
+        Raises:
+            RuntimeError: If the API key is not configured.
+
+        Returns:
+            Dict[str, Any]: A dictionary containing the generated content, usage
+                            statistics, and the raw API response.
+        """
 
         if not self.is_available():
             raise RuntimeError("Hyperbolic API key not configured (HYPERBOLIC_API_KEY)")
@@ -97,7 +143,20 @@ class HyperbolicClient:
         temperature: float = 0.7,
         max_tokens: int = 4096,
     ) -> str:
-        """Convenience helper returning only the generated text."""
+        """
+        A convenience method that calls the `generate` method and returns only
+        the generated text content.
+
+        Args:
+            prompt (str): The user prompt.
+            system_prompt (Optional[str], optional): The system prompt. Defaults to None.
+            temperature (float, optional): The sampling temperature. Defaults to 0.7.
+            max_tokens (int, optional): The maximum number of tokens to generate.
+                                      Defaults to 4096.
+
+        Returns:
+            str: The generated text.
+        """
 
         response = await self.generate(
             prompt=prompt,
@@ -115,16 +174,20 @@ class HyperbolicClient:
         max_tokens: int = 2048,
     ) -> str:
         """
-        Analyze image using vision model (Qwen2.5-VL-72B-Instruct).
-        
+        Analyzes an image using the vision-language model.
+
         Args:
-            prompt: Analysis prompt
-            image: PIL Image object
-            temperature: Sampling temperature
-            max_tokens: Maximum output tokens
-            
+            prompt (str): The prompt for the analysis.
+            image: The image to analyze (e.g., a PIL Image object).
+            temperature (float, optional): The sampling temperature. Defaults to 0.4.
+            max_tokens (int, optional): The maximum number of tokens to generate.
+                                      Defaults to 2048.
+
+        Raises:
+            RuntimeError: If the API key is not configured.
+
         Returns:
-            Analysis text
+            str: The analysis of the image.
         """
         if not self.is_available():
             raise RuntimeError("Hyperbolic API key not configured (HYPERBOLIC_API_KEY)")

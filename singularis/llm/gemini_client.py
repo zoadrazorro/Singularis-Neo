@@ -12,7 +12,12 @@ from loguru import logger
 
 
 class GeminiClient:
-    """Minimal async wrapper around the Gemini generative API."""
+    """
+    An asynchronous client for the Google Gemini API.
+
+    This class provides a minimal wrapper around the Gemini generative API,
+    with support for text and image analysis.
+    """
 
     def __init__(
         self,
@@ -21,6 +26,19 @@ class GeminiClient:
         base_url: str = "https://generativelanguage.googleapis.com/v1beta",
         timeout: int = 90,  # Increased from 60s for vision requests
     ) -> None:
+        """
+        Initializes the GeminiClient.
+
+        Args:
+            api_key (Optional[str], optional): The Gemini API key. If not provided,
+                                             it will be read from the GEMINI_API_KEY
+                                             environment variable. Defaults to None.
+            model (str, optional): The Gemini model to use.
+                                   Defaults to "gemini-2.0-flash-exp".
+            base_url (str, optional): The base URL for the Gemini API.
+                                      Defaults to "https://generativelanguage.googleapis.com/v1beta".
+            timeout (int, optional): The request timeout in seconds. Defaults to 90.
+        """
         self.api_key = api_key or os.getenv("GEMINI_API_KEY")
         self.model = model
         self.base_url = base_url.rstrip("/")
@@ -33,10 +51,17 @@ class GeminiClient:
         return self._session
 
     async def close(self) -> None:
+        """Closes the aiohttp session."""
         if self._session and not self._session.closed:
             await self._session.close()
 
     def is_available(self) -> bool:
+        """
+        Checks if the client is available to make requests.
+
+        Returns:
+            bool: True if an API key is configured, False otherwise.
+        """
         return bool(self.api_key)
 
     async def generate_text(
@@ -45,7 +70,18 @@ class GeminiClient:
         temperature: float = 0.4,
         max_output_tokens: int = 768,
     ) -> str:
-        """Text-only generation helper."""
+        """
+        Generates text using the Gemini API.
+
+        Args:
+            prompt (str): The prompt to send to the model.
+            temperature (float, optional): The sampling temperature. Defaults to 0.4.
+            max_output_tokens (int, optional): The maximum number of tokens to generate.
+                                             Defaults to 768.
+
+        Returns:
+            str: The generated text.
+        """
 
         response = await self._generate_content(
             contents=[{"role": "user", "parts": [{"text": prompt}]}],
@@ -62,7 +98,26 @@ class GeminiClient:
         max_output_tokens: int = 768,
         max_retries: int = 3,
     ) -> str:
-        """Send prompt + image to Gemini for multimodal analysis with retries."""
+        """
+        Analyzes an image with a prompt using the Gemini API.
+
+        This method handles the conversion of the image to base64 and includes
+        retry logic with exponential backoff for increased reliability.
+
+        Args:
+            prompt (str): The prompt to send with the image.
+            image: The image to analyze (e.g., a PIL Image object).
+            temperature (float, optional): The sampling temperature. Defaults to 0.4.
+            max_output_tokens (int, optional): The maximum number of tokens to generate.
+                                             Defaults to 768.
+            max_retries (int, optional): The maximum number of retries. Defaults to 3.
+
+        Raises:
+            RuntimeError: If the API key is not configured.
+
+        Returns:
+            str: The analysis of the image.
+        """
 
         if not self.is_available():
             raise RuntimeError("Gemini API key not configured (GEMINI_API_KEY)")

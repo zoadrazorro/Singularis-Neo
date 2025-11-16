@@ -17,38 +17,51 @@ from enum import Enum
 
 
 class EmergencyLevel(Enum):
-    """Severity of emergency situation."""
-    CRITICAL = 3  # Immediate override required
-    HIGH = 2      # Strong recommendation
-    MEDIUM = 1    # Suggestion
-    NONE = 0      # Normal operation
+    """Enumerates the severity levels of an emergency situation."""
+    CRITICAL = 3  # Immediate action override is required.
+    HIGH = 2      # Strong recommendation for an alternative action.
+    MEDIUM = 1    # Suggestion to modify behavior or re-evaluate.
+    NONE = 0      # Normal operation, no emergency.
 
 
 @dataclass
 class EmergencyResponse:
-    """Emergency response recommendation."""
+    """Represents a recommended response to a detected emergency.
+
+    Attributes:
+        level: The severity of the emergency.
+        action: The recommended action to take. Can be None if the response
+                is to modify confidence rather than override the action.
+        reason: A human-readable string explaining why the emergency was triggered.
+        confidence_modifier: A float multiplier to apply to the confidence score
+                             of the normally planned action.
+        override: If True, the recommended action should immediately replace any
+                  planned action.
+    """
     level: EmergencyLevel
     action: str
     reason: str
-    confidence_modifier: float  # Multiply action confidence
-    override: bool  # If True, skip normal planning
+    confidence_modifier: float
+    override: bool
 
 
 class EmergencyRules:
-    """
-    Emergency rule system for critical situations.
-    
-    These rules fire BEFORE expensive LLM reasoning and can override
-    normal planning when system is in a critical state.
+    """A system for detecting and responding to critical in-game situations.
+
+    These rules are designed to be fast checks that run before more complex
+    reasoning (like LLM calls). They can identify situations like being physically
+    stuck, system confusion (low coherence), or repeated failures, and can
+    override the normal planning process to force a recovery action.
     """
     
     def __init__(self):
+        """Initializes the emergency rule system with default thresholds."""
         self.stuck_cycle_threshold = 3
         self.low_coherence_threshold = 0.25
         self.visual_similarity_stuck_threshold = 0.95
         self.confidence_reduction_threshold = 0.5
         
-        # Tracking
+        # Tracking for stagnation detection
         self.cycles_since_strategy_change = 0
         self.last_strategy = None
     
@@ -56,20 +69,19 @@ class EmergencyRules:
         self,
         context: Dict[str, Any]
     ) -> Optional[EmergencyResponse]:
-        """
-        Evaluate if emergency response is needed.
-        
+        """Evaluates the current system context against a set of emergency rules.
+
+        The rules are checked in order of priority (critical, high, medium).
+        The first rule that matches the context returns an EmergencyResponse.
+
         Args:
-            context: System state including:
-                - visual_similarity: float
-                - recent_actions: List[str]
-                - coherence: float
-                - action_confidence: float
-                - sensorimotor_status: str
-                - cycles_since_change: int
-                
+            context: A dictionary containing the current state of the system.
+                     Expected keys include 'visual_similarity', 'recent_actions',
+                     'coherence', 'action_confidence', 'sensorimotor_status',
+                     and 'cycles_since_change'.
+
         Returns:
-            EmergencyResponse if emergency detected, None otherwise
+            An EmergencyResponse object if an emergency is detected, otherwise None.
         """
         # Check rules in priority order
         
@@ -101,16 +113,16 @@ class EmergencyRules:
         return None
     
     def _rule_stuck_visual(self, context: Dict[str, Any]) -> Optional[EmergencyResponse]:
-        """
-        CRITICAL: If stuck for N cycles with high visual similarity, force change.
-        
-        Rule:
-            visual_similarity > 0.95 AND
-            action_history has repeated actions AND
-            cycles_since_change > 3
-            
-        Response:
-            Emergency override with rotation or interaction
+        """CRITICAL: Detects if the agent is physically stuck.
+
+        This rule triggers if visual input has not changed significantly over
+        several cycles despite repeated movement attempts.
+
+        Args:
+            context: The system state context.
+
+        Returns:
+            An EmergencyResponse with a recovery action, or None.
         """
         visual_sim = context.get('visual_similarity', 0.0)
         recent_actions = context.get('recent_actions', [])
@@ -156,15 +168,16 @@ class EmergencyRules:
         return None
     
     def _rule_perception_action_mismatch(self, context: Dict[str, Any]) -> Optional[EmergencyResponse]:
-        """
-        HIGH: Sensorimotor reports STUCK but action planning continues normal movement.
-        
-        Rule:
-            sensorimotor_status == "STUCK" AND
-            last_action in movement actions
-            
-        Response:
-            Override with unstuck strategy
+        """HIGH: Detects a mismatch between low-level sensors and high-level plans.
+
+        Triggers if sensorimotor feedback indicates a "STUCK" state, but the
+        planner is still attempting to perform standard movements.
+
+        Args:
+            context: The system state context.
+
+        Returns:
+            An EmergencyResponse suggesting an interaction, or None.
         """
         sensorimotor_status = context.get('sensorimotor_status', '').upper()
         recent_actions = context.get('recent_actions', [])
@@ -187,15 +200,16 @@ class EmergencyRules:
         return None
     
     def _rule_repeated_failure(self, context: Dict[str, Any]) -> Optional[EmergencyResponse]:
-        """
-        HIGH: Same action repeated 4+ times with no progress.
-        
-        Rule:
-            action_history[-4:] all same action AND
-            coherence not improving
-            
-        Response:
-            Force different action
+        """HIGH: Detects if the same action is being repeated without progress.
+
+        Triggers if the last four actions were identical and system coherence
+        has not improved, indicating a failure loop.
+
+        Args:
+            context: The system state context.
+
+        Returns:
+            An EmergencyResponse forcing an orthogonal action, or None.
         """
         recent_actions = context.get('recent_actions', [])
         coherence_history = context.get('coherence_history', [])
@@ -231,15 +245,17 @@ class EmergencyRules:
         return None
     
     def _rule_low_coherence(self, context: Dict[str, Any]) -> Optional[EmergencyResponse]:
-        """
-        MEDIUM: System coherence < threshold, reduce action confidence.
-        
-        Rule:
-            system_coherence < 0.25 AND
-            action_confidence > 0.7
-            
-        Response:
-            Reduce confidence, request conscious oversight
+        """MEDIUM: Detects low system coherence, indicating confusion.
+
+        If the system's internal state coherence is below a threshold but its
+        action confidence is high, this rule reduces the confidence to prevent
+        overconfident actions while confused.
+
+        Args:
+            context: The system state context.
+
+        Returns:
+            An EmergencyResponse that modifies confidence, or None.
         """
         coherence = context.get('coherence', 1.0)
         action_confidence = context.get('action_confidence', 0.5)
@@ -257,14 +273,16 @@ class EmergencyRules:
         return None
     
     def _rule_strategy_stagnation(self, context: Dict[str, Any]) -> Optional[EmergencyResponse]:
-        """
-        MEDIUM: No strategy change for extended period.
-        
-        Rule:
-            cycles_since_change > 10
-            
-        Response:
-            Request re-evaluation
+        """MEDIUM: Detects if the agent's strategy has not changed for a while.
+
+        Triggers if the agent has been pursuing the same high-level strategy for
+        too many cycles, suggesting it might be stuck in a strategic rut.
+
+        Args:
+            context: The system state context.
+
+        Returns:
+            An EmergencyResponse suggesting re-evaluation, or None.
         """
         cycles_since_change = context.get('cycles_since_change', 0)
         
@@ -286,21 +304,17 @@ class EmergencyRules:
         last_action: Optional[str],
         available_actions: List[str]
     ) -> str:
-        """
-        Suggest an unstuck action based on what was tried last.
-        
-        Strategy:
-        1. If moving forward -> try activate (door/gate)
-        2. If moving backward -> try rotation
-        3. If rotating -> try jump
-        4. If jumping -> try opposite direction
-        
+        """Suggests a logical sequence of actions to try to get unstuck.
+
+        Based on the last action attempted, it follows a predefined preference
+        list (e.g., if moving forward failed, try 'activate', then 'turn_right').
+
         Args:
-            last_action: Last action attempted
-            available_actions: Actions currently available
-            
+            last_action: The last action that was attempted.
+            available_actions: A list of currently available actions.
+
         Returns:
-            Recommended unstuck action
+            The name of the recommended unstuck action.
         """
         preferences = {
             'move_forward': ['activate', 'turn_right', 'jump'],
@@ -329,7 +343,11 @@ class EmergencyRules:
         return available_actions[0] if available_actions else 'wait'
     
     def record_strategy_change(self, new_strategy: str):
-        """Record that strategy changed (resets cycle counter)."""
+        """Records a change in high-level strategy to reset the stagnation counter.
+
+        Args:
+            new_strategy: The name of the new strategy being adopted.
+        """
         if new_strategy != self.last_strategy:
             self.cycles_since_strategy_change = 0
             self.last_strategy = new_strategy

@@ -31,7 +31,16 @@ from loguru import logger
 
 @dataclass
 class CurriculumDocument:
-    """A document from the university curriculum."""
+    """Represents a single document from the university curriculum knowledge base.
+
+    Attributes:
+        text_id: A unique identifier for the text.
+        category: The academic category (e.g., 'Philosophy', 'Natural Sciences').
+        title: The title of the document.
+        content: The full text content of the document.
+        embedding: An optional numpy array for the document's semantic embedding.
+        metadata: A dictionary for any additional metadata, like file path.
+    """
     text_id: str
     category: str
     title: str
@@ -42,17 +51,24 @@ class CurriculumDocument:
 
 @dataclass
 class KnowledgeRetrieval:
-    """Retrieved knowledge from curriculum."""
+    """Represents a piece of retrieved knowledge from the curriculum.
+
+    Attributes:
+        document: The CurriculumDocument from which the knowledge was retrieved.
+        relevance_score: A float score indicating how relevant the document is to the query.
+        excerpt: A string containing the most relevant snippet of text from the document.
+    """
     document: CurriculumDocument
     relevance_score: float
-    excerpt: str  # Relevant excerpt from document
+    excerpt: str
 
 
 class CurriculumRAG:
-    """
-    RAG system for university curriculum knowledge.
-    
-    Provides academic knowledge retrieval to enhance AI intelligence.
+    """A Retrieval-Augmented Generation system for university curriculum knowledge.
+
+    This class loads, indexes, and retrieves information from a structured
+    collection of academic texts. It uses keyword matching and optional
+    semantic embeddings to find relevant knowledge to augment AI decision-making.
     """
     
     def __init__(
@@ -62,14 +78,14 @@ class CurriculumRAG:
         chunk_size: int = 2000,
         use_embeddings: bool = False
     ):
-        """
-        Initialize curriculum RAG system.
-        
+        """Initializes the CurriculumRAG system.
+
         Args:
-            curriculum_path: Path to curriculum directory
-            max_documents: Maximum documents to index
-            chunk_size: Size of text chunks for retrieval
-            use_embeddings: Use embeddings for similarity (requires sentence-transformers)
+            curriculum_path: The file path to the root of the curriculum directory.
+            max_documents: The maximum number of documents to load and index.
+            chunk_size: The size of text chunks to split documents into for retrieval.
+            use_embeddings: Whether to use sentence-transformer embeddings for similarity.
+                            (Note: Requires the 'sentence-transformers' library).
         """
         self.curriculum_path = Path(curriculum_path)
         self.max_documents = max_documents
@@ -96,7 +112,11 @@ class CurriculumRAG:
         logger.info(f"[CURRICULUM-RAG] Initializing with path: {curriculum_path}")
     
     def initialize(self):
-        """Load and index curriculum documents."""
+        """Loads and indexes the curriculum documents from the specified path.
+
+        Reads a manifest file, then loads, chunks, and indexes the text documents
+        by category and keywords.
+        """
         logger.info("[CURRICULUM-RAG] Loading university curriculum...")
         
         # Load manifest
@@ -109,7 +129,6 @@ class CurriculumRAG:
             manifest = json.load(f)
         
         completed = manifest.get('completed', [])
-        categories = manifest.get('categories', {})
         
         logger.info(f"[CURRICULUM-RAG] Found {len(completed)} completed texts")
         
@@ -165,17 +184,16 @@ class CurriculumRAG:
         categories: Optional[List[str]] = None,
         min_relevance: float = 0.3
     ) -> List[KnowledgeRetrieval]:
-        """
-        Retrieve relevant knowledge from curriculum.
-        
+        """Retrieves the most relevant knowledge from the curriculum based on a query.
+
         Args:
-            query: Query text
-            top_k: Number of results to return
-            categories: Filter by categories (None = all)
-            min_relevance: Minimum relevance threshold
-            
+            query: The text query to search for.
+            top_k: The maximum number of knowledge retrievals to return.
+            categories: An optional list of categories to restrict the search to.
+            min_relevance: The minimum relevance score for a result to be included.
+
         Returns:
-            List of knowledge retrievals
+            A list of KnowledgeRetrieval objects, sorted by relevance.
         """
         self.retrieval_count += 1
         
@@ -231,17 +249,17 @@ class CurriculumRAG:
         top_k: int = 2,
         categories: Optional[List[str]] = None
     ) -> str:
-        """
-        Augment a prompt with relevant curriculum knowledge.
-        
+        """Augments a given prompt with knowledge retrieved from the curriculum.
+
         Args:
-            base_prompt: Original prompt
-            knowledge_query: Query for knowledge (uses base_prompt if None)
-            top_k: Number of knowledge pieces to include
-            categories: Filter categories
-            
+            base_prompt: The original prompt to be augmented.
+            knowledge_query: The query to use for retrieval. If None, the
+                             base_prompt is used as the query.
+            top_k: The number of knowledge snippets to include.
+            categories: An optional list of categories to restrict the search to.
+
         Returns:
-            Augmented prompt with curriculum knowledge
+            The augmented prompt string with a "[RELEVANT ACADEMIC KNOWLEDGE]" section.
         """
         query = knowledge_query or base_prompt
         
@@ -268,21 +286,27 @@ class CurriculumRAG:
         category: str,
         max_docs: int = 5
     ) -> List[CurriculumDocument]:
-        """
-        Get documents from a specific category.
-        
+        """Retrieves all documents belonging to a specific category.
+
         Args:
-            category: Category name
-            max_docs: Maximum documents to return
-            
+            category: The name of the category to retrieve.
+            max_docs: The maximum number of documents to return from that category.
+
         Returns:
-            List of documents
+            A list of CurriculumDocument objects from the specified category.
         """
         doc_indices = self.category_index.get(category, [])
         return [self.documents[i] for i in doc_indices[:max_docs]]
     
     def _find_text_file(self, text_id: str) -> Optional[Path]:
-        """Find text file by ID."""
+        """Finds the text file corresponding to a given text ID.
+
+        Args:
+            text_id: The ID of the text to find.
+
+        Returns:
+            A Path object to the found file, or None if not found.
+        """
         # Search all category directories
         for category_dir in self.curriculum_path.iterdir():
             if not category_dir.is_dir():
@@ -295,13 +319,25 @@ class CurriculumRAG:
         return None
     
     def _format_title(self, text_id: str) -> str:
-        """Format text ID into readable title."""
+        """Formats a text_id string into a human-readable title.
+
+        Args:
+            text_id: The text ID string (e.g., 'philosophy_of_science').
+
+        Returns:
+            A formatted title string (e.g., 'Philosophy Of Science').
+        """
         # Convert underscores to spaces and capitalize
         parts = text_id.split('_')
         return ' '.join(word.capitalize() for word in parts)
     
     def _create_chunks(self, doc: CurriculumDocument, doc_idx: int):
-        """Create text chunks for better retrieval."""
+        """Splits a document's content into smaller chunks and stores them.
+
+        Args:
+            doc: The CurriculumDocument to process.
+            doc_idx: The index of the document in the main documents list.
+        """
         content = doc.content
         
         # Split into chunks
@@ -310,7 +346,12 @@ class CurriculumRAG:
             self.document_chunks.append((doc, chunk, i // self.chunk_size))
     
     def _index_keywords(self, doc: CurriculumDocument, doc_idx: int):
-        """Index important keywords from document."""
+        """Extracts and indexes keywords from a document's title and category.
+
+        Args:
+            doc: The CurriculumDocument to process.
+            doc_idx: The index of the document in the main documents list.
+        """
         # Extract significant words (simple approach)
         words = doc.title.lower().split() + doc.category.lower().split()
         
@@ -319,7 +360,14 @@ class CurriculumRAG:
                 self.keyword_index[word].append(doc_idx)
     
     def _extract_keywords(self, text: str) -> List[str]:
-        """Extract keywords from text."""
+        """Extracts a list of meaningful keywords from a text string.
+
+        Args:
+            text: The text to extract keywords from.
+
+        Returns:
+            A list of keyword strings.
+        """
         # Simple keyword extraction
         words = text.lower().split()
         
@@ -335,7 +383,19 @@ class CurriculumRAG:
         chunk_text: str,
         doc: CurriculumDocument
     ) -> float:
-        """Calculate relevance score between query and chunk."""
+        """Calculates a relevance score between a query and a text chunk.
+
+        The score is based on keyword matching, with bonuses for matches in the
+        document's title and category.
+
+        Args:
+            query_keywords: A list of keywords from the user query.
+            chunk_text: The text of the document chunk to score.
+            doc: The document the chunk belongs to.
+
+        Returns:
+            A relevance score between 0.0 and 1.0.
+        """
         score = 0.0
         
         # Keyword matching
@@ -357,7 +417,16 @@ class CurriculumRAG:
         return min(1.0, score)
     
     def _create_excerpt(self, chunk: str, keywords: List[str], context_chars: int = 400) -> str:
-        """Create relevant excerpt from chunk."""
+        """Creates a relevant excerpt from a chunk centered around query keywords.
+
+        Args:
+            chunk: The text chunk to extract from.
+            keywords: The list of query keywords to focus on.
+            context_chars: The desired number of characters for the excerpt.
+
+        Returns:
+            A formatted excerpt string.
+        """
         chunk_lower = chunk.lower()
         
         # Find best position (most keyword matches)
@@ -383,14 +452,14 @@ class CurriculumRAG:
         return excerpt.strip()
     
     def get_random_academic_thought(self) -> Optional[KnowledgeRetrieval]:
-        """
-        Retrieve a random academic thought using Brownian motion through knowledge space.
-        
-        Simulates spontaneous memory recall - like a random thought popping into consciousness.
-        Uses Brownian motion to wander through the knowledge graph naturally.
-        
+        """Retrieves a random academic thought using a simulated Brownian motion.
+
+        This method simulates a spontaneous memory recall by performing a random
+        walk through the indexed document chunks.
+
         Returns:
-            Random knowledge retrieval, or None if no documents available
+            A KnowledgeRetrieval object with a random excerpt, or None if no
+            documents are loaded.
         """
         if not self.document_chunks:
             return None
@@ -437,7 +506,12 @@ class CurriculumRAG:
         )
     
     def get_stats(self) -> Dict[str, Any]:
-        """Get RAG statistics."""
+        """Retrieves statistics about the indexed curriculum.
+
+        Returns:
+            A dictionary containing statistics like the number of indexed
+            documents, chunks, categories, and retrievals performed.
+        """
         return {
             'documents_indexed': len(self.documents),
             'chunks_created': len(self.document_chunks),
@@ -448,7 +522,7 @@ class CurriculumRAG:
         }
 
 
-# Predefined category mappings for common queries
+# Predefined category mappings for common queries to simplify targeted retrieval.
 CATEGORY_MAPPINGS = {
     'strategy': ['Philosophy Of Science', 'Logic & Reasoning', 'Political Theory'],
     'ethics': ['Ethics & Moral Philosophy', 'Religion & Theology', 'Philosophy'],

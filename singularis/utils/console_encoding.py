@@ -17,21 +17,19 @@ import io
 
 
 def ensure_utf8_console():
-    """
-    Ensure console uses UTF-8 encoding on Windows.
-    
-    This fixes UnicodeEncodeError when printing unicode characters, emojis,
-    or special symbols on Windows where the default console encoding is
-    often cp1252 instead of UTF-8.
-    
-    This function:
-    - Wraps sys.stdout and sys.stderr with UTF-8 TextIOWrapper on Windows
-    - Uses 'replace' error handling to avoid crashes on unprintable characters
-    - Is safe to call multiple times (idempotent)
-    - Does nothing on non-Windows platforms
-    
+    """Ensures that the console on Windows is configured to use UTF-8 encoding.
+
+    This function addresses common `UnicodeEncodeError` issues that occur when
+    printing unicode characters, emojis, or other special symbols to the Windows
+    console, which often defaults to a legacy codepage like `cp1252`.
+
+    On Windows, it wraps `sys.stdout` and `sys.stderr` with a `TextIOWrapper`
+    that forces UTF-8 encoding and uses 'replace' as the error handler to prevent
+    crashes from unprintable characters. The function is idempotent and has no
+    effect on non-Windows platforms.
+
     Returns:
-        bool: True if encoding was changed, False otherwise
+        bool: True if the console encoding was successfully changed, False otherwise.
     """
     if sys.platform != 'win32':
         return False
@@ -62,15 +60,15 @@ def ensure_utf8_console():
 
 
 def print_utf8(*args, **kwargs):
-    """
-    Print with UTF-8 encoding, falling back to ASCII if needed.
-    
-    This is a safer alternative to print() that handles encoding errors
-    gracefully by replacing unprintable characters.
-    
+    """A wrapper for the built-in `print` function that safely handles Unicode.
+
+    This function attempts to print the given arguments. If a `UnicodeEncodeError`
+    occurs, it falls back to encoding the message as UTF-8 with replacement
+    characters for any symbols that cannot be rendered, preventing crashes.
+
     Args:
-        *args: Arguments to print
-        **kwargs: Keyword arguments to pass to print()
+        *args: The objects to be printed, same as the built-in `print`.
+        **kwargs: Keyword arguments for the built-in `print`.
     """
     try:
         print(*args, **kwargs)
@@ -85,15 +83,20 @@ def print_utf8(*args, **kwargs):
 
 
 def safe_format_unicode(text: str, fallback: str = '[?]') -> str:
-    """
-    Safely format unicode text for console output.
-    
+    """Safely formats a string to prevent `UnicodeEncodeError` on console output.
+
+    On Windows, this function attempts to encode the string to the console's
+    detected encoding. If it fails, it falls back to a UTF-8 encoding with
+    replacement characters. On other platforms, it returns the original string.
+
     Args:
-        text: Text containing unicode characters
-        fallback: Replacement string for characters that can't be encoded
-        
+        text: The input string, which may contain unicode characters.
+        fallback: The string to use for characters that cannot be encoded.
+                  Note: The current implementation uses the default 'replace'
+                  behavior, which typically inserts a '?'.
+
     Returns:
-        str: Formatted text safe for console output
+        A string that is safe to print to the console.
     """
     if sys.platform != 'win32':
         return text
@@ -133,16 +136,17 @@ ASCII_EMOJI_MAP = {
 
 
 def replace_emojis_with_ascii(text: str) -> str:
-    """
-    Replace emojis and special unicode with ASCII equivalents.
-    
-    Useful for environments that don't support unicode at all.
-    
+    """Replaces common emojis and unicode symbols with ASCII-friendly equivalents.
+
+    This function is useful for logging or display in environments that have
+    poor or non-existent support for unicode characters.
+
     Args:
-        text: Text containing emojis and special characters
-        
+        text: The input string, which may contain emojis or special symbols.
+
     Returns:
-        str: Text with ASCII replacements
+        A new string with all recognized unicode symbols replaced by their
+        ASCII counterparts.
     """
     for emoji, ascii_equiv in ASCII_EMOJI_MAP.items():
         text = text.replace(emoji, ascii_equiv)

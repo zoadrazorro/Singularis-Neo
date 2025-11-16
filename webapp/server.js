@@ -1,5 +1,7 @@
 /**
- * WebSocket server for real-time learning progress monitoring
+ * @fileoverview This file sets up a WebSocket and HTTP server for real-time
+ * monitoring of the Singularis AGI's learning progress and live state. It
+ * serves data from JSON files to a web-based dashboard.
  */
 
 const express = require('express');
@@ -16,13 +18,16 @@ const PORT = 5000;
 const WS_PORT = 5001;
 const HOST = '0.0.0.0'; // Listen on all network interfaces
 
-// Path to learning progress file
+// Path to the JSON file containing learning progress data.
 const LEARNING_PROGRESS_PATH = path.join(__dirname, '..', 'learning_progress.json');
 
-// Path to Skyrim AGI live state file
+// Path to the JSON file containing the live state of the Skyrim AGI.
 const SKYRIM_STATE_PATH = path.join(__dirname, '..', 'skyrim_agi_state.json');
 
-// Store current progress
+/**
+ * Stores the current, in-memory state of the learning progress.
+ * @type {object}
+ */
 let currentProgress = {
   currentChunk: 0,
   totalChunks: 240,
@@ -37,7 +42,10 @@ let currentProgress = {
   lastUpdate: null,
 };
 
-// Parse learning progress from JSON file
+/**
+ * Parses the learning progress data from the `learning_progress.json` file.
+ * @returns {object} An object containing the structured learning progress data.
+ */
 function parseProgress() {
   try {
     if (!fs.existsSync(LEARNING_PROGRESS_PATH)) {
@@ -79,7 +87,11 @@ function parseProgress() {
   }
 }
 
-// Parse Skyrim AGI state from JSON file
+/**
+ * Parses the live state of the Skyrim AGI from the `skyrim_agi_state.json` file.
+ * @returns {object} An object containing the live state data, or an error message
+ * if the file is not available.
+ */
 function parseSkyrimState() {
   try {
     if (!fs.existsSync(SKYRIM_STATE_PATH)) {
@@ -106,16 +118,39 @@ function parseSkyrimState() {
 }
 
 // REST API endpoints
+
+/**
+ * @api {get} /api/progress Get Learning Progress
+ * @apiName GetProgress
+ * @apiGroup API
+ *
+ * @apiSuccess {Object} progress The current learning progress data.
+ */
 app.get('/api/progress', (req, res) => {
   const progress = parseProgress();
   res.json(progress);
 });
 
+/**
+ * @api {get} /api/skyrim Get Skyrim AGI State
+ * @apiName GetSkyrimState
+ * @apiGroup API
+ *
+ * @apiSuccess {Object} state The current live state of the Skyrim AGI.
+ */
 app.get('/api/skyrim', (req, res) => {
   const state = parseSkyrimState();
   res.json(state);
 });
 
+/**
+ * @api {get} /api/health Health Check
+ * @apiName GetHealth
+ * @apiGroup API
+ *
+ * @apiSuccess {String} status The status of the server ('ok').
+ * @apiSuccess {String} timestamp The current ISO timestamp.
+ */
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
@@ -128,7 +163,7 @@ app.listen(PORT, HOST, () => {
   console.log(`\nTo find your local IP, run: ipconfig (Windows) or ifconfig (Mac/Linux)`);
 });
 
-// WebSocket server for real-time updates
+// WebSocket server setup
 const wss = new WebSocket.Server({ 
   host: HOST,
   port: WS_PORT,
@@ -136,6 +171,11 @@ const wss = new WebSocket.Server({
   clientTracking: true
 });
 
+/**
+ * Handles new WebSocket connections.
+ * Determines the client's requested mode (learning monitor or Skyrim AGI)
+ * and sends the appropriate data at regular intervals.
+ */
 wss.on('connection', (ws, req) => {
   console.log('Client connected');
   

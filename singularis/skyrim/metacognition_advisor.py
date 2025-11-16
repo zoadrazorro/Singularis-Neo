@@ -6,10 +6,35 @@ from singularis.llm.openrouter_client import OpenRouterClient
 
 
 class MetaCognitionAdvisor:
+    """Provides high-level metacognitive analysis and long-term planning.
+
+    This class uses external large language models to reflect on the AGI's
+    overall state. It can generate short, diagnostic reports on the agent's
+    performance and propose multi-step, long-term plans to guide its behavior
+    over extended periods.
+    """
     def __init__(self, client: Optional[OpenRouterClient] = None) -> None:
+        """Initializes the MetaCognitionAdvisor.
+
+        Args:
+            client: An optional, pre-configured OpenRouterClient for making
+                    LLM API calls. If not provided, a new one is created.
+        """
         self.client = client or OpenRouterClient()
 
     async def metameta_report(self, snapshot: str) -> Optional[str]:
+        """Generates a high-level, short diagnostic report of the AGI's current state.
+
+        This "meta-meta" report aggregates information from all AGI layers to
+        identify trends, risks, and opportunities.
+
+        Args:
+            snapshot: A string containing a snapshot of the AGI's current state.
+
+        Returns:
+            A formatted string with the diagnostic report, or None if the
+            LLM call fails.
+        """
         if not self.client.is_available():
             return None
         system = (
@@ -31,6 +56,17 @@ class MetaCognitionAdvisor:
             return None
 
     async def deepseek_long_term_plan(self, snapshot: str) -> Optional[str]:
+        """Generates a concrete, 3-step long-term plan for the next 30-60 minutes.
+
+        This uses an LLM to propose a strategic plan focused on character
+        progression and safety.
+
+        Args:
+            snapshot: A string containing a summary of the AGI's current state.
+
+        Returns:
+            A formatted string with the 3-step plan, or None if the LLM call fails.
+        """
         if not self.client.is_available():
             return None
         system = (

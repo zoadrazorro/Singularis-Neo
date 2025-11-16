@@ -25,7 +25,7 @@ import numpy as np
 
 
 class RecoveryStatus(Enum):
-    """Status of a recovery attempt."""
+    """Enumerates the possible outcomes of a stuck recovery attempt."""
     PENDING = "pending"          # Recovery action issued, waiting to verify
     SUCCESS = "success"          # Visual state changed significantly
     PARTIAL = "partial"          # Small change, might need more attempts
@@ -35,7 +35,17 @@ class RecoveryStatus(Enum):
 
 @dataclass
 class StuckDetection:
-    """A detected stuck state."""
+    """Represents a single instance of the system detecting a "stuck" state.
+
+    Attributes:
+        timestamp: The time when the stuck state was detected.
+        visual_similarity: A score (0-1) indicating the similarity of the visual
+                           input to the previous state. A high value suggests no change.
+        repeated_action: The action that was being repeated, leading to the stuck state.
+        repeat_count: The number of consecutive times the action was repeated.
+        coherence: The system's epistemic coherence score at the time of detection.
+        location: The in-game location where the agent was stuck.
+    """
     timestamp: float
     visual_similarity: float  # How similar (0-1, 1.0 = identical)
     repeated_action: str
@@ -46,7 +56,24 @@ class StuckDetection:
 
 @dataclass
 class RecoveryAttempt:
-    """A single recovery attempt."""
+    """Tracks a single attempt to recover from a detected stuck state.
+
+    This class holds the state before and after the recovery action, and provides
+    a method to compute whether the attempt was successful based on the change in
+    visual similarity.
+
+    Attributes:
+        stuck_detection: The `StuckDetection` event that triggered this recovery attempt.
+        recovery_action: The action taken to try to get unstuck.
+        action_timestamp: The time the recovery action was initiated.
+        visual_before: The visual embedding before the recovery action.
+        visual_after: The visual embedding after the recovery action.
+        similarity_before: The visual similarity score before the attempt.
+        similarity_after: The visual similarity score calculated after the attempt.
+        status: The outcome of the recovery attempt, as a `RecoveryStatus` enum.
+        cycles_to_verify: The number of game cycles that passed before verification.
+        improvement: The measured decrease in visual similarity.
+    """
     stuck_detection: StuckDetection
     recovery_action: str
     action_timestamp: float
@@ -63,7 +90,13 @@ class RecoveryAttempt:
     improvement: float = 0.0  # How much similarity decreased
     
     def compute_success(self):
-        """Compute whether recovery was successful based on visual change."""
+        """Computes the success of the recovery attempt based on visual change.
+
+        This method calculates the cosine similarity between the visual states
+        before and after the recovery action. A significant decrease in similarity
+        indicates that the agent's view has changed, meaning it is likely unstuck.
+        The `status` and `improvement` attributes are updated based on this calculation.
+        """
         if self.visual_before is None or self.visual_after is None:
             self.status = RecoveryStatus.TIMEOUT
             return
@@ -89,14 +122,13 @@ class RecoveryAttempt:
 
 
 class StuckRecoveryTracker:
-    """
-    Tracks STUCK detection and recovery attempts.
-    
-    Monitors:
-    - Detection rate (how often we detect stuck)
-    - Recovery success rate (% of recoveries that work)
-    - Which actions work best for recovery
-    - Typical time to recover
+    """Tracks the detection of and recovery from "stuck" states.
+
+    This class logs when the AGI gets stuck (e.g., by repeating the same action
+    with no change in the visual state) and monitors the effectiveness of different
+    recovery actions. By analyzing which actions successfully lead to a change in
+    the visual state, the system can learn the most effective strategies for
+    getting unstuck in the future.
     """
     
     def __init__(
@@ -104,12 +136,12 @@ class StuckRecoveryTracker:
         verification_cycles: int = 3,
         max_history: int = 100
     ):
-        """
-        Initialize tracker.
-        
+        """Initializes the StuckRecoveryTracker.
+
         Args:
-            verification_cycles: How many cycles after recovery to check
-            max_history: Maximum recovery attempts to remember
+            verification_cycles: The number of game cycles to wait after a recovery
+                                 action before verifying its outcome.
+            max_history: The maximum number of recovery attempts to keep in memory.
         """
         self.verification_cycles = verification_cycles
         self.max_history = max_history
@@ -136,18 +168,17 @@ class StuckRecoveryTracker:
         coherence: float,
         location: str
     ) -> StuckDetection:
-        """
-        Record a STUCK detection.
-        
+        """Records a new "stuck" detection event.
+
         Args:
-            visual_similarity: Visual similarity score (0-1)
-            repeated_action: Action being repeated
-            repeat_count: How many times repeated
-            coherence: Current consciousness coherence
-            location: Current location
-            
+            visual_similarity: The visual similarity score (0-1) that triggered the detection.
+            repeated_action: The action that was being repeated.
+            repeat_count: The number of times the action was repeated.
+            coherence: The system's coherence score at the time of detection.
+            location: The in-game location where the agent is stuck.
+
         Returns:
-            StuckDetection object
+            A `StuckDetection` object representing the event.
         """
         detection = StuckDetection(
             timestamp=time.time(),
@@ -179,16 +210,15 @@ class StuckRecoveryTracker:
         recovery_action: str,
         visual_before: np.ndarray
     ) -> RecoveryAttempt:
-        """
-        Record a recovery attempt.
-        
+        """Records a new recovery attempt and adds it to the pending verification queue.
+
         Args:
-            detection: The stuck detection this is recovering from
-            recovery_action: Action being taken to recover
-            visual_before: Visual embedding before recovery
-            
+            detection: The `StuckDetection` event this attempt is addressing.
+            recovery_action: The action being taken to try to get unstuck.
+            visual_before: The visual embedding of the scene before the recovery action.
+
         Returns:
-            RecoveryAttempt object
+            A `RecoveryAttempt` object representing the attempt.
         """
         attempt = RecoveryAttempt(
             stuck_detection=detection,
@@ -219,12 +249,15 @@ class StuckRecoveryTracker:
         attempt: RecoveryAttempt,
         visual_after: np.ndarray
     ):
-        """
-        Verify if a recovery attempt succeeded.
-        
+        """Verifies the outcome of a pending recovery attempt.
+
+        This method is called after a set number of cycles to check if the
+        recovery action had the desired effect of changing the visual state. It
+        updates the attempt's status and the tracker's overall statistics.
+
         Args:
-            attempt: The recovery attempt to verify
-            visual_after: Visual embedding after recovery
+            attempt: The `RecoveryAttempt` to verify.
+            visual_after: The visual embedding of the scene after the recovery action.
         """
         attempt.visual_after = visual_after
         attempt.compute_success()
@@ -258,11 +291,15 @@ class StuckRecoveryTracker:
         print(f"   Cycles: {attempt.cycles_to_verify}")
     
     def tick_cycle(self, current_visual: Optional[np.ndarray] = None):
-        """
-        Advance cycle counter and verify pending recoveries.
-        
+        """Advances the tracker by one game cycle.
+
+        This method increments the cycle counter for all pending verifications
+        and triggers verification for any attempts that have reached the required
+        number of cycles.
+
         Args:
-            current_visual: Current visual embedding
+            current_visual: The current visual embedding, which will be used as the
+                            "after" state for any verifications triggered this tick.
         """
         if current_visual is None:
             return
@@ -283,11 +320,11 @@ class StuckRecoveryTracker:
                 self.pending_verifications.remove(attempt)
     
     def get_best_recovery_action(self) -> Optional[str]:
-        """
-        Get the recovery action with highest success rate.
-        
+        """Determines the most effective recovery action based on historical success rates.
+
         Returns:
-            Best recovery action, or None if no data
+            The name of the action with the highest success rate, or None if there
+            is no historical data.
         """
         if not self.action_success_rates:
             return None
@@ -305,7 +342,12 @@ class StuckRecoveryTracker:
         return best_action
     
     def get_stats(self) -> dict:
-        """Get recovery statistics."""
+        """Retrieves a dictionary of the tracker's current statistics.
+
+        Returns:
+            A dictionary containing statistics on detections, recoveries, success rates,
+            and action effectiveness.
+        """
         return {
             'total_detections': self.total_detections,
             'total_recoveries': self.total_recoveries,
@@ -321,7 +363,7 @@ class StuckRecoveryTracker:
         }
     
     def print_summary(self):
-        """Print a summary of recovery tracking."""
+        """Prints a formatted summary of the stuck recovery statistics to the console."""
         stats = self.get_stats()
         
         print("\n" + "=" * 70)

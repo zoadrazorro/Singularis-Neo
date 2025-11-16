@@ -36,7 +36,7 @@ except ImportError:
 
 
 class XboxButton(Enum):
-    """Xbox 360 controller buttons."""
+    """Enumerates the buttons on an Xbox 360 controller."""
     A = "A"
     B = "B"
     X = "X"
@@ -59,7 +59,7 @@ class XboxButton(Enum):
 
 
 class XboxAxis(Enum):
-    """Xbox 360 controller axes."""
+    """Enumerates the analog axes on an Xbox 360 controller."""
     LEFT_STICK_X = "LEFT_STICK_X"
     LEFT_STICK_Y = "LEFT_STICK_Y"
     RIGHT_STICK_X = "RIGHT_STICK_X"
@@ -70,21 +70,43 @@ class XboxAxis(Enum):
 
 @dataclass
 class StickState:
-    """State of an analog stick."""
+    """Represents the state of an analog stick, including its position and deadzone.
+
+    Attributes:
+        x: The horizontal position of the stick, from -1.0 (left) to 1.0 (right).
+        y: The vertical position of the stick, from -1.0 (down) to 1.0 (up).
+        deadzone: The size of the deadzone, where smaller movements are ignored.
+    """
     x: float = 0.0  # -1.0 to 1.0
     y: float = 0.0  # -1.0 to 1.0
     deadzone: float = 0.15
     
     def get_magnitude(self) -> float:
-        """Get magnitude of stick deflection."""
+        """Calculates the magnitude of the stick's deflection from the center.
+
+        Returns:
+            The magnitude, in a range of [0, sqrt(2)].
+        """
         return math.sqrt(self.x**2 + self.y**2)
     
     def get_angle(self) -> float:
-        """Get angle in radians."""
+        """Calculates the angle of the stick's deflection in radians.
+
+        Returns:
+            The angle in radians.
+        """
         return math.atan2(self.y, self.x)
     
     def apply_deadzone(self) -> Tuple[float, float]:
-        """Apply circular deadzone."""
+        """Applies a circular deadzone to the stick's position.
+
+        If the stick's deflection is within the deadzone, it returns (0, 0).
+        Otherwise, it rescales the output to ensure a smooth transition from
+        the edge of the deadzone to the maximum deflection.
+
+        Returns:
+            A tuple (x, y) with the deadzone applied.
+        """
         magnitude = self.get_magnitude()
         if magnitude < self.deadzone:
             return 0.0, 0.0
@@ -98,12 +120,24 @@ class StickState:
 
 @dataclass
 class TriggerState:
-    """State of a trigger."""
+    """Represents the state of an analog trigger.
+
+    Attributes:
+        value: The trigger's depression, from 0.0 (released) to 1.0 (fully pressed).
+        deadzone: The initial portion of the trigger's range that is ignored.
+    """
     value: float = 0.0  # 0.0 to 1.0
     deadzone: float = 0.05
     
     def apply_deadzone(self) -> float:
-        """Apply trigger deadzone."""
+        """Applies a deadzone to the trigger's value.
+
+        If the trigger's depression is within the deadzone, it returns 0.0.
+        Otherwise, it rescales the output to provide a smooth transition.
+
+        Returns:
+            The trigger value with the deadzone applied.
+        """
         if self.value < self.deadzone:
             return 0.0
         return (self.value - self.deadzone) / (1.0 - self.deadzone)
@@ -111,11 +145,19 @@ class TriggerState:
 
 @dataclass
 class ActionLayer:
-    """
-    Steam Input-style action layer.
-    
-    An action layer is a set of bindings that can be activated/deactivated.
-    For example: "Combat" layer, "Menu Navigation" layer, "Exploration" layer.
+    """Represents a Steam Input-style action layer.
+
+    An action layer is a collection of bindings that can be dynamically activated
+    or deactivated. This allows for context-sensitive control schemes, such as
+    having different button mappings for combat, menu navigation, and exploration.
+
+    Attributes:
+        name: The name of the action layer.
+        bindings: A dictionary mapping action names to their corresponding
+                  controller inputs or callbacks.
+        active: A boolean indicating if the layer is currently active.
+        priority: The priority of the layer, where higher priority layers
+                  override the bindings of lower priority layers.
     """
     name: str
     bindings: Dict[str, Any] = field(default_factory=dict)
@@ -124,14 +166,20 @@ class ActionLayer:
 
 
 class VirtualXboxController:
-    """
-    Virtual Xbox 360 controller with Steam Input-style features.
-    
-    This class provides:
-    1. Low-level controller emulation (buttons, sticks, triggers)
-    2. High-level action layers (like Steam Input)
-    3. Smooth analog input with proper deadzones
-    4. Input recording and playback
+    """A virtual Xbox 360 controller with advanced features like action layers.
+
+    This class provides a high-level interface for controlling games that support
+    Xbox 360 controllers. It emulates a real controller, allowing for more natural
+    and fluid input than traditional keyboard and mouse simulation. It also
+    incorporates a Steam Input-style action layer system for creating flexible,
+    context-aware control schemes.
+
+    Key features include:
+    - Emulation of all standard Xbox 360 controller inputs.
+    - An action layer system for dynamic rebinding.
+    - Smooth analog input with deadzone handling.
+    - Methods for complex actions like smooth stick movements and button taps.
+    - Input recording and playback for testing and automation.
     """
     
     def __init__(
@@ -141,14 +189,13 @@ class VirtualXboxController:
         sensitivity: float = 1.0,
         dry_run: bool = False
     ):
-        """
-        Initialize virtual controller.
-        
+        """Initializes the virtual controller.
+
         Args:
-            deadzone_stick: Deadzone for analog sticks (0.0-1.0)
-            deadzone_trigger: Deadzone for triggers (0.0-1.0)
-            sensitivity: Global sensitivity multiplier
-            dry_run: Don't actually send input (for testing)
+            deadzone_stick: The deadzone for the analog sticks, in a range of [0.0, 1.0].
+            deadzone_trigger: The deadzone for the triggers, in a range of [0.0, 1.0].
+            sensitivity: A global sensitivity multiplier for analog inputs.
+            dry_run: If True, controller inputs will be logged but not actually sent.
         """
         self.dry_run = dry_run
         self.sensitivity = sensitivity
@@ -191,7 +238,11 @@ class VirtualXboxController:
     # === Low-level input methods ===
     
     def press_button(self, button: XboxButton):
-        """Press a button."""
+        """Presses and holds a controller button.
+
+        Args:
+            button: The button to press.
+        """
         if self.dry_run:
             print(f"[DRY RUN] Press {button.value}")
             return
@@ -227,7 +278,11 @@ class VirtualXboxController:
             self._record_input('button_press', {'button': button.value})
     
     def release_button(self, button: XboxButton):
-        """Release a button."""
+        """Releases a controller button.
+
+        Args:
+            button: The button to release.
+        """
         if self.dry_run:
             print(f"[DRY RUN] Release {button.value}")
             return
@@ -262,7 +317,12 @@ class VirtualXboxController:
             self._record_input('button_release', {'button': button.value})
     
     async def tap_button(self, button: XboxButton, duration: float = 0.1):
-        """Tap a button (press and release)."""
+        """Simulates a quick tap of a button (press and release).
+
+        Args:
+            button: The button to tap.
+            duration: The duration for which to hold the button down.
+        """
         if not self.dry_run:
             print(f"[VGAMEPAD] Tapping {button.value} button")
         self.press_button(button)
@@ -270,12 +330,11 @@ class VirtualXboxController:
         self.release_button(button)
     
     def set_left_stick(self, x: float, y: float):
-        """
-        Set left stick position.
-        
+        """Sets the position of the left analog stick.
+
         Args:
-            x: Horizontal position (-1.0 to 1.0, left to right)
-            y: Vertical position (-1.0 to 1.0, down to up)
+            x: The horizontal position, from -1.0 (left) to 1.0 (right).
+            y: The vertical position, from -1.0 (down) to 1.0 (up).
         """
         self.left_stick.x = max(-1.0, min(1.0, x * self.sensitivity))
         self.left_stick.y = max(-1.0, min(1.0, y * self.sensitivity))
@@ -301,12 +360,11 @@ class VirtualXboxController:
         self._record_input('left_stick', {'x': x, 'y': y})
     
     def set_right_stick(self, x: float, y: float):
-        """
-        Set right stick position.
-        
+        """Sets the position of the right analog stick.
+
         Args:
-            x: Horizontal position (-1.0 to 1.0, left to right)
-            y: Vertical position (-1.0 to 1.0, down to up)
+            x: The horizontal position, from -1.0 (left) to 1.0 (right).
+            y: The vertical position, from -1.0 (down) to 1.0 (up).
         """
         self.right_stick.x = max(-1.0, min(1.0, x * self.sensitivity))
         self.right_stick.y = max(-1.0, min(1.0, y * self.sensitivity))
@@ -332,11 +390,10 @@ class VirtualXboxController:
         self._record_input('right_stick', {'x': x, 'y': y})
     
     def set_left_trigger(self, value: float):
-        """
-        Set left trigger value.
-        
+        """Sets the depression level of the left trigger.
+
         Args:
-            value: Trigger value (0.0 to 1.0)
+            value: The trigger depression, from 0.0 (released) to 1.0 (fully pressed).
         """
         self.left_trigger.value = max(0.0, min(1.0, value))
         
@@ -360,11 +417,10 @@ class VirtualXboxController:
         self._record_input('left_trigger', {'value': value})
     
     def set_right_trigger(self, value: float):
-        """
-        Set right trigger value.
-        
+        """Sets the depression level of the right trigger.
+
         Args:
-            value: Trigger value (0.0 to 1.0)
+            value: The trigger depression, from 0.0 (released) to 1.0 (fully pressed).
         """
         self.right_trigger.value = max(0.0, min(1.0, value))
         
@@ -388,7 +444,7 @@ class VirtualXboxController:
         self._record_input('right_trigger', {'value': value})
     
     def reset(self):
-        """Reset all inputs to neutral."""
+        """Resets all controller inputs to their neutral positions."""
         # Release all buttons
         for button in list(self.buttons_pressed):
             self.release_button(button)
@@ -402,26 +458,24 @@ class VirtualXboxController:
     # === High-level convenience methods ===
     
     async def move(self, x: float, y: float, duration: float = 1.0):
-        """
-        Move using left stick for specified duration.
-        
+        """Moves the character using the left stick for a specified duration.
+
         Args:
-            x: Horizontal movement (-1.0 to 1.0)
-            y: Vertical movement (-1.0 to 1.0)
-            duration: How long to hold the stick
+            x: The horizontal movement, from -1.0 to 1.0.
+            y: The vertical movement, from -1.0 to 1.0.
+            duration: The duration to hold the stick in position.
         """
         self.set_left_stick(x, y)
         await asyncio.sleep(duration)
         self.set_left_stick(0, 0)
     
     async def look(self, x: float, y: float, duration: float = 0.5):
-        """
-        Look using right stick for specified duration.
-        
+        """Moves the camera using the right stick for a specified duration.
+
         Args:
-            x: Horizontal look (-1.0 to 1.0)
-            y: Vertical look (-1.0 to 1.0)
-            duration: How long to hold the stick
+            x: The horizontal look, from -1.0 to 1.0.
+            y: The vertical look, from -1.0 to 1.0.
+            duration: The duration to hold the stick in position.
         """
         self.set_right_stick(x, y)
         await asyncio.sleep(duration)
@@ -435,15 +489,16 @@ class VirtualXboxController:
         duration: float = 0.5,
         steps: int = 20
     ):
-        """
-        Smoothly move a stick to target position.
-        
+        """Smoothly moves an analog stick from its current position to a target position.
+
+        This method is useful for creating more natural, human-like analog inputs.
+
         Args:
-            stick: 'left' or 'right'
-            target_x: Target X position
-            target_y: Target Y position
-            duration: Time to reach target
-            steps: Number of interpolation steps
+            stick: The stick to move ('left' or 'right').
+            target_x: The target horizontal position.
+            target_y: The target vertical position.
+            duration: The time to take to reach the target position.
+            steps: The number of interpolation steps to use for the movement.
         """
         current_x = self.left_stick.x if stick == 'left' else self.right_stick.x
         current_y = self.left_stick.y if stick == 'left' else self.right_stick.y
@@ -468,56 +523,66 @@ class VirtualXboxController:
     # === Steam Input-style Action Layers ===
     
     def create_action_layer(self, name: str, priority: int = 0) -> ActionLayer:
-        """
-        Create a new action layer.
-        
+        """Creates a new action layer.
+
         Args:
-            name: Layer name (e.g., "Combat", "Menu", "Exploration")
-            priority: Layer priority (higher overrides lower)
-        
+            name: The name of the layer (e.g., "Combat", "Menu").
+            priority: The priority of the layer, where higher values override lower ones.
+
         Returns:
-            Created action layer
+            The newly created ActionLayer object.
         """
         layer = ActionLayer(name=name, priority=priority)
         self.action_layers[name] = layer
         return layer
     
     def activate_layer(self, name: str):
-        """Activate an action layer."""
+        """Activates an action layer.
+
+        Args:
+            name: The name of the layer to activate.
+        """
         if name in self.action_layers:
             self.action_layers[name].active = True
             self.active_layer = name
             print(f"* Activated layer: {name}")
     
     def deactivate_layer(self, name: str):
-        """Deactivate an action layer."""
+        """Deactivates an action layer.
+
+        Args:
+            name: The name of the layer to deactivate.
+        """
         if name in self.action_layers:
             self.action_layers[name].active = False
             if self.active_layer == name:
                 self.active_layer = None
     
     def bind_action(self, layer_name: str, action_name: str, binding: Any):
-        """
-        Bind an action to a layer.
-        
+        """Binds an action to a specific input or callback within an action layer.
+
         Args:
-            layer_name: Name of the layer
-            action_name: Name of the action (e.g., "jump", "attack")
-            binding: Button or combination to bind
+            layer_name: The name of the layer to bind the action to.
+            action_name: The name of the action (e.g., "jump", "attack").
+            binding: The controller input (e.g., an XboxButton) or a callable
+                     to execute for this action.
         """
         if layer_name in self.action_layers:
             self.action_layers[layer_name].bindings[action_name] = binding
     
     async def execute_action(self, action_name: str, duration: float = 0.0) -> bool:
-        """
-        Execute a named action from the active layer.
-        
+        """Executes a named action from the currently active action layer(s).
+
+        This method searches for the action in all active layers, respecting their
+        priorities, and executes the corresponding binding.
+
         Args:
-            action_name: Name of the action to execute
-            duration: Duration for movement/hold actions (ignored for taps)
-        
+            action_name: The name of the action to execute.
+            duration: The duration for actions that involve holding an input, such as
+                      moving a stick.
+
         Returns:
-            Success status
+            True if the action was found and executed, False otherwise.
         """
         # Find action in active layers (by priority)
         sorted_layers = sorted(
@@ -544,25 +609,29 @@ class VirtualXboxController:
     # === Input Recording ===
     
     def start_recording(self):
-        """Start recording inputs."""
+        """Starts recording controller inputs."""
         self.recording = []
         self.is_recording = True
         self.record_start_time = time.time()
         print("OK Started recording inputs")
     
     def stop_recording(self) -> List[Dict[str, Any]]:
-        """
-        Stop recording and return recorded inputs.
-        
+        """Stops recording and returns the recorded input events.
+
         Returns:
-            List of recorded input events
+            A list of recorded input events.
         """
         self.is_recording = False
         print(f"OK Stopped recording ({len(self.recording)} events)")
         return self.recording
     
     def _record_input(self, input_type: str, data: Dict[str, Any]):
-        """Record an input event."""
+        """Records a single input event if recording is active.
+
+        Args:
+            input_type: The type of input (e.g., "button_press").
+            data: A dictionary of data associated with the input.
+        """
         if self.is_recording:
             timestamp = time.time() - self.record_start_time
             self.recording.append({
@@ -572,11 +641,14 @@ class VirtualXboxController:
             })
     
     async def playback_recording(self, recording: Optional[List[Dict[str, Any]]] = None):
-        """
-        Play back recorded inputs.
-        
+        """Plays back a sequence of recorded inputs.
+
+        This method replays the recorded inputs with the same timing as the
+        original recording.
+
         Args:
-            recording: Recording to play back (uses last recording if None)
+            recording: The list of input events to play back. If None, the
+                       last recording is used.
         """
         if recording is None:
             recording = self.recording
@@ -617,7 +689,11 @@ class VirtualXboxController:
     # === Statistics ===
     
     def get_stats(self) -> Dict[str, Any]:
-        """Get controller statistics."""
+        """Retrieves statistics about the controller's operation.
+
+        Returns:
+            A dictionary of statistics.
+        """
         return {
             **self.stats,
             'vgamepad_available': VGAMEPAD_AVAILABLE,
@@ -629,7 +705,7 @@ class VirtualXboxController:
         }
     
     def __del__(self):
-        """Cleanup on deletion."""
+        """Performs cleanup when the controller object is deleted."""
         if self.gamepad:
             try:
                 self.reset()

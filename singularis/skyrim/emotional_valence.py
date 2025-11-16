@@ -32,21 +32,11 @@ from ..core.types import Affect
 
 
 class AffectType(Enum):
-    """
-    Primary affect types from ETHICA Part IV.
+    """Enumerates the primary and derived affect types based on Spinoza's Ethics.
 
-    Basic affects:
-    - JOY: Increase in power to act
-    - SADNESS: Decrease in power to act
-    - DESIRE: Drive toward something
-
-    Derived affects:
-    - HOPE: Joy mixed with doubt
-    - FEAR: Sadness mixed with doubt
-    - LOVE: Joy with external cause
-    - HATRED: Sadness with external cause
-    - COURAGE: Joy overcoming danger
-    - DESPAIR: Overwhelming sadness
+    The basic affects (JOY, SADNESS, DESIRE) represent fundamental changes in
+    the agent's power to act. Derived affects (HOPE, FEAR, etc.) are more
+    complex combinations of these basic affects with cognitive context.
     """
     JOY = "joy"
     SADNESS = "sadness"
@@ -62,48 +52,63 @@ class AffectType(Enum):
 
 @dataclass
 class ValenceState:
+    """Represents the complete emotional valence state at a moment in time.
+
+    This dataclass tracks the agent's current affective state using Spinozist
+    components, including the core valence, its recent change, the dominant
+    affect type, and whether the affect is active or passive.
+
+    Attributes:
+        valence: The current emotional charge, an unbounded float.
+        valence_delta: The most recent change in valence.
+        affect_type: The dominant classified AffectType.
+        is_active: True if the affect is 'active' (driven by understanding),
+                   False if 'passive' (driven by external forces).
+        adequacy: The adequacy of ideas (a measure of understanding), from 0 to 1.
+        coherence_delta: The associated change in system coherence (Δ𝒞).
+        valence_history: A list tracking the recent trajectory of the valence.
+        affect_stability: A measure of how stable the current affect is (0-1).
+        component_affects: A dictionary of co-occurring affects and their intensities.
     """
-    Complete emotional valence state.
-
-    Tracks current affective state with all Spinozist components.
-    """
-    valence: float  # Current emotional charge (unbounded)
-    valence_delta: float  # Recent change in valence
-    affect_type: AffectType  # Dominant affect
-    is_active: bool  # Active (understanding) vs Passive (external)
-    adequacy: float  # Current adequacy of ideas (0-1)
-    coherence_delta: float  # Associated Δ𝒞
-
-    # Temporal tracking
-    valence_history: List[float]  # Recent valence trajectory
-    affect_stability: float  # How stable is current affect (0-1)
-
-    # Component affects (for complex emotions)
-    component_affects: Dict[str, float]  # Multiple simultaneous affects
+    valence: float
+    valence_delta: float
+    affect_type: AffectType
+    is_active: bool
+    adequacy: float
+    coherence_delta: float
+    valence_history: List[float]
+    affect_stability: float
+    component_affects: Dict[str, float]
 
     def __post_init__(self):
-        """Ensure valence history is initialized."""
+        """Ensures valence_history is initialized if not provided."""
         if not self.valence_history:
             self.valence_history = [self.valence]
 
     def get_dominant_affect(self) -> AffectType:
-        """Get the dominant affect type."""
+        """Returns the dominant affect type for the current state."""
         return self.affect_type
 
     def is_ethical_affect(self) -> bool:
-        """
-        Check if affect is ethically positive.
+        """Checks if the current affect is ethically positive, according to Spinoza.
 
-        From ETHICA: Active affects with Δ𝒞 > 0 are ethical.
+        An affect is considered ethical if it is 'active' (stems from understanding)
+        and corresponds to an increase in system coherence.
+
+        Returns:
+            True if the affect is active and coherence delta is positive.
         """
         return self.is_active and self.coherence_delta > 0
 
     def get_power_to_act(self) -> float:
-        """
-        Estimate current power to act from valence.
+        """Estimates the agent's current power of acting based on its valence.
 
-        From ETHICA: Joy increases power, sadness decreases it.
-        Normalized to [0, 1] range.
+        Following Spinoza, 'Joy' is an increase in the power to act, and 'Sadness'
+        is a decrease. This method maps the unbounded valence value to a
+        normalized [0, 1] range using a sigmoid function.
+
+        Returns:
+            A float between 0 and 1 representing the power to act.
         """
         # Transform unbounded valence to bounded power estimate
         # Use sigmoid to map ℝ → (0, 1)
@@ -111,19 +116,20 @@ class ValenceState:
 
 
 class EmotionalValenceComputer:
-    """
-    Computes emotional valence from game events and state changes.
+    """Computes emotional valence based on Spinozist affect theory.
 
-    Uses Spinozist affect theory to generate genuine emotional responses
-    based on coherence dynamics, adequacy, and game events.
+    This class processes game events, state changes, and internal cognitive metrics
+    (coherence and adequacy) to generate a rich, continuous emotional valence
+    state for the AGI.
     """
 
     def __init__(self, adequacy_threshold: float = 0.70):
-        """
-        Initialize emotional valence computer.
+        """Initializes the EmotionalValenceComputer.
 
         Args:
-            adequacy_threshold: Threshold for active vs passive affects (θ)
+            adequacy_threshold: The threshold (θ) for determining if an affect
+                                is 'active' (driven by understanding) versus
+                                'passive' (driven by external forces).
         """
         self.adequacy_threshold = adequacy_threshold
 
@@ -190,19 +196,22 @@ class EmotionalValenceComputer:
         events: Optional[List[str]] = None,
         context: Optional[Dict[str, Any]] = None
     ) -> ValenceState:
-        """
-        Compute emotional valence from current game state and events.
+        """Computes the full emotional valence state for the current time step.
+
+        This is the main method of the class. It integrates valence contributions
+        from game events, state changes, and internal coherence dynamics, then
+        classifies the resulting affect.
 
         Args:
-            game_state: Current game state
-            previous_state: Previous game state (for delta computation)
-            coherence_delta: Change in coherence (Δ𝒞)
-            adequacy: Current adequacy of ideas (Adeq)
-            events: List of game events that occurred
-            context: Optional additional context
+            game_state: The current game state dictionary.
+            previous_state: The game state from the previous time step.
+            coherence_delta: The change in system coherence (Δ𝒞).
+            adequacy: The current adequacy of ideas (a measure of understanding).
+            events: A list of discrete game event strings that occurred.
+            context: Optional additional context dictionary.
 
         Returns:
-            ValenceState with complete affective information
+            A ValenceState object containing the complete affective information.
         """
         events = events or []
         context = context or {}
@@ -277,7 +286,14 @@ class EmotionalValenceComputer:
         return valence_state
 
     def _compute_event_valence(self, events: List[str]) -> float:
-        """Compute valence change from game events."""
+        """Computes the total valence change from a list of discrete game events.
+
+        Args:
+            events: A list of event strings (e.g., 'enemy_killed').
+
+        Returns:
+            The summed valence change from all recognized events.
+        """
         total = 0.0
         for event in events:
             if event in self.event_weights:
@@ -289,7 +305,18 @@ class EmotionalValenceComputer:
         current: Dict[str, Any],
         previous: Optional[Dict[str, Any]]
     ) -> float:
-        """Compute valence from state changes."""
+        """Computes valence change by comparing current and previous game states.
+
+        This captures emotional responses to continuous changes like health loss,
+        resource gain, or an increase in nearby enemies.
+
+        Args:
+            current: The current game state dictionary.
+            previous: The previous game state dictionary.
+
+        Returns:
+            The calculated valence change based on state deltas.
+        """
         if not previous:
             return 0.0
 
@@ -347,10 +374,20 @@ class EmotionalValenceComputer:
         game_state: Dict[str, Any],
         adequacy: float
     ) -> AffectType:
-        """
-        Classify the dominant affect type.
+        """Classifies the dominant affect type based on the current affective state.
 
-        Uses Spinozist taxonomy of affects from ETHICA Part IV.
+        This method uses a decision tree based on Spinoza's taxonomy of affects,
+        considering valence, context (like being in combat), and internal metrics.
+
+        Args:
+            valence: The current emotional valence.
+            valence_delta: The recent change in valence.
+            coherence_delta: The recent change in coherence.
+            game_state: The current game state dictionary.
+            adequacy: The current adequacy of ideas.
+
+        Returns:
+            The classified AffectType enum.
         """
         # Threshold for significant affect
         threshold = 0.10
@@ -401,20 +438,30 @@ class EmotionalValenceComputer:
             return AffectType.NEUTRAL
 
     def _is_active_affect(self, adequacy: float, coherence_delta: float) -> bool:
-        """
-        Determine if affect is active (from understanding) or passive (external).
+        """Determines if an affect is 'active' or 'passive'.
 
-        From MATHEMATICA D6:
-        Active iff Adeq ≥ θ AND Δ𝒞 ≥ 0
+        Based on Spinozist theory, an affect is 'active' if it stems from
+        understanding (high adequacy) and corresponds to an increase in the
+        system's power (positive coherence delta). Otherwise, it is 'passive'.
+
+        Args:
+            adequacy: The current adequacy of ideas.
+            coherence_delta: The current change in coherence.
+
+        Returns:
+            True if the affect is active, False if passive.
         """
         return adequacy >= self.adequacy_threshold and coherence_delta >= 0
 
     def _compute_affect_stability(self) -> float:
-        """
-        Compute how stable the current affect is.
+        """Computes the stability of the current affect.
 
-        High stability means emotion is consistent over time.
-        Low stability means volatile/fluctuating emotions.
+        Stability is determined by the variance of recent valence values. Low
+        variance indicates a stable, consistent emotion, while high variance
+        indicates volatile or fluctuating emotions.
+
+        Returns:
+            A stability score between 0.0 and 1.0.
         """
         if len(self.valence_history) < 5:
             return 0.5  # Default
@@ -432,10 +479,19 @@ class EmotionalValenceComputer:
         coherence_delta: float,
         events: List[str]
     ) -> Dict[str, float]:
-        """
-        Compute multiple simultaneous affects (complex emotions).
+        """Computes the intensities of multiple co-occurring component affects.
 
-        Humans experience multiple affects at once - this captures that.
+        This allows for the representation of complex emotions where, for example,
+        both 'joy' (from an achievement) and 'fear' (from ongoing danger) can
+        be present simultaneously.
+
+        Args:
+            game_state: The current game state.
+            coherence_delta: The current change in coherence.
+            events: The list of recent game events.
+
+        Returns:
+            A dictionary mapping affect names to their intensity scores.
         """
         components = {}
 
@@ -472,7 +528,12 @@ class EmotionalValenceComputer:
         return components
 
     def get_affect_summary(self) -> Dict[str, Any]:
-        """Get summary of current affective state."""
+        """Generates a summary of the current and historical affective state.
+
+        Returns:
+            A dictionary with statistics like current, average, min, and max
+            valence, volatility, and dominant recent affects.
+        """
         if not self.valence_history:
             return {
                 'current_valence': 0.0,
@@ -497,17 +558,29 @@ class EmotionalValenceComputer:
         }
 
     def _compute_active_ratio(self) -> float:
-        """Compute ratio of active to passive affects in recent history."""
+        """Computes the ratio of active to passive affects in recent history.
+
+        Note: This is a placeholder for a future enhancement that would require
+        tracking the active/passive state of each historical valence entry.
+
+        Returns:
+            A placeholder value.
+        """
         # This requires tracking active/passive in history (future enhancement)
         # For now, estimate from adequacy trend
         return 0.5  # Placeholder
 
     def create_affect_object(self, valence_state: ValenceState) -> Affect:
-        """
-        Create an Affect object from ValenceState.
+        """Converts a ValenceState dataclass into a core Affect object.
+
+        This is a utility for interoperability with other systems that use the
+        core Affect type from `singularis.core.types`.
+
+        Args:
+            valence_state: The ValenceState object to convert.
 
         Returns:
-            Affect object from core types
+            An Affect object.
         """
         return Affect(
             valence=valence_state.valence,

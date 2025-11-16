@@ -32,14 +32,18 @@ class LocalMoEConfig:
 
 class LocalMoEOrchestrator:
     """
-    Local Mixture of Experts orchestrator.
-    
-    Uses 4 Qwen3-VL experts for parallel analysis, then Phi-4 to synthesize
-    the final decision. All models run locally via LM Studio.
+    Orchestrates a local Mixture of Experts (MoE) system, using multiple
+    language models running in parallel via LM Studio to analyze a situation
+    and recommend an action.
     """
     
     def __init__(self, config: LocalMoEConfig):
-        """Initialize local MoE system."""
+        """
+        Initializes the LocalMoEOrchestrator.
+
+        Args:
+            config (LocalMoEConfig): A configuration object for the MoE system.
+        """
         self.config = config
         
         # Expert specializations
@@ -65,7 +69,7 @@ class LocalMoEOrchestrator:
         logger.info(f"Local MoE initialized: {config.num_experts} experts + 1 synthesizer + cache")
     
     async def initialize(self):
-        """Initialize all LM Studio clients."""
+        """Initializes the LM Studio clients for the experts and synthesizers."""
         logger.info("Initializing local MoE experts...")
         
         # Model names matching all loaded instances in LM Studio
@@ -151,7 +155,7 @@ class LocalMoEOrchestrator:
             }
     
     async def close(self):
-        """Close all expert and synthesizer sessions."""
+        """Closes the aiohttp sessions for all expert and synthesizer clients."""
         for expert in self.experts:
             if expert.session:
                 await expert.session.close()
@@ -170,10 +174,24 @@ class LocalMoEOrchestrator:
         motivation: str = "exploration"
     ) -> Optional[Tuple[str, str]]:
         """
-        Get action recommendation from MoE.
-        
+        Gets an action recommendation from the MoE system.
+
+        This method queries the expert models in parallel, synthesizes their
+        responses, and returns a single action and the reasoning behind it.
+        It also uses a cache to speed up responses for similar situations.
+
+        Args:
+            perception (Dict[str, Any]): A dictionary of perception data.
+            game_state (Any): The current game state.
+            available_actions (List[str]): A list of available actions.
+            q_values (Dict[str, float]): A dictionary of Q-values for the actions.
+            motivation (str, optional): The current motivation of the AGI.
+                                      Defaults to "exploration".
+
         Returns:
-            Tuple of (action, reasoning) or None if failed
+            Optional[Tuple[str, str]]: A tuple containing the recommended action
+                                      and the reasoning, or None if the process
+                                      fails.
         """
         # Check cache first
         scene_type = perception.get('scene_type', 'unknown')

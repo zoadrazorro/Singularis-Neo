@@ -54,13 +54,12 @@ class GPT5Response:
 
 class GPT5Orchestrator:
     """
-    Central orchestrator using GPT-5 for meta-cognitive coordination.
-    
-    All subsystems communicate through this hub, which:
-    1. Receives messages from all systems
-    2. Sends to GPT-5 for meta-cognitive analysis
-    3. Returns coordinated guidance
-    4. Logs everything verbosely to console
+    Acts as a central communication hub for all AGI subsystems, using GPT-5
+    for meta-cognitive coordination.
+
+    This class receives messages from various subsystems, sends them to GPT-5
+    for analysis, and returns coordinated guidance. It also provides verbose
+    logging of all system interactions.
     """
     
     def __init__(
@@ -71,13 +70,17 @@ class GPT5Orchestrator:
         log_to_file: bool = True,
     ):
         """
-        Initialize GPT-5 orchestrator.
-        
+        Initializes the GPT5Orchestrator.
+
         Args:
-            api_key: OpenAI API key
-            model: GPT-5 model name
-            verbose: Print verbose console output
-            log_to_file: Also log to file
+            api_key (Optional[str], optional): The OpenAI API key. If not provided,
+                                             it is read from the OPENAI_API_KEY
+                                             environment variable. Defaults to None.
+            model (str, optional): The GPT-5 model to use. Defaults to "gpt-5".
+            verbose (bool, optional): If True, prints verbose console output.
+                                      Defaults to True.
+            log_to_file (bool, optional): If True, logs output to a file.
+                                          Defaults to True.
         """
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
         self.model = model
@@ -165,7 +168,7 @@ class GPT5Orchestrator:
         return self._session
     
     async def close(self):
-        """Close the orchestrator."""
+        """Closes the aiohttp session and prints shutdown statistics."""
         if self._session and not self._session.closed:
             await self._session.close()
         
@@ -179,7 +182,13 @@ class GPT5Orchestrator:
             print("="*self.console_width + "\n")
     
     def register_system(self, system_id: str, system_type: SystemType):
-        """Register a subsystem with the orchestrator."""
+        """
+        Registers a subsystem with the orchestrator.
+
+        Args:
+            system_id (str): The unique ID of the subsystem.
+            system_type (SystemType): The type of the subsystem.
+        """
         self.registered_systems[system_id] = system_type
         
         if self.verbose:
@@ -194,16 +203,17 @@ class GPT5Orchestrator:
         metadata: Optional[Dict[str, Any]] = None
     ) -> GPT5Response:
         """
-        Send message from subsystem to GPT-5.
-        
+        Sends a message from a subsystem to GPT-5 for coordination.
+
         Args:
-            system_id: ID of sending system
-            message_type: Type of message
-            content: Message content
-            metadata: Optional metadata
-            
+            system_id (str): The ID of the sending subsystem.
+            message_type (str): The type of the message (e.g., "decision", "query").
+            content (str): The content of the message.
+            metadata (Optional[Dict[str, Any]], optional): Optional metadata.
+                                                          Defaults to None.
+
         Returns:
-            GPT-5 response with guidance
+            GPT5Response: A `GPT5Response` object with guidance from the orchestrator.
         """
         # Get system type
         system_type = self.registered_systems.get(system_id, SystemType.COGNITION)
@@ -373,12 +383,13 @@ Be concise but insightful. Focus on coordination and optimization."""
         cycle: int
     ):
         """
-        Record differential coherence between GPT-5 and other consciousness nodes.
-        
+        Records the differential coherence between GPT-5's assessment and that
+        of other consciousness nodes.
+
         Args:
-            gpt5_coherence: GPT-5's coherence assessment
-            other_nodes_coherence: Average coherence from other nodes
-            cycle: Current cycle number
+            gpt5_coherence (float): GPT-5's coherence assessment.
+            other_nodes_coherence (float): The average coherence from other nodes.
+            cycle (int): The current cycle number.
         """
         differential = abs(gpt5_coherence - other_nodes_coherence)
         
@@ -397,7 +408,12 @@ Be concise but insightful. Focus on coordination and optimization."""
             self.coherence_samples.pop(0)
     
     def get_coherence_stats(self) -> Dict[str, Any]:
-        """Get differential coherence statistics."""
+        """
+        Gets a dictionary of statistics about the differential coherence.
+
+        Returns:
+            Dict[str, Any]: A dictionary of statistics.
+        """
         if not self.coherence_samples:
             return {
                 'samples': 0,
@@ -428,7 +444,12 @@ Be concise but insightful. Focus on coordination and optimization."""
         }
     
     def get_stats(self) -> Dict[str, Any]:
-        """Get orchestrator statistics."""
+        """
+        Gets a dictionary of statistics about the orchestrator.
+
+        Returns:
+            Dict[str, Any]: A dictionary of statistics.
+        """
         stats = {
             "registered_systems": len(self.registered_systems),
             "total_messages": self.total_messages,
@@ -446,7 +467,7 @@ Be concise but insightful. Focus on coordination and optimization."""
         return stats
     
     def print_stats(self):
-        """Print statistics to console."""
+        """Prints a formatted summary of orchestrator statistics to the console."""
         if not self.verbose:
             return
         

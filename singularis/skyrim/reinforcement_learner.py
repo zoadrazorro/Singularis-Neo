@@ -44,33 +44,39 @@ except ImportError:
 
 @dataclass
 class Experience:
-    """
-    A single experience tuple for RL.
-    
-    Enhanced with consciousness state for consciousness-guided learning.
+    """Represents a single tuple of (state, action, reward, next_state).
+
+    This dataclass is enhanced to include consciousness state information, which
+    is crucial for the consciousness-guided reward shaping mechanism.
+
+    Attributes:
+        state: The state of the game before the action was taken.
+        action: The action performed by the agent.
+        reward: The calculated reward for taking the action in the given state.
+        next_state: The state of the game after the action was performed.
+        done: A boolean indicating if the episode has terminated.
+        consciousness_before: The AGI's consciousness state before the action.
+        consciousness_after: The AGI's consciousness state after the action.
+        coherence_delta: The change in consciousness coherence (Δ𝒞).
     """
     state: Dict[str, Any]
     action: str
     reward: float
     next_state: Dict[str, Any]
     done: bool
-    # Consciousness measurements (optional, added by consciousness bridge)
     consciousness_before: Optional['ConsciousnessState'] = None
     consciousness_after: Optional['ConsciousnessState'] = None
     coherence_delta: float = 0.0  # Δ𝒞
 
 
 class StateEncoder:
-    """
-    Encodes game state into fixed-size feature vector.
-    """
+    """Encodes the high-dimensional game state dictionary into a fixed-size feature vector."""
 
     def __init__(self, feature_dim: int = 64):
-        """
-        Initialize state encoder.
+        """Initializes the StateEncoder.
 
         Args:
-            feature_dim: Dimension of encoded state vector
+            feature_dim: The desired dimension of the encoded state vector.
         """
         self.feature_dim = feature_dim
 
@@ -94,14 +100,17 @@ class StateEncoder:
         }
 
     def encode(self, state: Dict[str, Any]) -> np.ndarray:
-        """
-        Encode state dict into feature vector.
+        """Encodes a game state dictionary into a fixed-size numpy feature vector.
+
+        This method extracts key information from the state dictionary—such as
+        player stats, combat status, scene type, and more—and converts it into
+        a numerical format suitable for the Q-network.
 
         Args:
-            state: Game state dictionary
+            state: The game state dictionary to encode.
 
         Returns:
-            Fixed-size numpy array
+            A fixed-size numpy array representing the encoded state.
         """
         features = np.zeros(self.feature_dim)
 
@@ -154,35 +163,37 @@ class StateEncoder:
 
 
 class ReplayBuffer:
-    """
-    Experience replay buffer for RL.
+    """A circular buffer to store and sample experiences for training.
 
-    Stores experiences and samples batches for training.
+    This class implements the experience replay mechanism, which is vital for
+    stabilizing the training of the Q-network by decorrelating experiences.
     """
 
     def __init__(self, capacity: int = 10000):
-        """
-        Initialize replay buffer.
+        """Initializes the ReplayBuffer.
 
         Args:
-            capacity: Maximum number of experiences to store
+            capacity: The maximum number of experiences to store in the buffer.
         """
         self.buffer = deque(maxlen=capacity)
         self.capacity = capacity
 
-    def add(self, experience: Experience):
-        """Add experience to buffer."""
+    def add(self, experience: Experience) -> None:
+        """Adds a single experience to the buffer.
+
+        Args:
+            experience: The Experience object to add.
+        """
         self.buffer.append(experience)
 
     def sample(self, batch_size: int) -> List[Experience]:
-        """
-        Sample random batch of experiences.
+        """Samples a random batch of experiences from the buffer.
 
         Args:
-            batch_size: Number of experiences to sample
+            batch_size: The number of experiences to include in the batch.
 
         Returns:
-            List of experiences
+            A list of randomly sampled Experience objects.
         """
         if len(self.buffer) < batch_size:
             batch_size = len(self.buffer)
@@ -190,25 +201,26 @@ class ReplayBuffer:
         indices = np.random.choice(len(self.buffer), batch_size, replace=False)
         return [self.buffer[i] for i in indices]
 
-    def __len__(self):
+    def __len__(self) -> int:
+        """Returns the current number of experiences in the buffer."""
         return len(self.buffer)
 
 
 class QNetwork:
-    """
-    Q-Network: Learns action-value function Q(s, a).
+    """A simple linear model to approximate the action-value function Q(s, a).
 
-    Uses a simple linear model for now (can be upgraded to neural net).
+    This network takes an encoded state vector as input and outputs the estimated
+    Q-value for each possible action. It is trained using gradient descent to
+    minimize the temporal difference error.
     """
 
     def __init__(self, state_dim: int, n_actions: int, learning_rate: float = 0.01):
-        """
-        Initialize Q-network.
+        """Initializes the QNetwork.
 
         Args:
-            state_dim: Dimension of state features
-            n_actions: Number of possible actions
-            learning_rate: Learning rate for updates
+            state_dim: The dimension of the input state feature vectors.
+            n_actions: The number of possible actions (the output dimension).
+            learning_rate: The learning rate for the gradient descent updates.
         """
         self.state_dim = state_dim
         self.n_actions = n_actions
@@ -222,14 +234,13 @@ class QNetwork:
         self.update_count = 0
 
     def predict(self, state: np.ndarray) -> np.ndarray:
-        """
-        Predict Q-values for all actions given state.
+        """Predicts the Q-values for all actions given a state.
 
         Args:
-            state: State feature vector
+            state: The encoded state feature vector.
 
         Returns:
-            Q-values for each action
+            A numpy array containing the predicted Q-value for each action.
         """
         return self.weights @ state + self.bias
 
@@ -238,14 +249,17 @@ class QNetwork:
         state: np.ndarray,
         action_idx: int,
         target: float
-    ):
-        """
-        Update Q-network using gradient descent.
+    ) -> None:
+        """Updates the network's weights using a single training example.
+
+        This method performs a single step of gradient descent to minimize the
+        difference between the predicted Q-value and the target Q-value (calculated
+        using the Bellman equation).
 
         Args:
-            state: State feature vector
-            action_idx: Index of action taken
-            target: Target Q-value
+            state: The encoded state feature vector.
+            action_idx: The index of the action that was taken.
+            target: The target Q-value for the state-action pair.
         """
         # Predict current Q-value
         q_pred = self.predict(state)[action_idx]
@@ -260,15 +274,14 @@ class QNetwork:
         self.update_count += 1
 
     def get_best_action(self, state: np.ndarray, action_names: List[str]) -> Tuple[str, float]:
-        """
-        Get best action for given state.
+        """Determines the best action for a given state based on predicted Q-values.
 
         Args:
-            state: State feature vector
-            action_names: List of action names
+            state: The encoded state feature vector.
+            action_names: A list of all possible action names.
 
         Returns:
-            (best_action_name, q_value)
+            A tuple containing the name of the best action and its corresponding Q-value.
         """
         q_values = self.predict(state)
         best_idx = np.argmax(q_values)
@@ -302,19 +315,18 @@ class ReinforcementLearner:
         replay_capacity: int = 10000,
         consciousness_bridge: Optional['ConsciousnessBridge'] = None
     ):
-        """
-        Initialize RL system.
+        """Initializes the ReinforcementLearner system.
 
         Args:
-            state_dim: Dimension of state encoding
-            learning_rate: Learning rate for Q-network
-            discount_factor: Discount factor (gamma) for future rewards
-            epsilon_start: Initial exploration rate
-            epsilon_end: Minimum exploration rate
-            epsilon_decay: Decay rate for epsilon
-            batch_size: Batch size for training
-            replay_capacity: Capacity of replay buffer
-            consciousness_bridge: Optional consciousness bridge for coherence-based rewards
+            state_dim: The dimensionality of the encoded state vectors.
+            learning_rate: The learning rate for the Q-network updates.
+            discount_factor: The discount factor (gamma) for future rewards.
+            epsilon_start: The initial value for the exploration rate (epsilon).
+            epsilon_end: The minimum value for epsilon.
+            epsilon_decay: The rate at which epsilon decays after each training step.
+            batch_size: The number of experiences to sample from the replay buffer for each training step.
+            replay_capacity: The maximum number of experiences to store in the replay buffer.
+            consciousness_bridge: An optional reference to the ConsciousnessBridge for reward shaping.
         """
         # Consciousness integration
         self.consciousness_bridge = consciousness_bridge
@@ -452,16 +464,18 @@ class ReinforcementLearner:
         available_actions: Optional[List[str]] = None,
         deterministic: bool = False
     ) -> str:
-        """
-        Select action using epsilon-greedy policy.
+        """Selects an action based on the current state using an epsilon-greedy policy.
+
+        The method balances exploration (choosing a random action) and
+        exploitation (choosing the action with the highest predicted Q-value).
 
         Args:
-            state: Current game state
-            available_actions: List of available actions (if None, use all)
-            deterministic: If True, always pick best action (no exploration)
+            state: The current game state dictionary.
+            available_actions: An optional list of currently available actions to choose from.
+            deterministic: If True, exploration is disabled and the best action is always chosen.
 
         Returns:
-            Selected action name
+            The name of the selected action.
         """
         # Encode state
         state_vec = self.state_encoder.encode(state)
@@ -502,28 +516,26 @@ class ReinforcementLearner:
         consciousness_before: Optional['ConsciousnessState'] = None,
         consciousness_after: Optional['ConsciousnessState'] = None
     ) -> float:
-        """
-        Compute reward for transition using consciousness-guided evaluation with emotional valence.
+        """Computes the reward for a given state transition.
 
-        This is CRITICAL for learning! Rewards guide the agent.
-
-        ENHANCED APPROACH:
-        - PRIMARY: Consciousness coherence change (Δ𝒞) - 60%
-        - SECONDARY: Emotional valence change (ΔVal) - 15%
-        - TERTIARY: Game-specific rewards (health, progress, etc.) - 25%
-
-        Per ETHICA: Actions that increase coherence (Δ𝒞 > 0) are ethical and rewarded.
-        Per ETHICA Part IV: Joy (positive valence) increases power to act.
+        This is a critical component that guides the learning process. The reward
+        is a weighted sum of three components:
+        1.  **Primary (60%):** Change in consciousness coherence (Δ𝒞). Actions
+            that increase coherence are considered "good" and are rewarded.
+        2.  **Secondary (15%):** Change in emotional valence. Positive emotional
+            shifts are rewarded.
+        3.  **Tertiary (25%):** Game-specific metrics like health changes,
+            quest progress, and engaging in core gameplay loops.
 
         Args:
-            state_before: State before action
-            action: Action taken
-            state_after: State after action
-            consciousness_before: Optional consciousness state before
-            consciousness_after: Optional consciousness state after
+            state_before: The game state before the action was taken.
+            action: The action that was taken.
+            state_after: The game state after the action was taken.
+            consciousness_before: The consciousness state before the action.
+            consciousness_after: The consciousness state after the action.
 
         Returns:
-            Reward value (higher is better)
+            A float representing the calculated reward.
         """
         reward = 0.0
 
@@ -582,19 +594,20 @@ class ReinforcementLearner:
         action: str,
         state_after: Dict[str, Any]
     ) -> float:
-        """
-        Compute game-specific reward shaping (secondary reward).
-        
-        ENHANCED FOR EMBEDDED SKYRIM GAMEPLAY:
-        This provides immediate feedback on core Skyrim gameplay:
-        - Combat engagement (being belligerent with hostiles)
-        - NPC interactions (talking to NPCs)
-        - Menu navigation (inventory, skills, map)
-        - Health management
-        - Exploration progress
-        
+        """Computes the game-specific component of the total reward.
+
+        This method provides more immediate, tangible feedback based on core
+        gameplay loops in Skyrim. It incentivizes actions related to combat,
+        dialogue with NPCs, menu navigation, and general survival and progress.
+        This reward component is weighted and added to the consciousness-based reward.
+
+        Args:
+            state_before: The game state before the action was taken.
+            action: The action that was taken.
+            state_after: The game state after the action was taken.
+
         Returns:
-            Game reward (not scaled, will be weighted at 30%)
+            A float representing the game-specific reward component.
         """
         reward = 0.0
 
@@ -733,23 +746,22 @@ class ReinforcementLearner:
         consciousness_before: Optional['ConsciousnessState'] = None,
         consciousness_after: Optional['ConsciousnessState'] = None,
         action_source: Optional[str] = None  # Fix 17: Track action source
-    ):
-        """
-        Store experience in replay buffer with consciousness measurements.
+    ) -> None:
+        """Computes the reward for a transition and stores the complete experience in the replay buffer.
 
-        This connects RL learning to consciousness:
-        - Experiences include Δ𝒞 (coherence change)
-        - Consciousness states stored for later analysis
-        - Enables consciousness-guided learning
+        This method serves as the bridge between the agent's interaction with the
+        environment and the learning process. It calculates the reward, packages
+        the state, action, reward, and next state into an `Experience` object
+        (including consciousness data), and adds it to the replay buffer.
 
         Args:
-            state_before: State before action
-            action: Action taken
-            state_after: State after action
-            done: Whether episode ended
-            consciousness_before: Optional consciousness state before
-            consciousness_after: Optional consciousness state after
-            action_source: Optional source of action (llm/heuristic)
+            state_before: The state before the action.
+            action: The action taken.
+            state_after: The state after the action.
+            done: Boolean indicating if the episode terminated.
+            consciousness_before: The consciousness state before the action.
+            consciousness_after: The consciousness state after the action.
+            action_source: The source of the action (e.g., 'llm', 'heuristic').
         """
         # Fix 17: Only train on LLM-based actions, exclude heuristics
         if action_source in ['heuristic', 'timeout']:
@@ -795,11 +807,14 @@ class ReinforcementLearner:
 
         print(f"[RL] Stored experience | Reward: {reward:.2f} | Buffer: {len(self.replay_buffer)}")
 
-    def train_step(self):
-        """
-        Perform one training step using experience replay.
+    def train_step(self) -> None:
+        """Performs a single training step on the Q-network.
 
-        This is where actual learning happens!
+        This is where the agent learns. It samples a batch of experiences from
+        the replay buffer, calculates the target Q-values using the Bellman
+        equation, and updates the Q-network's weights via gradient descent.
+        It also handles the periodic update of the target network and the
+        decay of the epsilon exploration parameter.
         """
         if len(self.replay_buffer) < self.batch_size:
             return  # Not enough experiences yet
@@ -857,14 +872,13 @@ class ReinforcementLearner:
         print(f"[RL] Training step {self.training_steps} | Loss: {avg_loss:.4f} | ε: {self.epsilon:.3f}")
 
     def get_q_values(self, state: Dict[str, Any]) -> Dict[str, float]:
-        """
-        Get Q-values for all actions in given state.
+        """Retrieves the predicted Q-values for all actions in a given state.
 
         Args:
-            state: Game state
+            state: The game state dictionary.
 
         Returns:
-            Dict mapping action names to Q-values
+            A dictionary mapping each action name to its predicted Q-value.
         """
         state_vec = self.state_encoder.encode(state)
         q_values = self.q_network.predict(state_vec)
@@ -872,15 +886,26 @@ class ReinforcementLearner:
         return {action: float(q_values[idx]) for action, idx in self.action_to_idx.items()}
 
     def get_stats(self) -> Dict[str, Any]:
-        """Get RL statistics."""
+        """Retrieves the current performance statistics of the RL system.
+
+        Returns:
+            A dictionary containing various statistics like buffer size, average reward, etc.
+        """
         return {
             **self.stats,
             'buffer_size': len(self.replay_buffer),
             'avg_reward': self.stats['total_reward'] / max(1, self.stats['total_experiences'])
         }
 
-    def save(self, filepath: str):
-        """Save RL model."""
+    def save(self, filepath: str) -> None:
+        """Saves the current state of the RL model to a file.
+
+        This includes the weights of the Q-network and target network, the
+        current epsilon value, and training statistics.
+
+        Args:
+            filepath: The path to the file where the model should be saved.
+        """
         data = {
             'q_weights': self.q_network.weights,
             'q_bias': self.q_network.bias,
@@ -894,8 +919,15 @@ class ReinforcementLearner:
             pickle.dump(data, f)
         print(f"[RL] Saved model to {filepath}")
 
-    def load(self, filepath: str):
-        """Load RL model."""
+    def load(self, filepath: str) -> None:
+        """Loads a previously saved RL model from a file.
+
+        It checks for compatibility of the action space between the saved model
+        and the current configuration.
+
+        Args:
+            filepath: The path to the file from which to load the model.
+        """
         if not os.path.exists(filepath):
             print(f"[RL] No saved model at {filepath}")
             return

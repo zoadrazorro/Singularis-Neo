@@ -17,7 +17,15 @@ from pathlib import Path
 
 @dataclass
 class SystemOutput:
-    """Output from a single AGI subsystem."""
+    """Represents a structured output from a single AGI subsystem.
+
+    Attributes:
+        system_name: The name of the subsystem that produced the output.
+        timestamp: The time the output was generated.
+        content: The primary string content of the output.
+        metadata: A dictionary for any additional, structured data.
+        success: A boolean indicating if the operation was successful.
+    """
     system_name: str
     timestamp: float
     content: str
@@ -27,7 +35,17 @@ class SystemOutput:
 
 @dataclass
 class SessionReport:
-    """Complete session report."""
+    """Represents a complete, synthesized report for a gameplay session.
+
+    Attributes:
+        session_id: The unique identifier for the session.
+        start_time: The start time of the session.
+        end_time: The end time of the session.
+        total_cycles: The total number of AGI cycles executed.
+        outputs: A list of all SystemOutput objects recorded during the session.
+        synthesis: The AI-generated narrative synthesis of the session.
+        statistics: A dictionary of aggregated statistics for the session.
+    """
     session_id: str
     start_time: float
     end_time: float
@@ -38,19 +56,22 @@ class SessionReport:
 
 
 class MainBrain:
-    """
-    MAIN BRAIN - Synthesizes all AGI subsystem outputs.
-    
-    Uses GPT-4o to create coherent reports from distributed intelligence.
+    """The central synthesis system for the Skyrim AGI.
+
+    The Main Brain collects outputs from all other AGI subsystems (e.g., vision,
+    planning, emotion) throughout a gameplay session. At the end of the session,
+    it uses a powerful large language model (like GPT-4o) to synthesize these
+    disparate outputs into a single, coherent, human-readable report that
+    analyzes the AGI's behavior, learning, and overall performance.
     """
     
     def __init__(self, openai_client, session_id: Optional[str] = None):
-        """
-        Initialize Main Brain.
+        """Initializes the Main Brain for a new session.
 
         Args:
-            openai_client: OpenAI client for GPT-4o
-            session_id: Optional session ID (generated if not provided)
+            openai_client: An initialized OpenAI client for making API calls.
+            session_id: An optional, specific ID for the session. If not provided,
+                        a unique ID will be generated automatically.
         """
         self.openai_client = openai_client
         self.session_id = session_id or self._generate_session_id()
@@ -72,7 +93,11 @@ class MainBrain:
         print(f"[MAIN BRAIN] 🧠 Initialized - Session ID: {self.session_id}")
         
     def _generate_session_id(self) -> str:
-        """Generate unique session ID."""
+        """Generates a unique, timestamped session ID.
+
+        Returns:
+            A unique string identifier for the session.
+        """
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         unique_id = str(uuid.uuid4())[:8]
         return f"skyrim_agi_{timestamp}_{unique_id}"
@@ -84,7 +109,14 @@ class MainBrain:
         metadata: Optional[Dict[str, Any]] = None,
         success: bool = True
     ) -> None:
-        """Record output from a subsystem."""
+        """Records an output from one of the AGI's subsystems.
+
+        Args:
+            system_name: The name of the system generating the output.
+            content: The string content of the output.
+            metadata: Optional dictionary of supplementary data.
+            success: Whether the operation reported was successful.
+        """
         output = SystemOutput(
             system_name=system_name,
             timestamp=time.time(),
@@ -101,7 +133,7 @@ class MainBrain:
         self.system_activations[system_name] += 1
         
     def increment_cycle(self) -> None:
-        """Increment cycle counter."""
+        """Increments the main AGI cycle counter for the session."""
         self.total_cycles += 1
 
     def record_affective_state(
@@ -110,13 +142,13 @@ class MainBrain:
         affect_type: str,
         is_active: bool
     ) -> None:
-        """
-        Record affective state for this cycle.
+        """Records the agent's emotional (affective) state for the current cycle.
 
         Args:
-            valence: Emotional valence value
-            affect_type: Type of affect (joy, fear, etc.)
-            is_active: True if active affect, False if passive
+            valence: The emotional valence value (-1.0 to 1.0).
+            affect_type: The type of affect (e.g., 'joy', 'fear').
+            is_active: True if it's an 'active' affect (from understanding),
+                       False if 'passive' (from external events).
         """
         self.valence_history.append(valence)
         self.affect_history.append(affect_type)
@@ -127,11 +159,12 @@ class MainBrain:
             self.passive_affect_count += 1
 
     def get_affective_statistics(self) -> Dict[str, Any]:
-        """
-        Get affective statistics for the session.
+        """Calculates and returns statistics about the agent's emotional state
+        throughout the session.
 
         Returns:
-            Dictionary with affective metrics
+            A dictionary containing metrics like average valence, dominant affects,
+            and the ratio of active to passive affects.
         """
         if not self.valence_history:
             return {
@@ -174,8 +207,12 @@ class MainBrain:
         }
         
     async def synthesize_report(self) -> str:
-        """
-        Synthesize all outputs into a coherent report using GPT-4o.
+        """Synthesizes all recorded subsystem outputs into a coherent narrative report
+        using an external LLM (GPT-4o).
+
+        Returns:
+            The synthesized report as a single string. If the LLM call fails,
+            a simple fallback report is generated instead.
         """
         if not self.openai_client or not self.openai_client.is_available():
             return self._generate_fallback_report()
@@ -212,7 +249,15 @@ Write in a clear, technical style suitable for AI researchers. Be specific and r
             return self._generate_fallback_report()
             
     def _build_synthesis_prompt(self) -> str:
-        """Build the synthesis prompt from all collected outputs."""
+        """Constructs the detailed prompt to be sent to the LLM for synthesis.
+
+        This method aggregates session metadata, affective statistics, system
+        activation counts, and recent raw outputs from each subsystem into a
+        single large prompt.
+
+        Returns:
+            The fully constructed prompt string.
+        """
         
         # Session overview
         duration = time.time() - self.session_start
@@ -285,7 +330,11 @@ Provide a comprehensive but concise synthesis (aim for 1000-2000 words).
         return prompt
         
     def _generate_fallback_report(self) -> str:
-        """Generate simple text report if GPT-4o unavailable."""
+        """Generates a simple, non-AI-synthesized report if the LLM call fails.
+
+        Returns:
+            A basic string report with session statistics.
+        """
         duration = time.time() - self.session_start
         
         report = f"""# Skyrim AGI Session Report (Fallback)
@@ -307,11 +356,15 @@ Total Cycles: {self.total_cycles}
         return report
         
     async def generate_session_markdown(self, output_dir: str = "sessions") -> str:
-        """
-        Generate complete session report as markdown file.
-        
+        """Generates a complete session report and saves it as a Markdown file.
+
+        This method orchestrates the synthesis and formatting of the final report.
+
+        Args:
+            output_dir: The directory where the session report file will be saved.
+
         Returns:
-            Path to generated markdown file
+            The file path to the generated Markdown report.
         """
         # Create sessions directory
         sessions_path = Path(output_dir)
@@ -335,7 +388,17 @@ Total Cycles: {self.total_cycles}
         return str(filepath)
         
     def _build_session_markdown(self, synthesis: str) -> str:
-        """Build complete markdown document."""
+        """Constructs the full Markdown document for the session report.
+
+        This method assembles the metadata, AI synthesis, and detailed system
+        outputs into a single, well-formatted Markdown string.
+
+        Args:
+            synthesis: The AI-generated synthesis string.
+
+        Returns:
+            The complete Markdown report as a string.
+        """
         
         start_dt = datetime.fromtimestamp(self.session_start)
         end_dt = datetime.now()

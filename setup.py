@@ -1,4 +1,10 @@
-"""Setup script for Singularis."""
+"""
+Setup script for the Singularis project.
+
+This script uses setuptools to package the Singularis AGI framework,
+defining metadata, dependencies, and other package information. It is used
+for installing the project and its required libraries.
+"""
 
 from setuptools import setup, find_packages
 

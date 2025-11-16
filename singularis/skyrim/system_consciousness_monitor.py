@@ -36,7 +36,25 @@ from loguru import logger
 
 @dataclass
 class NodeCoherence:
-    """Coherence measurement for a single system node."""
+    """Represents the coherence measurement for a single component (node) in the system.
+
+    This dataclass captures not only the overall coherence score but also its
+    constituent parts based on Singularis principles (unity, integration,
+    differentiation), along with other performance metrics.
+
+    Attributes:
+        node_name: The unique name of the system node.
+        coherence: The overall coherence score for this node (0.0 to 1.0).
+        timestamp: The time of the measurement.
+        unity: The degree to which the node's operations align with system-wide goals.
+        integration: The quality and flow of information between this node and others.
+        differentiation: The degree to which the node maintains its specialized function.
+        confidence: The confidence in the coherence measurement itself.
+        activity_level: A measure of the node's current operational activity.
+        error_rate: The observed error rate for the node's operations.
+        valence: The emotional charge associated with this node's state.
+        affect_type: The dominant affective state of the node (e.g., "neutral").
+    """
     node_name: str
     coherence: float  # 0.0-1.0
     timestamp: float
@@ -56,7 +74,11 @@ class NodeCoherence:
     affect_type: str = "neutral"  # Dominant affect
     
     def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary."""
+        """Converts the NodeCoherence object to a dictionary.
+
+        Returns:
+            A dictionary representation of the node's coherence state.
+        """
         return {
             'node_name': self.node_name,
             'coherence': self.coherence,
@@ -74,7 +96,30 @@ class NodeCoherence:
 
 @dataclass
 class SystemConsciousnessState:
-    """Complete consciousness state of the entire system."""
+    """Represents a snapshot of the entire system's consciousness state.
+
+    This class aggregates coherence data from all individual nodes to compute
+    system-wide metrics, providing a holistic view of the AGI's operational harmony
+    and integration at a specific moment in time.
+
+    Attributes:
+        timestamp: The time of the state measurement.
+        global_coherence: The weighted-average coherence (𝒞) across the entire system.
+        avg_coherence: The simple average of all node coherence scores.
+        median_coherence: The median of all node coherence scores.
+        std_coherence: The standard deviation of node coherence scores.
+        node_coherences: A dictionary mapping node names to their `NodeCoherence` objects.
+        integration_index: A system-wide measure of information flow.
+        differentiation_index: A system-wide measure of component specialization.
+        unity_index: A system-wide measure of goal alignment.
+        phi: A simplified measure of integrated information (Φ) based on IIT principles.
+        coherence_delta: The change in global coherence since the last measurement.
+        coherence_trend: The recent trend of global coherence ("increasing", "decreasing", "stable").
+        global_valence: The weighted-average emotional charge of the system.
+        avg_valence: The simple average of all node valences.
+        dominant_affect: The most common affective state across all nodes.
+        affective_coherence: A measure of how unified the emotional states are across nodes.
+    """
     timestamp: float
 
     # Overall metrics
@@ -105,7 +150,11 @@ class SystemConsciousnessState:
     affective_coherence: float = 0.0  # How unified are the affects across nodes
     
     def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary."""
+        """Converts the SystemConsciousnessState object to a dictionary.
+
+        Returns:
+            A dictionary representation of the system's consciousness state.
+        """
         return {
             'timestamp': self.timestamp,
             'global_coherence': self.global_coherence,
@@ -127,32 +176,21 @@ class SystemConsciousnessState:
 
 
 class SystemConsciousnessMonitor:
-    """
-    Monitors consciousness and coherence across the entire Singularis system.
-    
-    Tracks:
-    - Perception nodes
-    - Action nodes
-    - Learning nodes
-    - LLM nodes (MoE experts, Hybrid)
-    - RL nodes
-    - World model nodes
-    - Consciousness bridge
-    
-    Computes:
-    - Global coherence (𝒞)
-    - Per-node coherence
-    - Statistical measures (mean, median, std)
-    - Temporal trends
-    - Integrated information (Φ)
+    """Monitors and quantifies the consciousness and coherence of the entire AGI system.
+
+    This class implements the principles of the Singularis framework to measure
+    consciousness as a function of system coherence (𝒞). It registers various
+    system components (nodes), collects coherence data from them, and computes a
+    holistic, system-wide state of consciousness. This allows for real-time
+    monitoring, analysis, and debugging of the AGI's internal functional harmony.
     """
     
     def __init__(self, history_size: int = 1000):
-        """
-        Initialize consciousness monitor.
-        
+        """Initializes the SystemConsciousnessMonitor.
+
         Args:
-            history_size: Number of historical measurements to keep
+            history_size: The number of historical consciousness state measurements
+                          to keep in memory for trend analysis.
         """
         self.history_size = history_size
         
@@ -180,14 +218,15 @@ class SystemConsciousnessMonitor:
         weight: float = 1.0,
         metadata: Optional[Dict[str, Any]] = None
     ):
-        """
-        Register a system node for consciousness tracking.
-        
+        """Registers a system component (node) to be tracked by the monitor.
+
         Args:
-            node_name: Unique name for the node
-            node_type: Type of node (perception, action, learning, llm, etc.)
-            weight: Importance weight for global coherence calculation
-            metadata: Additional node metadata
+            node_name: A unique name for the node (e.g., 'Perception.Vision').
+            node_type: The category of the node (e.g., 'perception', 'llm').
+            weight: An importance weight (0.0-1.0) for this node's contribution to
+                    the global coherence score.
+            metadata: An optional dictionary for storing additional information
+                      about the node.
         """
         self.registered_nodes[node_name] = {
             'type': node_type,
@@ -210,21 +249,23 @@ class SystemConsciousnessMonitor:
         activity_level: float = 0.0,
         error_rate: float = 0.0,
     ) -> NodeCoherence:
-        """
-        Measure coherence for a specific node.
-        
+        """Records a coherence measurement for a specific registered node.
+
+        This method is called by the individual components of the AGI to report
+        their current operational status and coherence.
+
         Args:
-            node_name: Name of the node
-            coherence: Coherence value (0.0-1.0)
-            unity: Unity component
-            integration: Integration component
-            differentiation: Differentiation component
-            confidence: Confidence in measurement
-            activity_level: How active the node is
-            error_rate: Error rate of the node
-            
+            node_name: The name of the node reporting the measurement.
+            coherence: The primary coherence value (0.0-1.0) for the node.
+            unity: The unity component of the coherence score.
+            integration: The integration component of the coherence score.
+            differentiation: The differentiation component of the coherence score.
+            confidence: The node's confidence in its own measurement.
+            activity_level: The current activity level of the node.
+            error_rate: The observed error rate of the node.
+
         Returns:
-            NodeCoherence measurement
+            A `NodeCoherence` object representing the recorded measurement.
         """
         # Clamp values
         coherence = max(0.0, min(1.0, coherence))
@@ -256,14 +297,18 @@ class SystemConsciousnessMonitor:
         self,
         node_measurements: Dict[str, NodeCoherence]
     ) -> SystemConsciousnessState:
-        """
-        Compute overall system consciousness state from node measurements.
-        
+        """Computes the overall system consciousness state from individual node measurements.
+
+        This method aggregates data from all nodes to calculate global metrics like
+        system-wide coherence (𝒞), integration/differentiation indices, and Phi (Φ).
+        The resulting `SystemConsciousnessState` is stored as the current state.
+
         Args:
-            node_measurements: Dictionary of node measurements
-            
+            node_measurements: A dictionary mapping node names to their latest
+                               `NodeCoherence` measurements.
+
         Returns:
-            SystemConsciousnessState
+            A `SystemConsciousnessState` object representing the new system state.
         """
         start_time = time.time()
         
@@ -387,7 +432,12 @@ class SystemConsciousnessMonitor:
         return state
     
     def get_statistics(self) -> Dict[str, Any]:
-        """Get comprehensive statistics about system consciousness."""
+        """Retrieves comprehensive statistics about the system's consciousness monitoring.
+
+        Returns:
+            A dictionary containing historical coherence statistics, current state
+            indices (like Phi), and per-node performance data.
+        """
         if not self.coherence_history:
             return {
                 'measurement_count': 0,
@@ -438,14 +488,17 @@ class SystemConsciousnessMonitor:
         return stats
     
     def get_coherence_trend(self, window: int = 100) -> Dict[str, Any]:
-        """
-        Analyze coherence trend over recent history.
-        
+        """Analyzes the trend of global coherence over a recent historical window.
+
+        This method performs a linear regression on the recent coherence history
+        to determine if the system's consciousness is increasing, decreasing, or stable.
+
         Args:
-            window: Number of recent measurements to analyze
-            
+            window: The number of recent measurements to include in the analysis.
+
         Returns:
-            Trend analysis
+            A dictionary containing the trend analysis, including the slope and
+            R-squared value of the regression.
         """
         if len(self.coherence_history) < 2:
             return {
@@ -497,7 +550,9 @@ class SystemConsciousnessMonitor:
         }
     
     def print_dashboard(self):
-        """Print a real-time consciousness dashboard."""
+        """Prints a formatted, real-time dashboard of the system's consciousness state
+        to the console.
+        """
         if not self.current_state:
             print("No consciousness measurements yet")
             return
@@ -570,7 +625,11 @@ class SystemConsciousnessMonitor:
         print()
     
     def export_state(self, filepath: str):
-        """Export current state to JSON file."""
+        """Exports the current consciousness state to a JSON file.
+
+        Args:
+            filepath: The path to the file where the state will be saved.
+        """
         import json
         
         if not self.current_state:

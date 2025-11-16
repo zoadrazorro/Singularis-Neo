@@ -62,15 +62,8 @@ class ActionResult:
 
 class ActionArbiter:
     """
-    Central arbiter for all action execution.
-    
-    Ensures:
-    - Only one action executes at a time
-    - Higher priority actions can preempt lower priority
-    - Actions are validated before execution
-    - Requesting systems get feedback
-    
-    Phase 2: Single point of control with priority system
+    A central arbiter for all action execution, ensuring that only one action
+    is executed at a time and that actions are prioritized and validated.
     """
     
     def __init__(
@@ -81,12 +74,20 @@ class ActionArbiter:
         meta_cortex: Optional[BDHMetaCortex] = None,
     ):
         """
-        Initialize action arbiter.
-        
+        Initializes the ActionArbiter.
+
         Args:
-            skyrim_agi: Reference to SkyrimAGI instance
-            gpt5_orchestrator: Optional GPT-5 orchestrator for coordination
-            enable_gpt5_coordination: Whether to use GPT-5 for action coordination
+            skyrim_agi (SkyrimAGI): A reference to the main `SkyrimAGI` instance.
+            gpt5_orchestrator (Optional['GPT5Orchestrator'], optional): An optional
+                                                                     GPT-5 orchestrator
+                                                                     for coordination.
+                                                                     Defaults to None.
+            enable_gpt5_coordination (bool, optional): If True, enables the use of
+                                                       GPT-5 for action coordination.
+                                                       Defaults to True.
+            meta_cortex (Optional[BDHMetaCortex], optional): An optional BDH
+                                                             MetaCortex for meta-decision
+                                                             making. Defaults to None.
         """
         self.agi = skyrim_agi
         self.gpt5 = gpt5_orchestrator
@@ -145,17 +146,23 @@ class ActionArbiter:
         callback: Optional[Callable[[ActionResult], Awaitable[None]]] = None
     ) -> ActionResult:
         """
-        Request action execution.
-        
+        Requests the execution of an action.
+
+        The request is validated, and if it has a higher priority than the
+        currently executing action, it will preempt it.
+
         Args:
-            action: Action to execute
-            priority: Priority level
-            source: Which system is requesting (e.g., 'reasoning_loop', 'fast_reactive')
-            context: Game state, perception, etc.
-            callback: Optional callback when action completes
-            
+            action (str): The action to execute.
+            priority (ActionPriority): The priority of the action.
+            source (str): The system requesting the action.
+            context (Dict[str, Any]): The context for the action, including game
+                                     state and perception data.
+            callback (Optional[Callable[[ActionResult], Awaitable[None]]], optional):
+                An optional callback to be notified when the action completes.
+                Defaults to None.
+
         Returns:
-            ActionResult with execution status
+            ActionResult: An `ActionResult` object with the execution status.
         """
         request = ActionRequest(
             action=action,
@@ -476,19 +483,19 @@ class ActionArbiter:
         candidate_actions: List[Dict[str, Any]]
     ) -> Optional[Dict[str, Any]]:
         """
-        Coordinate action decision through GPT-5 orchestrator.
-        
-        Phase 3.3: GPT-5 Orchestrator Coordination (Hybrid Mode)
-        
-        Uses fast local arbitration for simple cases, GPT-5 only for complex
-        decisions requiring meta-cognitive coordination.
-        
+        Coordinates a decision between multiple candidate actions.
+
+        This method uses a hybrid approach, employing fast local arbitration for
+        simple cases and escalating to the GPT-5 orchestrator for complex or
+        conflicting decisions.
+
         Args:
-            being_state: Current unified state
-            candidate_actions: List of candidate actions with metadata
-            
+            being_state (BeingState): The current unified state of the being.
+            candidate_actions (List[Dict[str, Any]]): A list of candidate actions.
+
         Returns:
-            Selected action with reasoning, or None if coordination fails
+            Optional[Dict[str, Any]]: The selected action, or None if no decision
+                                      could be made.
         """
         meta_decision = self._consult_meta_cortex(being_state, candidate_actions)
         if meta_decision:
@@ -682,23 +689,20 @@ Provide: Selected action number (or 0 for none), reasoning, and confidence."""
         priority: ActionPriority
     ) -> tuple[bool, str]:
         """
-        Prevent conflicting actions before execution.
-        
-        Phase 3.4: Conflict Prevention
-        
-        Checks for conflicts with:
-        - Current system state (stuck loops, low health, etc.)
-        - Temporal binding state (unclosed loops)
-        - Subsystem recommendations
-        - Recent action history
-        
+        Checks for and prevents conflicting actions before execution.
+
+        This method validates an action against the current system state,
+        including stuck loops, low health, temporal binding issues, and
+        conflicting recommendations from other subsystems.
+
         Args:
-            action: Action to check
-            being_state: Current unified state
-            priority: Action priority
-            
+            action (str): The action to check.
+            being_state (BeingState): The current unified state of the being.
+            priority (ActionPriority): The priority of the action.
+
         Returns:
-            (is_allowed, reason) - True if action should proceed
+            tuple[bool, str]: A tuple containing a boolean indicating if the
+                              action is allowed and a string explaining the reason.
         """
         # Check 1: Stuck loop prevention (lenient for exploration)
         if being_state.stuck_loop_count >= 3:
@@ -800,19 +804,19 @@ Provide: Selected action number (or 0 for none), reasoning, and confidence."""
         temporal_tracker: Optional[Any] = None
     ) -> Dict[str, Any]:
         """
-        Ensure temporal binding loops close properly.
-        
-        Phase 3.5: Temporal Binding Closure
-        
-        Tracks closure rate and provides recommendations to improve it.
-        Target: >95% closure rate
-        
+        Ensures that temporal binding loops are closing properly.
+
+        This method tracks the closure rate of temporal bindings and provides
+        recommendations to improve it if it falls below the target.
+
         Args:
-            being_state: Current unified state
-            temporal_tracker: Optional temporal coherence tracker
-            
+            being_state (BeingState): The current unified state of the being.
+            temporal_tracker (Optional[Any], optional): An optional temporal
+                                                        coherence tracker.
+                                                        Defaults to None.
+
         Returns:
-            Dict with closure metrics and recommendations
+            Dict[str, Any]: A dictionary with closure metrics and recommendations.
         """
         # Get temporal binding stats from BeingState
         temporal_coherence = being_state.temporal_coherence
@@ -902,7 +906,12 @@ Provide: Selected action number (or 0 for none), reasoning, and confidence."""
                 logger.error(f"[ARBITER] Callback error: {e}")
     
     def get_stats(self) -> Dict[str, Any]:
-        """Get arbiter statistics."""
+        """
+        Gets a dictionary of statistics about the arbiter.
+
+        Returns:
+            Dict[str, Any]: A dictionary of statistics.
+        """
         total = max(self.stats['total_requests'], 1)
         executed = max(self.stats['executed'], 1)
         
@@ -915,7 +924,7 @@ Provide: Selected action number (or 0 for none), reasoning, and confidence."""
         }
     
     def print_stats(self):
-        """Print formatted statistics."""
+        """Prints a formatted summary of arbiter statistics to the console."""
         stats = self.get_stats()
         
         print(f"\n{'='*60}")

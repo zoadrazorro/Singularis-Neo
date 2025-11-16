@@ -20,7 +20,7 @@ from collections import defaultdict
 
 
 class CausalRelation(Enum):
-    """Types of causal relationships."""
+    """Enumerates the types of relationships that can exist between nodes in the causal graph."""
     CAUSES = "causes"  # A → B
     PREVENTS = "prevents"  # A ⊣ B
     ENABLES = "enables"  # A ⊢ B
@@ -29,15 +29,17 @@ class CausalRelation(Enum):
 
 @dataclass
 class CausalNode:
-    """
-    A node in the causal graph representing a variable/concept.
+    """Represents a variable or concept as a node in the causal graph.
 
     Attributes:
-        name: Unique identifier
-        value: Current state/value
-        parents: Direct causes
-        children: Direct effects
-        node_type: observational/interventional/counterfactual
+        name: The unique identifier for the node.
+        value: The current observed or intervened value of the variable.
+        parents: A set of names of nodes that are direct causes of this node.
+        children: A set of names of nodes that are directly affected by this node.
+        node_type: The type of the node, typically "observational", but can be
+                   changed to "interventional" or "counterfactual" during reasoning.
+        causal_strengths: A dictionary mapping parent names to the strength of their
+                          causal influence on this node.
     """
     name: str
     value: Optional[float] = None
@@ -49,25 +51,33 @@ class CausalNode:
     causal_strengths: Dict[str, float] = field(default_factory=dict)
 
     def add_parent(self, parent: str, strength: float = 1.0):
-        """Add a causal parent (A causes this node)."""
+        """Adds a direct cause (parent) to this node.
+
+        Args:
+            parent: The name of the parent node.
+            strength: The strength of the causal link from the parent to this node.
+        """
         self.parents.add(parent)
         self.causal_strengths[parent] = strength
 
     def add_child(self, child: str):
-        """Add a causal child (this node causes B)."""
+        """Adds a direct effect (child) to this node.
+
+        Args:
+            child: The name of the child node.
+        """
         self.children.add(child)
 
 
 @dataclass
 class CausalEdge:
-    """
-    A causal edge representing a causal relationship.
-    
+    """Represents a directed causal relationship between two nodes.
+
     Attributes:
-        cause: The causing variable
-        effect: The effect variable
-        strength: Strength of causal relationship (0-1)
-        confidence: Confidence in this relationship (0-1)
+        cause: The name of the variable that is the cause.
+        effect: The name of the variable that is the effect.
+        strength: The strength of the causal relationship (e.g., a regression coefficient).
+        confidence: The confidence in the existence of this causal link (0.0 to 1.0).
     """
     cause: str
     effect: str
@@ -77,11 +87,16 @@ class CausalEdge:
 
 @dataclass
 class Intervention:
-    """
-    An intervention: do(X=x)
-    Forces a variable to a specific value, cutting incoming edges.
+    """Represents a "do-calculus" intervention, forcing a variable to a specific value.
 
-    This is Pearl's do-operator: the foundation of causal inference.
+    This is the programmatic equivalent of Judea Pearl's `do(X=x)` operator, which
+    is the foundation of causal inference. It allows for reasoning about the effects
+    of actions, distinct from passive observation.
+
+    Attributes:
+        variable: The name of the variable to intervene on.
+        value: The value to which the variable is to be set.
+        timestamp: The time of the intervention.
     """
     variable: str
     value: float
@@ -89,22 +104,22 @@ class Intervention:
 
 
 class CausalGraph:
-    """
-    Causal graph implementing Pearl's causality framework.
+    """Implements a causal graph based on Judea Pearl's framework for causal inference.
 
-    Key capabilities:
-    1. Learn causal structure from observational data
-    2. Compute interventional distributions: P(Y|do(X=x))
-    3. Counterfactual reasoning: "What if I had done X instead?"
-    4. Confounding detection and adjustment
-
-    Uses:
-    - NetworkX for graph structure
-    - Constraint-based learning (PC algorithm)
-    - Bayesian network inference
+    This class provides the core functionalities for building and reasoning with
+    causal models. It allows the system to move beyond mere correlation and understand
+    the cause-and-effect structure of its environment. Key capabilities include
+    learning causal relationships, predicting the outcomes of interventions (actions),
+    and performing counterfactual reasoning.
     """
 
     def __init__(self, learning_rate: float = 0.1):
+        """Initializes the CausalGraph.
+
+        Args:
+            learning_rate: The learning rate used for updating causal strengths
+                           when learning from surprise.
+        """
         self.nodes: Dict[str, CausalNode] = {}
         self.graph = nx.DiGraph()  # Directed acyclic graph (DAG)
         self.learning_rate = learning_rate
@@ -116,7 +131,15 @@ class CausalGraph:
         self.intervention_history: List[Tuple[Intervention, Dict[str, float]]] = []
 
     def add_node(self, name: str, value: Optional[float] = None) -> CausalNode:
-        """Add a node to the causal graph."""
+        """Adds a node to the causal graph if it doesn't already exist.
+
+        Args:
+            name: The unique name for the node.
+            value: The initial value of the node.
+
+        Returns:
+            The newly created or existing `CausalNode` object.
+        """
         if name not in self.nodes:
             node = CausalNode(name=name, value=value)
             self.nodes[name] = node
@@ -124,13 +147,15 @@ class CausalGraph:
         return self.nodes[name]
 
     def add_edge(self, cause_or_edge, effect: Optional[str] = None, strength: float = 1.0):
-        """
-        Add causal edge: cause → effect
+        """Adds a directed causal edge from a cause to an effect.
+
+        This method ensures that adding the edge does not create a cycle, preserving
+        the Directed Acyclic Graph (DAG) property of the causal model.
 
         Args:
-            cause_or_edge: Either a CausalEdge object or a string (cause variable)
-            effect: Child variable (if cause_or_edge is a string)
-            strength: Causal strength (learned from data)
+            cause_or_edge: Either a `CausalEdge` object or the string name of the cause node.
+            effect: The string name of the effect node. Required if `cause_or_edge` is a string.
+            strength: The causal strength of the relationship.
         """
         # Handle both CausalEdge objects and string arguments
         if isinstance(cause_or_edge, CausalEdge):
@@ -156,19 +181,19 @@ class CausalGraph:
             print(f"Warning: Adding {cause}→{effect} would create cycle. Skipped.")
 
     def intervene(self, intervention: Intervention) -> Dict[str, float]:
-        """
-        Perform intervention: do(variable=value)
+        """Performs a causal intervention using the do-operator.
 
-        This is the KEY operation for causal inference:
-        - Cuts incoming edges to intervened variable
-        - Propagates effects forward through graph
-        - Returns predicted outcomes for all variables
+        This is the core operation for causal reasoning. It simulates the effect
+        of forcing a variable to a specific value by creating a "mutilated" version
+        of the graph where all causal links into the intervened variable are severed.
+        It then propagates the effect of this intervention forward through the graph.
 
         Args:
-            intervention: The do(X=x) operation
+            intervention: The `Intervention` object specifying the variable and value.
 
         Returns:
-            Predicted values for all variables after intervention
+            A dictionary of predicted values for all variables in the graph following
+            the intervention.
         """
         var = intervention.variable
         val = intervention.value
@@ -194,10 +219,7 @@ class CausalGraph:
         graph: nx.DiGraph,
         initial_values: Dict[str, float]
     ) -> Dict[str, float]:
-        """
-        Propagate values forward through causal graph.
-        Uses topological sort to respect causal order.
-        """
+        """Propagates values forward through the causal graph respecting causal order."""
         values = initial_values.copy()
 
         # Get topological order (respects causation)
@@ -232,18 +254,18 @@ class CausalGraph:
         action: str,
         state: Dict[str, float]
     ) -> Dict[str, float]:
-        """
-        Predict outcome of action in given state.
+        """Predicts the outcome of taking an action in a given state.
 
-        This answers: "If I do X in state S, what happens?"
-        NOT: "What happens when X occurs naturally?"
+        This method models an action as an intervention on a specific variable and
+        uses the `intervene` method to predict the resulting state of the world.
+        This answers the question, "If I *do* X, what will happen?"
 
         Args:
-            action: Variable to intervene on (e.g., "grasp_object")
-            state: Current world state
+            action: The name of the variable to intervene on (representing the action).
+            state: A dictionary representing the current state of the world.
 
         Returns:
-            Predicted next state after intervention
+            A dictionary representing the predicted next state after the action.
         """
         # Set current state
         for var, val in state.items():
@@ -261,13 +283,18 @@ class CausalGraph:
         actual_past: Dict[str, float],
         intervention: Intervention
     ) -> Dict[str, float]:
-        """
-        Counterfactual reasoning: "What if I had done X instead?"
+        """Performs counterfactual reasoning: "What would have happened if...?"
 
-        Three steps (Pearl's algorithm):
-        1. Abduction: Infer latent variables from actual past
-        2. Action: Apply intervention
-        3. Prediction: Compute counterfactual outcomes
+        This method estimates what the outcome would have been if a different
+        action had been taken in the past. It follows the three steps of Pearl's
+        algorithm: abduction, action, and prediction (in a simplified form).
+
+        Args:
+            actual_past: A dictionary representing the actual observed past state.
+            intervention: The counterfactual `Intervention` to be applied.
+
+        Returns:
+            A dictionary representing the predicted counterfactual outcome.
         """
         # Simplified counterfactual: re-run with intervention
         # Full Pearl counterfactuals require structural equations
@@ -281,11 +308,15 @@ class CausalGraph:
         return counterfactual_outcome
 
     def learn_from_observation(self, observation: Dict[str, float]):
-        """
-        Learn causal structure from observational data.
-        Uses simple correlation → causation heuristics.
+        """Learns the causal structure from observational data.
 
-        For production: Use PC algorithm, FCI, or constraint-based methods.
+        This method updates the graph based on a new observation. In this simplified
+        implementation, it adds new nodes but relies on other mechanisms to add
+        edges. In a more advanced system, this would involve a causal discovery
+        algorithm (like PC or FCI).
+
+        Args:
+            observation: A dictionary representing an observed state.
         """
         self.observation_history.append(observation)
 
@@ -305,14 +336,15 @@ class CausalGraph:
         expected: Dict[str, float],
         actual: Dict[str, float]
     ):
-        """
-        Update causal model from prediction errors.
+        """Updates the causal model based on prediction errors (surprise).
 
-        Key to continual learning: when predictions fail, update the model.
+        When the predicted outcome of an action differs significantly from the
+        actual outcome, this method adjusts the causal strengths of the parent
+        nodes of the surprising variable to improve future predictions.
 
         Args:
-            expected: Predicted values
-            actual: Observed values
+            expected: The dictionary of predicted values.
+            actual: The dictionary of actual observed values.
         """
         # Compute prediction error for each variable
         for var in expected.keys():
@@ -330,10 +362,18 @@ class CausalGraph:
                             node.causal_strengths[parent] = current + self.learning_rate * error
 
     def find_confounders(self, var1: str, var2: str) -> List[str]:
-        """
-        Find confounding variables between var1 and var2.
+        """Identifies confounding variables between two specified variables.
 
-        A confounder C affects both var1 and var2, creating spurious correlation.
+        A confounder is a common cause of two variables that can create a spurious
+        correlation between them. Identifying confounders is crucial for accurate
+        causal reasoning.
+
+        Args:
+            var1: The name of the first variable.
+            var2: The name of the second variable.
+
+        Returns:
+            A list of names of confounding variables.
         """
         confounders = []
 
@@ -346,9 +386,18 @@ class CausalGraph:
         return confounders
 
     def compute_total_effect(self, cause: str, effect: str) -> float:
-        """
-        Compute total causal effect of cause on effect.
-        Includes all causal paths, not just direct.
+        """Computes the total causal effect of one variable on another.
+
+        This calculation sums the effects over all causal pathways from the cause
+        to the effect, providing a measure of the total influence, both direct
+        and indirect.
+
+        Args:
+            cause: The name of the cause variable.
+            effect: The name of the effect variable.
+
+        Returns:
+            The total causal effect as a float.
         """
         if cause not in self.graph or effect not in self.graph:
             return 0.0
@@ -371,7 +420,11 @@ class CausalGraph:
             return 0.0
 
     def visualize(self) -> str:
-        """Return ASCII visualization of causal graph."""
+        """Generates a simple ASCII text visualization of the causal graph.
+
+        Returns:
+            A string representing the graph structure.
+        """
         lines = ["Causal Graph:", "=" * 40]
 
         for node_name in self.nodes:
@@ -387,7 +440,11 @@ class CausalGraph:
         return "\n".join(lines)
 
     def to_dict(self) -> Dict[str, Any]:
-        """Export graph structure for serialization."""
+        """Serializes the causal graph to a dictionary.
+
+        Returns:
+            A dictionary containing the nodes and edges of the graph.
+        """
         return {
             'nodes': {
                 name: {
@@ -410,7 +467,14 @@ class CausalGraph:
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'CausalGraph':
-        """Load graph from serialized data."""
+        """Creates a CausalGraph instance from a serialized dictionary representation.
+
+        Args:
+            data: A dictionary containing the graph's nodes and edges.
+
+        Returns:
+            A new `CausalGraph` instance.
+        """
         graph = cls()
 
         # Add nodes

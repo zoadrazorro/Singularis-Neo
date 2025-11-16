@@ -24,22 +24,16 @@ from singularis.core.types import CoherentiaScore, Lumen, ExpertIO, WorkspaceSta
 
 class CoherentiaCalculator:
     """
-    Calculate coherentia across the Three Lumina.
+    Calculates the Coherentia score, a measure of alignment with Being's
+    ontological structure across three fundamental aspects (Lumina).
 
-    LUMEN ONTICUM (Energy/Being):
-    - Robustness: How resilient to perturbation?
-    - Vitality: How energetically efficient?
-    - Conatus: How persistent/self-maintaining?
+    The three Lumina are:
+    - LUMEN ONTICUM (Energy/Being): Measures robustness, vitality, and persistence.
+    - LUMEN STRUCTURALE (Form/Rationality): Measures integration, consistency, and structure.
+    - LUMEN PARTICIPATUM (Consciousness/Awareness): Measures self-reflexivity, clarity,
+      and non-dual recognition.
 
-    LUMEN STRUCTURALE (Form/Rationality):
-    - Integration: IIT Φ (integrated information)
-    - Logical consistency: Contradictions resolved?
-    - Pattern coherence: Clear structure?
-
-    LUMEN PARTICIPATUM (Consciousness/Awareness):
-    - Self-reflexivity: HOT depth (higher-order thought)
-    - Phenomenological clarity: Vivid awareness?
-    - Non-dual recognition: Adequate vs inadequate ideas?
+    The total Coherentia is the geometric mean of the scores from the three Lumina.
     """
 
     def __init__(
@@ -49,8 +43,15 @@ class CoherentiaCalculator:
         participatory_weight: float = 1.0,
     ):
         """
-        Initialize with optional weights for three Lumina.
-        Default: equal weighting (geometric mean).
+        Initializes the CoherentiaCalculator with optional weights for the three Lumina.
+
+        The weights act as exponents in the geometric mean calculation, allowing for
+        different aspects of Coherentia to be emphasized.
+
+        Args:
+            ontical_weight (float, optional): The weight for the ontical Lumen. Defaults to 1.0.
+            structural_weight (float, optional): The weight for the structural Lumen. Defaults to 1.0.
+            participatory_weight (float, optional): The weight for the participatory Lumen. Defaults to 1.0.
         """
         self.ontical_weight = ontical_weight
         self.structural_weight = structural_weight
@@ -67,12 +68,19 @@ class CoherentiaCalculator:
 
     def measure_ontical(self, content: Any, metadata: Optional[Dict] = None) -> float:
         """
-        Measure LUMEN ONTICUM (Energy/Being).
+        Measures the ontical Lumen (Energy/Being).
 
-        Computational correlates:
-        - Robustness: Length, completeness, error-free
-        - Vitality: Information density, non-redundancy
-        - Conatus: Self-consistency, persistence
+        This score is calculated based on computational correlates of:
+        - Robustness: The length and completeness of the content.
+        - Vitality: The information density, measured as the ratio of unique words to total words.
+        - Conatus: Self-consistency, proxied by the presence of logical connectors.
+
+        Args:
+            content (Any): The content to be analyzed, which will be converted to a string.
+            metadata (Optional[Dict], optional): Additional metadata (not currently used). Defaults to None.
+
+        Returns:
+            float: The ontical score, in the range [0, 1].
         """
         if metadata is None:
             metadata = {}
@@ -116,12 +124,20 @@ class CoherentiaCalculator:
         metadata: Optional[Dict] = None
     ) -> float:
         """
-        Measure LUMEN STRUCTURALE (Form/Rationality).
+        Measures the structural Lumen (Form/Rationality).
 
-        Computational correlates:
-        - Integration: IIT Φ (provided externally)
-        - Logical consistency: No contradictions
-        - Pattern coherence: Clear argumentative structure
+        This score is based on:
+        - Integration: The integrated information (Φ), if provided, otherwise estimated from sentence connectivity.
+        - Logical consistency: The absence of contradiction markers.
+        - Pattern coherence: The presence of structural markers.
+
+        Args:
+            content (Any): The content to be analyzed, converted to a string.
+            phi (Optional[float], optional): The integrated information score (Φ). If not provided, it is estimated. Defaults to None.
+            metadata (Optional[Dict], optional): Additional metadata (not currently used). Defaults to None.
+
+        Returns:
+            float: The structural score, in the range [0, 1].
         """
         if metadata is None:
             metadata = {}
@@ -168,12 +184,20 @@ class CoherentiaCalculator:
         metadata: Optional[Dict] = None
     ) -> float:
         """
-        Measure LUMEN PARTICIPATUM (Consciousness/Awareness).
+        Measures the participatory Lumen (Consciousness/Awareness).
 
-        Computational correlates:
-        - Self-reflexivity: HOT depth (meta-cognitive markers)
-        - Phenomenological clarity: Vivid, concrete language
-        - Non-dual recognition: Transcends subject-object split
+        This score is based on:
+        - Self-reflexivity: Higher-order thought (HOT) depth, if provided, otherwise estimated from meta-cognitive markers.
+        - Phenomenological clarity: The presence of vivid and concrete language.
+        - Non-dual recognition: The presence of markers that transcend dualism.
+
+        Args:
+            content (Any): The content to be analyzed, converted to a string.
+            hot_depth (Optional[float], optional): The higher-order thought depth. If not provided, it is estimated. Defaults to None.
+            metadata (Optional[Dict], optional): Additional metadata (not currently used). Defaults to None.
+
+        Returns:
+            float: The participatory score, in the range [0, 1].
         """
         if metadata is None:
             metadata = {}
@@ -228,13 +252,19 @@ class CoherentiaCalculator:
         metadata: Optional[Dict] = None
     ) -> CoherentiaScore:
         """
-        Calculate complete coherentia across all three Lumina.
+        Calculates the complete Coherentia score across all three Lumina.
 
-        Returns CoherentiaScore with:
-        - ontical: Energy/vitality score
-        - structural: Form/rationality score
-        - participatory: Consciousness/awareness score
-        - total: Geometric mean of all three
+        This method computes the ontical, structural, and participatory scores and
+        then combines them into a total score using a weighted geometric mean.
+
+        Args:
+            content (Any): The content to be analyzed.
+            phi (Optional[float], optional): The integrated information score (Φ) for the structural calculation. Defaults to None.
+            hot_depth (Optional[float], optional): The higher-order thought depth for the participatory calculation. Defaults to None.
+            metadata (Optional[Dict], optional): Additional metadata. Defaults to None.
+
+        Returns:
+            CoherentiaScore: A dataclass containing the ontical, structural, participatory, and total scores.
         """
         ontical = self.measure_ontical(content, metadata)
         structural = self.measure_structural(content, phi, metadata)
@@ -274,14 +304,21 @@ class CoherentiaCalculator:
         threshold: float = 0.02
     ) -> tuple[Optional[bool], str]:
         """
-        Ethical validation based on coherentia change.
+        Validates the ethical alignment of an action based on the change in Coherentia.
 
-        From ETHICA UNIVERSALIS:
-        - Good = Coherentia Increase (Δℭ𝕠 > threshold)
-        - Neutral = No significant change (|Δℭ𝕠| < threshold)
-        - Evil = Coherentia Decrease (Δℭ𝕠 < -threshold)
+        According to the principles of ETHICA UNIVERSALIS, an action is considered:
+        - Good (True) if it increases Coherentia by more than the threshold.
+        - Evil (False) if it decreases Coherentia by more than the threshold.
+        - Neutral (None) if the change is within the threshold.
 
-        This is not arbitrary morality but flows from Being's structure.
+        Args:
+            coherentia_before (float): The Coherentia score before the action.
+            coherentia_after (float): The Coherentia score after the action.
+            threshold (float, optional): The significance threshold for the change. Defaults to 0.02.
+
+        Returns:
+            tuple[Optional[bool], str]: A tuple containing the ethical status (True, False, or None)
+                                       and a string explaining the reasoning.
         """
         delta = coherentia_after - coherentia_before
 
@@ -317,7 +354,19 @@ def calculate_coherentia(
     metadata: Optional[Dict] = None
 ) -> CoherentiaScore:
     """
-    Quick coherentia calculation using default calculator.
+    A convenience function for a quick Coherentia calculation using a default calculator.
+
+    This function instantiates a `CoherentiaCalculator` with default weights and
+    returns the `CoherentiaScore`.
+
+    Args:
+        content (Any): The content to be analyzed.
+        phi (Optional[float], optional): The integrated information score (Φ). Defaults to None.
+        hot_depth (Optional[float], optional): The higher-order thought depth. Defaults to None.
+        metadata (Optional[Dict], optional): Additional metadata. Defaults to None.
+
+    Returns:
+        CoherentiaScore: The calculated Coherentia score.
     """
     calculator = CoherentiaCalculator()
     return calculator.calculate(content, phi, hot_depth, metadata)
@@ -329,7 +378,18 @@ def validate_ethical_action(
     threshold: float = 0.02
 ) -> tuple[Optional[bool], str]:
     """
-    Quick ethical validation.
+    A convenience function for a quick ethical validation of an action.
+
+    This function instantiates a `CoherentiaCalculator` and uses it to
+    validate the ethical alignment of an action based on the change in Coherentia.
+
+    Args:
+        coherentia_before (float): The Coherentia score before the action.
+        coherentia_after (float): The Coherentia score after the action.
+        threshold (float, optional): The significance threshold for the change. Defaults to 0.02.
+
+    Returns:
+        tuple[Optional[bool], str]: A tuple containing the ethical status and a reasoning string.
     """
     calculator = CoherentiaCalculator()
     return calculator.validate_ethical_alignment(

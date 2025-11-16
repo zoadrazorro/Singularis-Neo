@@ -49,12 +49,12 @@ class ExpertMetrics:
 
 class AsyncExpertPool:
     """
-    Non-blocking expert pool with automatic fallback.
-    
-    Prevents rate limit cascade failures by:
-    1. Acquiring experts with timeout
-    2. Gracefully degrading to fallback experts
-    3. Tracking expert health and availability
+    Manages a pool of asynchronous experts, providing non-blocking access with
+    automatic fallback and circuit breaker functionality.
+
+    This class is designed to prevent rate limiting cascade failures by gracefully
+    degrading to fallback experts and tracking the health and availability of
+    each expert.
     """
     
     def __init__(
@@ -65,13 +65,18 @@ class AsyncExpertPool:
         circuit_breaker_threshold: int = 5
     ):
         """
-        Initialize async expert pool.
-        
+        Initializes the async expert pool.
+
         Args:
-            experts: List of primary experts
-            max_concurrent: Max concurrent expert uses
-            fallback_expert: Fallback expert for when pool exhausted
-            circuit_breaker_threshold: Consecutive failures before circuit break
+            experts (List[ExpertInterface]): A list of primary expert instances.
+            max_concurrent (int, optional): The maximum number of concurrent
+                                          expert uses. Defaults to 3.
+            fallback_expert (Optional[ExpertInterface], optional): A fallback expert
+                                                                    to use when the pool
+                                                                    is exhausted. Defaults to None.
+            circuit_breaker_threshold (int, optional): The number of consecutive
+                                                       failures before an expert's
+                                                       circuit is broken. Defaults to 5.
         """
         self.experts = experts
         self.fallback_expert = fallback_expert
@@ -99,13 +104,19 @@ class AsyncExpertPool:
     
     async def acquire(self, timeout: float = 5.0) -> Optional[tuple[int, ExpertInterface]]:
         """
-        Get available expert or None if all busy.
-        
+        Acquires an available expert from the pool.
+
+        This method waits for an expert to become available, up to the specified
+        timeout. It also checks the expert's circuit breaker before returning it.
+
         Args:
-            timeout: Max time to wait for expert
-            
+            timeout (float, optional): The maximum time in seconds to wait for an
+                                     expert. Defaults to 5.0.
+
         Returns:
-            (expert_id, expert) or None if timeout
+            Optional[tuple[int, ExpertInterface]]: A tuple containing the expert's ID
+                                                  and the expert instance, or None
+                                                  if the timeout is reached.
         """
         try:
             async with asyncio.timeout(timeout):
@@ -133,18 +144,24 @@ class AsyncExpertPool:
     
     async def release(self, expert_id: int, expert: ExpertInterface):
         """
-        Return expert to pool.
-        
+        Returns an expert to the pool, making it available for other tasks.
+
         Args:
-            expert_id: ID of expert
-            expert: Expert instance
+            expert_id (int): The ID of the expert to release.
+            expert (ExpertInterface): The expert instance to release.
         """
         self.in_use.discard(expert_id)
         await self.available.put((expert_id, expert))
         logger.debug(f"[EXPERT-POOL] Released expert {expert_id}")
     
     def record_success(self, expert_id: int, response_time: float):
-        """Record successful expert call."""
+        """
+        Records a successful expert call, updating the expert's metrics.
+
+        Args:
+            expert_id (int): The ID of the expert.
+            response_time (float): The time taken for the expert to respond.
+        """
         metrics = self.metrics[expert_id]
         metrics.total_calls += 1
         metrics.successful_calls += 1
@@ -153,7 +170,13 @@ class AsyncExpertPool:
         metrics.consecutive_failures = 0
     
     def record_failure(self, expert_id: int):
-        """Record failed expert call."""
+        """
+        Records a failed expert call, updating the expert's metrics and checking
+        the circuit breaker.
+
+        Args:
+            expert_id (int): The ID of the expert.
+        """
         metrics = self.metrics[expert_id]
         metrics.total_calls += 1
         metrics.failed_calls += 1
@@ -167,20 +190,30 @@ class AsyncExpertPool:
             )
     
     def record_fallback_success(self, response_time: float):
-        """Record successful fallback call."""
+        """
+        Records a successful call to the fallback expert.
+
+        Args:
+            response_time (float): The time taken for the fallback expert to respond.
+        """
         self.fallback_metrics.total_calls += 1
         self.fallback_metrics.successful_calls += 1
         self.fallback_metrics.total_time += response_time
         self.fallback_metrics.last_success_time = time.time()
     
     def record_fallback_failure(self):
-        """Record failed fallback call."""
+        """Records a failed call to the fallback expert."""
         self.fallback_metrics.total_calls += 1
         self.fallback_metrics.failed_calls += 1
         self.fallback_metrics.last_failure_time = time.time()
     
     def get_statistics(self) -> dict:
-        """Get pool statistics."""
+        """
+        Gets a dictionary of statistics about the expert pool.
+
+        Returns:
+            dict: A dictionary of statistics.
+        """
         return {
             'total_experts': len(self.experts),
             'in_use': len(self.in_use),
@@ -204,10 +237,18 @@ class AsyncExpertPool:
 
 
 class PooledExpertCaller:
-    """High-level interface for calling pooled experts with fallback."""
+    """
+    Provides a high-level interface for calling experts from an `AsyncExpertPool`,
+    handling the acquisition, release, and fallback logic automatically.
+    """
     
     def __init__(self, pool: AsyncExpertPool):
-        """Initialize with expert pool."""
+        """
+        Initializes the PooledExpertCaller.
+
+        Args:
+            pool (AsyncExpertPool): The expert pool to use for calling experts.
+        """
         self.pool = pool
     
     async def call_expert(
@@ -217,15 +258,19 @@ class PooledExpertCaller:
         **kwargs
     ) -> Optional[str]:
         """
-        Call expert with automatic fallback.
-        
+        Calls an expert from the pool to generate a response to a prompt.
+
+        This method attempts to acquire an expert from the primary pool. If that
+        fails or the expert call fails, it will fall back to the fallback expert
+        if one is available.
+
         Args:
-            prompt: Prompt for expert
-            timeout: Timeout for acquiring expert
-            **kwargs: Additional arguments for expert
-            
+            prompt (str): The prompt to send to the expert.
+            timeout (float, optional): The timeout for acquiring an expert. Defaults to 5.0.
+            **kwargs: Additional keyword arguments to pass to the expert's `generate` method.
+
         Returns:
-            Expert response or None if all failed
+            Optional[str]: The expert's response, or None if all experts failed.
         """
         # Try primary pool
         expert_tuple = await self.pool.acquire(timeout=timeout)
@@ -273,16 +318,18 @@ class PooledExpertCaller:
         **kwargs
     ) -> Optional[str]:
         """
-        Call vision expert with automatic fallback.
-        
+        Calls a vision expert from the pool to analyze an image.
+
+        This method follows the same logic as `call_expert`, but for vision-based tasks.
+
         Args:
-            prompt: Prompt for expert
-            image: Image to analyze
-            timeout: Timeout for acquiring expert
-            **kwargs: Additional arguments for expert
-            
+            prompt (str): The prompt to send to the vision expert.
+            image (Any): The image to be analyzed.
+            timeout (float, optional): The timeout for acquiring an expert. Defaults to 5.0.
+            **kwargs: Additional keyword arguments to pass to the expert's `analyze_image` method.
+
         Returns:
-            Expert response or None if all failed
+            Optional[str]: The expert's response, or None if all experts failed.
         """
         # Try primary pool
         expert_tuple = await self.pool.acquire(timeout=timeout)

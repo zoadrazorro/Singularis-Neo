@@ -16,14 +16,36 @@ from typing import Any, Deque, Dict, List, Optional, Tuple
 
 @dataclass
 class Waypoint:
+    """Represents a significant point in the navigation graph.
+
+    A waypoint is a named location that has associated contextual information,
+    which can be used for more intelligent pathfinding and decision-making.
+
+    Attributes:
+        location: The unique name or identifier of the location.
+        context: A dictionary of contextual data about the waypoint.
+    """
     location: str
     context: Dict[str, Any]
 
 
 class SmartNavigator:
-    """Learned navigation helper."""
+    """A learned navigation helper for providing intelligent movement suggestions.
+
+    This class builds and maintains a spatial understanding of the game world by
+    learning locations and the connections between them. It can suggest exploration
+    actions and plan routes between discovered points using an A* search algorithm,
+    even without direct access to the game's underlying navigation mesh.
+
+    Attributes:
+        map_memory: A dictionary storing contextual information about each known location.
+        fast_travel_points: A set of locations that can be used for fast travel.
+        discovered_locations: A set of all locations the agent has visited.
+        recent_routes: A deque that keeps a history of recently planned routes.
+    """
 
     def __init__(self) -> None:
+        """Initializes the SmartNavigator."""
         self.map_memory: Dict[str, Dict[str, Any]] = {}
         self.fast_travel_points: set[str] = set()
         self.discovered_locations: set[str] = set()
@@ -32,6 +54,16 @@ class SmartNavigator:
         self._last_known_location: Optional[str] = None
 
     def learn_location(self, location: str, context: Optional[Dict[str, Any]] = None) -> None:
+        """Adds or updates a location in the navigator's memory.
+
+        This method records a location as discovered and updates its associated
+        contextual information. It also sets this location as the agent's last
+        known position.
+
+        Args:
+            location: The name of the location to learn.
+            context: An optional dictionary of contextual data about the location.
+        """
         if not location:
             return
         self.discovered_locations.add(location)
@@ -42,6 +74,17 @@ class SmartNavigator:
         self._last_known_location = location
 
     def record_transition(self, source: str, destination: str, distance: float = 1.0) -> None:
+        """Records a navigable path between two locations.
+
+        This method updates the internal location graph, creating a weighted,
+        undirected edge between the source and destination. This graph is used
+        by the route planning algorithm.
+
+        Args:
+            source: The starting location of the transition.
+            destination: The ending location of the transition.
+            distance: The cost or distance of traversing this path.
+        """
         if not source or not destination or source == destination:
             return
         self._location_graph[source][destination] = min(
@@ -52,6 +95,19 @@ class SmartNavigator:
         )
 
     def suggest_exploration_action(self, context: Dict[str, Any]) -> str:
+        """Suggests an action to explore the environment.
+
+        Based on the provided context, this method decides on a simple exploration
+        strategy. It prioritizes moving towards nearby points that have not yet
+        been discovered.
+
+        Args:
+            context: A dictionary containing information about the current
+                     environment, such as nearby points of interest.
+
+        Returns:
+            A string representing the suggested navigation action (e.g., 'move_forward').
+        """
         nearby = context.get("nearby_points", [])
         if not nearby:
             return "move_forward"
@@ -64,6 +120,19 @@ class SmartNavigator:
         return "navigate"
 
     def plan_route(self, target_location: str) -> List[str]:
+        """Plans a route from the last known location to a target using A* search.
+
+        This method calculates the shortest path through the learned location graph.
+        It uses a heuristic to estimate the cost to the target, making the search
+        more efficient.
+
+        Args:
+            target_location: The name of the destination location.
+
+        Returns:
+            A list of location names representing the planned route, or an empty
+            list if no route can be found.
+        """
         start = self._last_known_location
         if not start or start == target_location:
             return []
@@ -90,6 +159,7 @@ class SmartNavigator:
         return best_route
 
     def _heuristic_cost(self, location: str, target: str) -> float:
+        """Estimates the heuristic cost between two locations for A* search."""
         if location == target:
             return 0.0
         loc_info = self.map_memory.get(location, {})
@@ -101,6 +171,12 @@ class SmartNavigator:
         return math.dist(loc_pos, target_pos)
 
     def snapshot(self) -> Dict[str, Any]:
+        """Takes a snapshot of the navigator's current state.
+
+        Returns:
+            A dictionary containing key statistics about the navigator's memory,
+            such as the number of discovered locations and known routes.
+        """
         return {
             "discovered_locations": len(self.discovered_locations),
             "known_routes": len(self.recent_routes),

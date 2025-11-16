@@ -1,7 +1,20 @@
+/**
+ * @fileoverview This file contains the React component for the Timeline Panel,
+ * which visualizes the AGI's consciousness metrics and recent events over time.
+ */
+
 import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import './TimelinePanel.css';
 
+/**
+ * A panel component that displays a timeline of the AGI's performance and actions.
+ * It features a chart showing the history of consciousness metrics (Coherence and Phi)
+ * and a list of the most recent events (actions).
+ * @param {object} props - The component's props.
+ * @param {object} props.data - The live AGI state data object.
+ * @returns {React.Component} The rendered Timeline Panel.
+ */
 function TimelinePanel({ data }) {
   const consciousness = data.consciousness || {};
   const performance = data.performance || {};
@@ -66,10 +79,20 @@ function TimelinePanel({ data }) {
   );
 }
 
+/**
+ * Formats an action name string for display (e.g., "move_forward" -> "Move Forward").
+ * @param {string} action - The action name string.
+ * @returns {string} The formatted action name.
+ */
 function formatAction(action) {
   return action.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 }
 
+/**
+ * Formats a Unix timestamp into a locale-specific time string.
+ * @param {number} timestamp - The Unix timestamp.
+ * @returns {string} The formatted time string.
+ */
 function formatTime(timestamp) {
   if (!timestamp) return '';
   const date = new Date(timestamp * 1000);

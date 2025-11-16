@@ -1,15 +1,30 @@
 """
 Check learning progress in real-time.
 
+This script provides a simple command-line utility to monitor the progress of a
+running learning process by parsing its output log file (`learning_output.txt`).
+
 Usage:
     python check_progress.py
+
+The script reads the log file and uses regular expressions to extract key metrics,
+including:
+- The number of completed learning chunks out of the total.
+- The average time taken per chunk.
+- An estimated time remaining for the entire process.
+- The average and latest "Coherentia" scores.
+- The rate of "Ethical" chunks.
+
+It then prints a formatted summary of these metrics to the console, providing a
+quick and easy way to check the status and performance of the learning task
+without needing to tail the full log file.
 """
 
 import re
 from pathlib import Path
 
 def check_progress():
-    """Check current learning progress."""
+    """Reads the learning output log and prints a formatted progress summary."""
     
     output_file = Path("learning_output.txt")
     

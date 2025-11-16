@@ -1,9 +1,20 @@
+/**
+ * @fileoverview This file contains the React component for the Performance Panel,
+ * which displays metrics related to system timing, FPS, and overall performance health.
+ */
+
 import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import './PerformancePanel.css';
 
 /**
- * Performance metrics panel showing timing, FPS, and system health
+ * A panel component that displays performance metrics for the AGI.
+ * It includes real-time values for various timings (planning, execution, vision),
+ * total cycle time, and frames per second (FPS). It also shows a historical
+ * performance chart and a summary of system health.
+ * @param {object} props - The component's props.
+ * @param {object} props.data - The live AGI state data object.
+ * @returns {React.Component} The rendered Performance Panel.
  */
 function PerformancePanel({ data }) {
   const performance = data.performance || {};
