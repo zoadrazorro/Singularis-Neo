@@ -27,14 +27,18 @@ import base64
 
 @dataclass
 class VisualConcept:
-    """
-    A concept grounded in visual experience.
+    """Represents a concept that is grounded in the shared text-vision embedding space.
+
+    This class stores not only the name of a concept but also its corresponding
+    embedding vector. It can be enriched with visual examples to create a more
+    robust, multimodally-grounded representation.
 
     Attributes:
-        name: Concept name (e.g., "apple", "justice")
-        embedding: CLIP embedding vector
-        examples: List of image embeddings that exemplify this concept
-        abstraction_level: How abstract (0=concrete, 1=highly abstract)
+        name: The name of the concept (e.g., "apple", "justice").
+        embedding: The CLIP embedding vector for the concept.
+        examples: A list of image embeddings that visually exemplify the concept.
+        abstraction_level: A heuristic score (0=concrete, 1=abstract) indicating
+                           how abstract the concept is.
     """
     name: str
     embedding: np.ndarray
@@ -43,20 +47,13 @@ class VisualConcept:
 
 
 class VisionModule:
-    """
-    Vision module for multimodal grounding.
+    """Provides multimodal grounding capabilities using OpenAI's CLIP model.
 
-    Capabilities:
-    1. Encode images to embeddings (CLIP)
-    2. Encode text to embeddings (CLIP)
-    3. Measure image-text similarity
-    4. Ground abstract concepts in visual experience
-    5. Cross-modal retrieval
-
-    Uses CLIP (Contrastive Language-Image Pretraining):
-    - Learned joint embedding space for vision + language
-    - Zero-shot classification
-    - Cross-modal retrieval
+    This module bridges the gap between language and vision by operating in a shared
+    embedding space. It can encode both text and images into this space, allowing
+    for a variety of cross-modal tasks such as zero-shot image classification,
+    image-text similarity measurement, and the grounding of abstract linguistic
+    concepts in visual experience.
     """
 
     def __init__(
@@ -64,14 +61,13 @@ class VisionModule:
         model_name: str = "ViT-B/32",
         device: Optional[str] = None
     ):
-        """
-        Initialize vision module.
+        """Initializes the VisionModule.
 
         Args:
-            model_name: CLIP model variant
-                - "ViT-B/32": Fast, 150MB (recommended for 7900XT)
-                - "ViT-L/14": Better quality, 900MB
-            device: "cuda", "cpu", or None (auto-detect)
+            model_name: The specific CLIP model variant to use. Common options are
+                        "ViT-B/32" (faster, smaller) and "ViT-L/14" (slower, more accurate).
+            device: The compute device to run the model on ("cuda", "cpu"). If None,
+                    it will auto-detect CUDA availability.
         """
         self.model_name = model_name
 
@@ -92,7 +88,7 @@ class VisionModule:
         self._embedding_cache: Dict[str, np.ndarray] = {}
 
     def _ensure_loaded(self):
-        """Lazy load CLIP model to save memory."""
+        """Lazily loads the CLIP model and preprocessor on the first use."""
         if self._model is None:
             try:
                 import clip
@@ -112,15 +108,16 @@ class VisionModule:
         image: Union[Image.Image, np.ndarray, str],
         normalize: bool = True
     ) -> np.ndarray:
-        """
-        Encode image to embedding vector.
+        """Encodes an image into a CLIP embedding vector.
 
         Args:
-            image: PIL Image, numpy array, or file path
-            normalize: Normalize embedding to unit length
+            image: The image to encode, which can be a PIL Image, a NumPy array,
+                   or a file path to an image.
+            normalize: If True, the resulting embedding vector is normalized to
+                       unit length.
 
         Returns:
-            Embedding vector (512-dim for ViT-B/32, 768-dim for ViT-L/14)
+            A NumPy array representing the image embedding.
         """
         self._ensure_loaded()
 
@@ -149,15 +146,15 @@ class VisionModule:
         text: Union[str, List[str]],
         normalize: bool = True
     ) -> np.ndarray:
-        """
-        Encode text to embedding vector.
+        """Encodes a string or a list of strings into CLIP embedding vectors.
 
         Args:
-            text: Single text or list of texts
-            normalize: Normalize embeddings
+            text: The string or list of strings to encode.
+            normalize: If True, the resulting embedding vector(s) are normalized
+                       to unit length.
 
         Returns:
-            Embedding vector(s)
+            A NumPy array for a single string, or a 2D array for a list of strings.
         """
         self._ensure_loaded()
 
@@ -204,11 +201,14 @@ class VisionModule:
         embedding1: np.ndarray,
         embedding2: np.ndarray
     ) -> float:
-        """
-        Compute cosine similarity between embeddings.
+        """Computes the cosine similarity between two embedding vectors.
+
+        Args:
+            embedding1: The first embedding vector.
+            embedding2: The second embedding vector.
 
         Returns:
-            Similarity in [0, 1] (1 = identical, 0 = orthogonal)
+            A similarity score between 0.0 and 1.0, where 1.0 means identical.
         """
         # Cosine similarity
         sim = np.dot(embedding1, embedding2) / (
@@ -223,11 +223,14 @@ class VisionModule:
         image: Union[Image.Image, np.ndarray, str],
         text: str
     ) -> float:
-        """
-        Measure how well text describes image.
+        """Measures the semantic similarity between an image and a piece of text.
+
+        Args:
+            image: The input image.
+            text: The text to compare against the image.
 
         Returns:
-            Similarity score in [0, 1]
+            A similarity score between 0.0 and 1.0.
         """
         img_emb = self.encode_image(image)
         txt_emb = self.encode_text(text)
@@ -238,15 +241,18 @@ class VisionModule:
         image: Union[Image.Image, np.ndarray, str],
         candidates: List[str]
     ) -> Dict[str, float]:
-        """
-        Zero-shot image classification.
+        """Performs zero-shot image classification using a list of text labels.
+
+        This method leverages CLIP's joint embedding space to classify an image
+        without any prior training on the specific `candidates`. It works by finding
+        which text label's embedding is most similar to the image's embedding.
 
         Args:
-            image: Image to classify
-            candidates: List of possible labels
+            image: The image to classify.
+            candidates: A list of strings representing the possible class labels.
 
         Returns:
-            Dict mapping labels to probabilities
+            A dictionary mapping each candidate label to its predicted probability.
         """
         img_emb = self.encode_image(image)
         txt_embs = self.encode_text(candidates)
@@ -265,15 +271,18 @@ class VisionModule:
         concept_name: str,
         examples: Optional[List[Union[Image.Image, str]]] = None
     ) -> VisualConcept:
-        """
-        Ground an abstract concept in visual examples.
+        """Creates a `VisualConcept` by grounding a text concept with visual examples.
+
+        This method generates an embedding for the `concept_name` and, if provided,
+        averages it with the embeddings of the example images to create a more
+        robust, multimodally-grounded representation.
 
         Args:
-            concept_name: Name of concept (e.g., "justice", "force")
-            examples: Example images that exemplify the concept
+            concept_name: The name of the concept (e.g., "justice", "force").
+            examples: An optional list of example images that exemplify the concept.
 
         Returns:
-            VisualConcept with grounded embedding
+            A `VisualConcept` object with the grounded embedding.
         """
         # Encode concept name
         text_emb = self.encode_text(concept_name)
@@ -308,11 +317,14 @@ class VisionModule:
         concept1: str,
         concept2: str
     ) -> float:
-        """
-        Measure relationship between two concepts in visual space.
+        """Measures the semantic relationship between two concepts in the shared embedding space.
+
+        Args:
+            concept1: The name of the first concept.
+            concept2: The name of the second concept.
 
         Returns:
-            Similarity in [0, 1]
+            A similarity score between 0.0 and 1.0.
         """
         if concept1 in self.concepts and concept2 in self.concepts:
             emb1 = self.concepts[concept1].embedding
@@ -330,13 +342,18 @@ class VisionModule:
         candidates: List[str],
         top_k: int = 5
     ) -> List[tuple[str, float]]:
-        """
-        Find visual analogies: concepts similar in visual space.
+        """Finds concepts that are analogous to a query concept in the visual space.
 
-        Example: "apple" → "orange", "ball", "sphere"
+        For example, a query for "apple" might return "sphere" and "ball" as
+        strong visual analogies due to their similar shapes.
+
+        Args:
+            query: The concept to find analogies for.
+            candidates: A list of candidate concepts to compare against.
+            top_k: The number of top analogies to return.
 
         Returns:
-            List of (concept, similarity) sorted by similarity
+            A list of (concept, similarity) tuples, sorted by similarity.
         """
         query_emb = self.encode_text(query)
 
@@ -357,18 +374,19 @@ class VisionModule:
         database: List[Union[str, Image.Image]],
         top_k: int = 5
     ) -> List[tuple[int, float]]:
-        """
-        Cross-modal retrieval: find items similar to query.
+        """Performs cross-modal retrieval, searching a database of items with a query.
 
-        Can search images with text, or text with images.
+        This can be used to search a list of images using a text query, or to
+        search a list of texts using an image query.
 
         Args:
-            query: Text or image query
-            database: List of texts or images to search
-            top_k: Number of results
+            query: The text or image query.
+            database: A list of text strings or images to search through.
+            top_k: The number of best matches to return.
 
         Returns:
-            List of (index, similarity) for top matches
+            A list of (index, similarity) tuples for the top matching items
+            in the database.
         """
         # Encode query
         if isinstance(query, str):
@@ -392,7 +410,12 @@ class VisionModule:
         return similarities[:top_k]
 
     def get_stats(self) -> Dict[str, Any]:
-        """Get module statistics."""
+        """Retrieves statistics about the vision module's state and performance.
+
+        Returns:
+            A dictionary of statistics, including the loaded model name, device,
+            number of grounded concepts, and cache size.
+        """
         return {
             'model': self.model_name,
             'device': self.device,

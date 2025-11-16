@@ -2,13 +2,26 @@
 """
 Singularis Neo Beta 1.0 - Unified Runner
 
-Complete AGI architecture with:
-- Temporal binding (solves binding problem)
-- Adaptive memory (genuine learning)
-- 4D coherence (consciousness measurement)
-- Lumen balance (philosophical grounding)
-- Cross-modal integration (unified perception)
-- Goal emergence (creative autonomy)
+This script serves as the main entry point for running the complete Singularis Neo
+Beta 1.0 AGI architecture, specifically configured for the Skyrim environment. It
+integrates all core and experimental features into a single, configurable process.
+
+Key Architectural Features:
+-   **Temporal Binding:** A solution to the binding problem, allowing the AGI to
+    integrate sensory information over time.
+-   **Adaptive Memory:** A memory system that enables genuine learning from experience.
+-   **4D Coherence:** An enhanced system for measuring consciousness and system harmony.
+-   **Lumen Balance:** A philosophical grounding mechanism for decision-making.
+-   **Cross-Modal Integration:** Unifies perception across different sensory modalities.
+-   **Goal Emergence:** Allows for creative autonomy and the generation of novel goals.
+
+Usage:
+    python run_beta_skyrim_agi.py
+
+The script will guide the user through a configuration process, allowing them to
+enable or disable features, set the run duration, and choose between a safe
+"dry run" mode and a "live" mode that grants the AGI control over the keyboard
+and mouse.
 """
 
 import asyncio
@@ -23,12 +36,12 @@ sys.path.insert(0, str(project_root))
 
 from singularis.skyrim import SkyrimAGI, SkyrimConfig
 
-# Load environment variables
+# Load environment variables from a .env file
 load_dotenv()
 
 
 def print_banner():
-    """Print Singularis Neo banner."""
+    """Prints the main banner for Singularis Neo Beta 1.0 to the console."""
     banner = """
 ╔══════════════════════════════════════════════════════════════════════╗
 ║                                                                      ║
@@ -45,7 +58,15 @@ def print_banner():
 
 
 def get_user_input(prompt: str, default: str = "") -> str:
-    """Get user input with default value."""
+    """Prompts the user for input with an optional default value.
+
+    Args:
+        prompt: The message to display to the user.
+        default: The default value to use if the user enters nothing.
+
+    Returns:
+        The user's input or the default value.
+    """
     if default:
         user_input = input(f"{prompt} [{default}]: ").strip()
         return user_input if user_input else default
@@ -53,7 +74,15 @@ def get_user_input(prompt: str, default: str = "") -> str:
 
 
 def get_yes_no(prompt: str, default: bool = True) -> bool:
-    """Get yes/no input from user."""
+    """Prompts the user for a yes/no answer.
+
+    Args:
+        prompt: The question to ask the user.
+        default: The default boolean value to return if the user enters nothing.
+
+    Returns:
+        True for "yes" or the default, False for "no".
+    """
     default_str = "Y/n" if default else "y/N"
     response = input(f"{prompt} [{default_str}]: ").strip().lower()
     
@@ -64,7 +93,7 @@ def get_yes_no(prompt: str, default: bool = True) -> bool:
 
 
 async def main():
-    """Main entry point for Singularis Neo Beta 1.0."""
+    """The main asynchronous entry point for configuring and running the AGI."""
     
     print_banner()
     print()

@@ -1,11 +1,17 @@
 """
-Setup and verify Skyrim AGI installation.
+Setup and verification script for the Singularis Skyrim AGI.
 
-This script:
-1. Checks all dependencies
-2. Installs missing packages
-3. Verifies all components
-4. Tests basic functionality
+This script automates the process of checking and installing all required
+dependencies for running the AGI. It verifies the Python version, installs
+core and Skyrim-specific packages using pip, and ensures that all necessary
+Singularis AGI modules are importable.
+
+Usage:
+    python setup_skyrim.py
+
+The script provides a step-by-step report of the verification process and will
+attempt to install any missing packages automatically. It exits with a status
+code of 0 on success and 1 on failure.
 """
 
 import sys
@@ -13,7 +19,16 @@ import subprocess
 import importlib.util
 
 def check_package(package_name, import_name=None):
-    """Check if a package is installed."""
+    """Checks if a Python package is installed by trying to find its spec.
+
+    Args:
+        package_name: The name of the package as it is known by pip.
+        import_name: The name used to import the package. If None, it is
+                     assumed to be the same as `package_name`.
+
+    Returns:
+        True if the package is installed, False otherwise.
+    """
     if import_name is None:
         import_name = package_name
     
@@ -21,11 +36,24 @@ def check_package(package_name, import_name=None):
     return spec is not None
 
 def install_package(package_name):
-    """Install a package using pip."""
+    """Installs a Python package using pip.
+
+    Args:
+        package_name: The name of the package to install.
+    """
     print(f"  Installing {package_name}...")
     subprocess.check_call([sys.executable, "-m", "pip", "install", package_name])
 
 def main():
+    """Runs the main setup and verification process.
+
+    This function executes a series of checks for the Python environment,
+    dependencies, and internal AGI components, installing missing packages
+    as needed and printing a final summary report.
+
+    Returns:
+        True if all checks pass, False otherwise.
+    """
     print("=" * 70)
     print("SINGULARIS SKYRIM AGI - SETUP & VERIFICATION")
     print("=" * 70)

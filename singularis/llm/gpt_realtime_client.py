@@ -82,17 +82,27 @@ class RealtimeConfig:
 
 class GPTRealtimeClient:
     """
-    Client for GPT-4 Realtime API.
-    
-    Provides streaming decision-making with subsystem delegation.
+    A client for the GPT-4 Realtime API, facilitating streaming decision-making
+    and subsystem delegation via WebSockets.
+
+    This client manages the connection, session configuration, and message
+    handling for the realtime API, allowing for low-latency coordination
+    of various AGI subsystems.
     """
     
     def __init__(self, config: Optional[RealtimeConfig] = None):
         """
-        Initialize realtime client.
-        
+        Initializes the GPTRealtimeClient.
+
         Args:
-            config: Realtime configuration
+            config (Optional[RealtimeConfig], optional): A `RealtimeConfig` object
+                                                         containing the configuration for
+                                                         the client. If not provided, a
+                                                         default configuration is used.
+                                                         Defaults to None.
+
+        Raises:
+            ValueError: If the OpenAI API key is not provided.
         """
         self.config = config or RealtimeConfig()
         
@@ -251,7 +261,7 @@ class GPTRealtimeClient:
         ]
     
     async def connect(self):
-        """Connect to GPT-4 Realtime API via WebSocket."""
+        """Connects to the GPT-4 Realtime API via WebSocket."""
         if self.connected:
             return
         
@@ -330,15 +340,22 @@ Be FAST. Prioritize speed for immediate decisions. Delegate complex analysis to 
         context: Optional[Dict[str, Any]] = None
     ) -> RealtimeDecision:
         """
-        Stream a decision request and get real-time response.
-        
+        Streams a decision request to the GPT-4 Realtime API and returns the
+        resulting decision.
+
+        This method sends the current situation and game state to the API and
+        listens for a response, which can be an immediate action or a delegation
+        to one or more subsystems.
+
         Args:
-            situation: Current situation description
-            game_state: Game state dict
-            context: Additional context
-        
+            situation (str): A description of the current situation.
+            game_state (Dict[str, Any]): A dictionary representing the current game state.
+            context (Optional[Dict[str, Any]], optional): Additional context.
+                                                          Defaults to None.
+
         Returns:
-            RealtimeDecision with action or delegations
+            RealtimeDecision: A `RealtimeDecision` object representing the API's
+                              decision.
         """
         if not self.connected:
             await self.connect()
@@ -503,11 +520,14 @@ Be FAST. Prioritize speed for immediate decisions. Delegate complex analysis to 
         handler: Callable[[Dict[str, Any]], Awaitable[Any]]
     ):
         """
-        Register a handler for a subsystem.
-        
+        Registers a handler for a specific subsystem.
+
+        The handler is an asynchronous function that will be called when the
+        realtime API delegates a task to the subsystem.
+
         Args:
-            subsystem: Subsystem type
-            handler: Async function to handle delegation
+            subsystem (SubsystemType): The subsystem to register the handler for.
+            handler (Callable[[Dict[str, Any]], Awaitable[Any]]): The async handler function.
         """
         self.subsystem_handlers[subsystem] = handler
         logger.info(f"[REALTIME] Registered handler for {subsystem.value}")
@@ -517,13 +537,17 @@ Be FAST. Prioritize speed for immediate decisions. Delegate complex analysis to 
         decision: RealtimeDecision
     ) -> Dict[str, Any]:
         """
-        Execute a decision by delegating to subsystems.
-        
+        Executes a `RealtimeDecision`.
+
+        If the decision is an immediate action, it returns the action details.
+        If the decision involves delegations, it executes the registered handlers
+        for the specified subsystems in parallel and returns their results.
+
         Args:
-            decision: Decision to execute
-        
+            decision (RealtimeDecision): The decision to execute.
+
         Returns:
-            Results from subsystems
+            Dict[str, Any]: A dictionary containing the results of the decision execution.
         """
         results = {
             'decision_type': decision.decision_type,
@@ -622,14 +646,19 @@ Be FAST. Prioritize speed for immediate decisions. Delegate complex analysis to 
         return synthesis
     
     async def disconnect(self):
-        """Disconnect from realtime API."""
+        """Disconnects from the GPT-4 Realtime API."""
         if self.ws and self.connected:
             await self.ws.close()
             self.connected = False
             logger.info("[REALTIME] Disconnected")
     
     def get_stats(self) -> Dict[str, Any]:
-        """Get client statistics."""
+        """
+        Gets a dictionary of statistics about the client.
+
+        Returns:
+            Dict[str, Any]: A dictionary of statistics.
+        """
         return {
             'connected': self.connected,
             'session_id': self.session_id,

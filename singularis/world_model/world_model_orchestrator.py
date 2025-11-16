@@ -31,13 +31,19 @@ from .physics_engine import PhysicsEngine, PhysicalObject
 
 @dataclass
 class WorldState:
-    """
-    Complete representation of world state.
+    """Represents a complete, multimodal snapshot of the world at a specific time.
 
-    Combines:
-    - Causal variables
-    - Visual observations
-    - Physical states
+    This dataclass unifies information from different reasoning modalities,
+    including high-level causal variables, visual percepts, and the states of
+    physical objects.
+
+    Attributes:
+        causal_variables: A dictionary of named variables in the causal model and their values.
+        visual_observations: A list of image embeddings from the vision system.
+        visual_labels: A list of labels corresponding to the visual observations.
+        physical_objects: A dictionary mapping object names to their physical state properties.
+        timestamp: The time at which this world state was recorded.
+        metadata: An optional dictionary for storing additional contextual information.
     """
     # Causal state
     causal_variables: Dict[str, float]
@@ -56,19 +62,24 @@ class WorldState:
     metadata: Dict[str, Any] = None
 
     def __post_init__(self):
+        """Initializes mutable default attributes."""
         if self.metadata is None:
             self.metadata = {}
 
 
 @dataclass
 class WorldModelPrediction:
-    """
-    Prediction of future world state.
+    """Represents a prediction of a future world state.
 
-    Includes:
-    - Expected state
-    - Confidence
-    - Alternative scenarios
+    This includes not only the most likely future state but also the model's
+    confidence in that prediction, alternative possible scenarios, and a
+    natural language explanation of the reasoning behind the prediction.
+
+    Attributes:
+        predicted_state: The `WorldState` object representing the most likely future state.
+        confidence: A score (0.0-1.0) indicating the model's confidence in the prediction.
+        alternatives: A list of alternative `WorldState` objects for scenario planning.
+        reasoning: A natural language string explaining the basis for the prediction.
     """
     predicted_state: WorldState
     confidence: float
@@ -77,19 +88,14 @@ class WorldModelPrediction:
 
 
 class WorldModelOrchestrator:
-    """
-    Orchestrates causal, visual, and physical reasoning.
+    """Orchestrates the causal, visual, and physical reasoning components to form a unified world model.
 
-    Key capabilities:
-    1. Predict: Given state S and action A, predict outcome
-    2. Explain: Why did outcome O occur?
-    3. Intervene: Plan actions to achieve goals
-    4. Learn: Update model from surprises
-
-    Architecture:
-    - Causal graph: High-level causal structure
-    - Vision: Grounds concepts in perception
-    - Physics: Simulates physical dynamics
+    This class serves as the central hub for the AGI's understanding of the world.
+    It integrates a `CausalGraph` for high-level reasoning, a `VisionModule` for
+    grounding concepts in perception, and a `PhysicsEngine` for simulating physical
+    dynamics. Its primary functions are to predict the outcomes of actions, explain
+    why events occurred, and continuously learn and refine its internal models
+    by comparing its predictions to actual outcomes.
     """
 
     def __init__(
@@ -100,15 +106,14 @@ class WorldModelOrchestrator:
         vision_model: str = "ViT-B/32",
         physics_timestep: float = 0.01
     ):
-        """
-        Initialize world model orchestrator.
+        """Initializes the WorldModelOrchestrator.
 
         Args:
-            learning_rate: How fast to update from surprises
-            use_vision: Enable vision module
-            use_physics: Enable physics simulation
-            vision_model: CLIP model variant
-            physics_timestep: Physics simulation timestep
+            learning_rate: The learning rate for updating the causal graph from "surprise."
+            use_vision: A boolean to enable or disable the vision module.
+            use_physics: A boolean to enable or disable the physics engine.
+            vision_model: The name of the CLIP model to use for the vision module.
+            physics_timestep: The simulation time step for the physics engine.
         """
         # Core components
         self.causal_graph = CausalGraph(learning_rate=learning_rate)
@@ -133,17 +138,21 @@ class WorldModelOrchestrator:
         physical_obs: Optional[Dict[str, Dict[str, Any]]] = None,
         timestamp: float = 0.0
     ) -> WorldState:
-        """
-        Perceive current world state from multimodal observations.
+        """Constructs a unified `WorldState` from multimodal sensory observations.
+
+        This method takes raw or pre-processed data from different sources
+        (causal variables, images, physical object states) and integrates them
+        into a single, coherent representation of the world at a specific moment.
 
         Args:
-            causal_obs: High-level causal variables
-            visual_obs: Images or image paths
-            physical_obs: Physical object states
-            timestamp: Time of observation
+            causal_obs: A dictionary of high-level causal variables.
+            visual_obs: A list of images, image paths, or dictionaries containing
+                        image and label data.
+            physical_obs: A dictionary describing the states of physical objects.
+            timestamp: The timestamp of the observation.
 
         Returns:
-            Unified WorldState representation
+            A `WorldState` object representing the unified current state.
         """
         # Process visual observations
         visual_embeddings = []
@@ -186,16 +195,21 @@ class WorldModelOrchestrator:
         action_params: Optional[Dict[str, Any]] = None,
         time_horizon: float = 1.0
     ) -> WorldModelPrediction:
-        """
-        Predict future world state.
+        """Predicts the future world state, given a potential action.
+
+        This is a core function of the world model. It simulates the consequences
+        of an action (or the natural evolution of the system if no action is given)
+        by orchestrating predictions from the causal, physical, and visual sub-modules.
 
         Args:
-            action: Action to take (optional, predicts passive evolution if None)
-            action_params: Parameters for action
-            time_horizon: How far into future (seconds)
+            action: An optional string representing the action to be taken. If None,
+                    the model predicts the passive evolution of the state.
+            action_params: Optional parameters for the action.
+            time_horizon: The duration in seconds into the future to predict.
 
         Returns:
-            WorldModelPrediction with expected outcome
+            A `WorldModelPrediction` object containing the expected future state,
+            confidence, and other metadata.
         """
         if self.current_state is None:
             raise ValueError("No current state. Call perceive() first.")
@@ -240,7 +254,7 @@ class WorldModelOrchestrator:
         action: Optional[str],
         action_params: Optional[Dict[str, Any]]
     ) -> Dict[str, float]:
-        """Predict causal variables."""
+        """Predicts the evolution of causal variables."""
         if action:
             # Interventional prediction: do(action)
             intervention = Intervention(
@@ -260,7 +274,7 @@ class WorldModelOrchestrator:
         action_params: Optional[Dict[str, Any]],
         time_horizon: float
     ) -> Dict[str, Dict[str, Any]]:
-        """Predict physical state evolution."""
+        """Predicts the evolution of the physical state."""
         if not self.physics or not self.current_state.physical_objects:
             return self.current_state.physical_objects
 
@@ -291,10 +305,7 @@ class WorldModelOrchestrator:
         return result['final_states']
 
     def _estimate_confidence(self) -> float:
-        """
-        Estimate confidence in prediction.
-        Based on historical prediction accuracy.
-        """
+        """Estimates the confidence in a prediction based on historical accuracy."""
         if not self.prediction_errors:
             return 0.7  # Default moderate confidence
 
@@ -312,10 +323,7 @@ class WorldModelOrchestrator:
         action: Optional[str],
         action_params: Optional[Dict[str, Any]]
     ) -> List[WorldState]:
-        """
-        Generate alternative possible outcomes.
-        Useful for uncertainty quantification.
-        """
+        """Generates alternative possible outcomes for a prediction."""
         alternatives = []
 
         # For now, return empty (would need probabilistic world model)
@@ -329,7 +337,7 @@ class WorldModelOrchestrator:
         action_params: Optional[Dict[str, Any]],
         predicted_state: WorldState
     ) -> str:
-        """Generate natural language explanation of prediction."""
+        """Generates a simple natural language explanation for a prediction."""
         if action:
             explanation = f"If action '{action}' is taken"
             if action_params:
@@ -345,17 +353,15 @@ class WorldModelOrchestrator:
         expected: WorldState,
         actual: WorldState
     ):
-        """
-        Learn from prediction errors (surprise).
+        """Updates the internal models based on a prediction error ("surprise").
 
-        This is KEY to continual learning:
-        - When predictions fail, update the world model
-        - Adjust causal strengths
-        - Refine physical parameters
+        This is the core learning mechanism. When the actual outcome of an action
+        deviates from the predicted outcome, this method is called to adjust the
+        parameters of the causal graph and other models to improve future predictions.
 
         Args:
-            expected: What we predicted
-            actual: What actually happened
+            expected: The `WorldState` that was predicted.
+            actual: The `WorldState` that was actually observed.
         """
         # 1. Compute surprise for causal variables
         causal_surprise = {}
@@ -391,15 +397,15 @@ class WorldModelOrchestrator:
         concept: str,
         examples: Optional[List[Any]] = None
     ) -> Optional[VisualConcept]:
-        """
-        Ground abstract concept in visual perception.
+        """Grounds an abstract text concept using visual examples via the VisionModule.
 
         Args:
-            concept: Abstract concept name (e.g., "justice", "force")
-            examples: Example images
+            concept: The name of the concept to ground (e.g., "justice").
+            examples: A list of images that exemplify the concept.
 
         Returns:
-            VisualConcept with grounded representation
+            A `VisualConcept` object with a new, grounded embedding, or None if
+            the vision module is disabled.
         """
         if not self.vision:
             return None
@@ -411,17 +417,16 @@ class WorldModelOrchestrator:
         outcome_var: str,
         state: Optional[WorldState] = None
     ) -> Dict[str, Any]:
-        """
-        Explain why an outcome occurred.
-
-        Traces causal chain back to root causes.
+        """Explains why a particular outcome occurred by tracing its causes in the causal graph.
 
         Args:
-            outcome_var: Variable to explain
-            state: World state (uses current if None)
+            outcome_var: The name of the variable representing the outcome to explain.
+            state: The `WorldState` in which the outcome occurred. If None, the
+                   current state is used.
 
         Returns:
-            Explanation with causal chain
+            A dictionary containing the explanation, including the direct causes
+            and their calculated causal effects.
         """
         if state is None:
             state = self.current_state
@@ -453,7 +458,11 @@ class WorldModelOrchestrator:
             }
 
     def get_stats(self) -> Dict[str, Any]:
-        """Get world model statistics."""
+        """Retrieves statistics about the state and complexity of the world model.
+
+        Returns:
+            A dictionary of statistics.
+        """
         return {
             'causal_nodes': len(self.causal_graph.nodes),
             'causal_edges': self.causal_graph.graph.number_of_edges(),
@@ -465,7 +474,11 @@ class WorldModelOrchestrator:
         }
 
     def visualize_causal_graph(self) -> str:
-        """Visualize causal structure."""
+        """Generates a simple ASCII visualization of the internal causal graph.
+
+        Returns:
+            A string representing the graph's structure.
+        """
         return self.causal_graph.visualize()
 
 

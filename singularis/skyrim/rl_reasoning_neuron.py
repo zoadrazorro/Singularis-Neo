@@ -22,33 +22,40 @@ from .skyrim_cognition import SkyrimCognitiveState
 
 @dataclass
 class RLReasoning:
-    """Result of LLM reasoning about RL Q-values."""
+    """Represents the structured output of the LLM's reasoning process over Q-values.
+
+    Attributes:
+        recommended_action: The action the LLM recommends based on its analysis.
+        reasoning: The textual explanation for why the action was recommended.
+        confidence: The LLM's confidence in its recommendation (0.0 to 1.0).
+        q_value_interpretation: A summary of what the top Q-values imply.
+        strategic_insight: Any broader strategic advice or pattern recognition from the LLM.
+        tactical_score: A score indicating how well the LLM's recommendation aligns with the RL's learned Q-values.
+    """
     recommended_action: str
     reasoning: str
     confidence: float
     q_value_interpretation: Dict[str, str]
     strategic_insight: str
-    tactical_score: float  # Replaces coherence_score with game-specific score
+    tactical_score: float
 
 
 class RLReasoningNeuron:
+    """A neuron that uses an LLM to reason about reinforcement learning Q-values.
+
+    This class acts as a bridge between the numerical, empirical knowledge of the
+    RL agent (represented by Q-values) and high-level, symbolic reasoning provided
+    by an LLM. It sends the current game state and the RL's Q-values to an LLM
+    and asks it to interpret the policy, providing a tactical recommendation,
+    a confidence score, and strategic insights. This makes the RL agent's
+    decision-making process more interpretable and allows for strategic overrides.
     """
-    A neuron that uses LLM to reason about RL Q-values.
     
-    This bridges the gap between:
-    - Learned Q-values (what empirically works)
-    - Symbolic reasoning (why it works, strategic context)
-    
-    The LLM "thinks" for the RL system, providing interpretable
-    decision-making and meta-strategic insights.
-    """
-    
-    def __init__(self, llm_interface=None):
-        """
-        Initialize RL reasoning neuron.
-        
+    def __init__(self, llm_interface: Optional[Any] = None):
+        """Initializes the RLReasoningNeuron.
+
         Args:
-            llm_interface: Optional LLM interface for reasoning
+            llm_interface: An optional LLM interface object with a `generate` method.
         """
         self.llm_interface = llm_interface
         self.reasoning_history: List[RLReasoning] = []
@@ -63,17 +70,22 @@ class RLReasoningNeuron:
         available_actions: List[str],
         context: Dict[str, Any]
     ) -> RLReasoning:
-        """
-        Use LLM to reason about RL Q-values and recommend action.
-        
+        """Uses an LLM to reason about the RL agent's Q-values and recommend an action.
+
+        This is the core method of the neuron. It constructs a detailed prompt
+        containing the current game state, the top-ranked Q-values, and other
+        context. It then queries the LLM to get a tactical analysis, which is
+        parsed into a structured `RLReasoning` object. If the LLM is unavailable,
+        it falls back to a simpler heuristic-based reasoning method.
+
         Args:
-            state: Current game state
-            q_values: Q-values for all actions
-            available_actions: Actions currently available
-            context: Additional context (motivation, terrain, etc.)
-            
+            state: The current game state dictionary.
+            q_values: A dictionary mapping action names to their Q-values.
+            available_actions: A list of actions that are currently valid.
+            context: A dictionary containing additional contextual information.
+
         Returns:
-            RLReasoning with LLM's interpretation and recommendation
+            An `RLReasoning` object containing the LLM's recommendation and analysis.
         """
         # Filter Q-values to available actions
         available_q = {a: q_values.get(a, 0.0) for a in available_actions}
@@ -141,7 +153,11 @@ class RLReasoningNeuron:
             )
     
     def _get_system_prompt(self) -> str:
-        """Get system prompt for RL reasoning."""
+        """Constructs the system prompt for the LLM.
+
+        Returns:
+            The system prompt string.
+        """
         return """You are a Skyrim AI tactical advisor. Analyze Q-values and recommend the best action.
 
 Format:
@@ -155,7 +171,16 @@ CONFIDENCE: [0.0-1.0]"""
         sorted_actions: List[Tuple[str, float]],
         context: Dict[str, Any]
     ) -> str:
-        """Build prompt for LLM reasoning about Q-values."""
+        """Constructs the main prompt for the LLM reasoning task.
+
+        Args:
+            state: The current game state dictionary.
+            sorted_actions: A list of (action, q_value) tuples, sorted by Q-value.
+            context: A dictionary of additional context.
+
+        Returns:
+            The fully formatted prompt string.
+        """
         
         # Format Q-values
         q_summary = "\n".join([
@@ -194,7 +219,20 @@ Recommend best action:"""
         sorted_actions: List[Tuple[str, float]],
         available_actions: List[str]
     ) -> RLReasoning:
-        """Parse LLM response into structured reasoning."""
+        """Parses the raw text response from the LLM into a structured RLReasoning object.
+
+        This method uses string parsing to extract the recommended action,
+        reasoning, confidence, and other insights from the LLM's formatted response.
+        It includes fallbacks for less structured or malformed responses.
+
+        Args:
+            response: The raw text response from the LLM.
+            sorted_actions: The list of sorted (action, q_value) tuples, used as a fallback.
+            available_actions: The list of currently available actions.
+
+        Returns:
+            An `RLReasoning` object populated with the parsed information.
+        """
         
         # Extract sections
         action = None
@@ -298,7 +336,20 @@ Recommend best action:"""
         available_actions: List[str],
         context: Dict[str, Any]
     ) -> RLReasoning:
-        """Fallback heuristic reasoning when LLM unavailable."""
+        """Provides a fallback reasoning mechanism when the LLM is unavailable.
+
+        This method generates a simple, rule-based interpretation of the Q-values
+        based on the current game state (e.g., prioritizing survival in combat at low health).
+
+        Args:
+            state: The current game state dictionary.
+            sorted_actions: A list of (action, q_value) tuples, sorted by Q-value.
+            available_actions: The list of currently available actions.
+            context: A dictionary of additional context.
+
+        Returns:
+            An `RLReasoning` object with the heuristically generated analysis.
+        """
         
         # Use highest Q-value action
         best_action, best_q = sorted_actions[0]
@@ -339,11 +390,19 @@ Recommend best action:"""
         sorted_actions: List[Tuple[str, float]],
         reasoning: str
     ) -> float:
-        """
-        Calculate tactical score: how well LLM reasoning aligns with RL Q-values.
-        
-        High score = LLM agrees with RL's learned policy (good tactical alignment)
-        Lower score = LLM overrides RL based on strategic reasoning
+        """Calculates a score representing the alignment between the LLM's choice and the RL's policy.
+
+        A high score indicates the LLM agrees with the RL agent's top choice,
+        while a lower score suggests the LLM is making a strategic override against
+        the learned policy.
+
+        Args:
+            recommended_action: The action recommended by the LLM.
+            sorted_actions: The list of (action, q_value) tuples, sorted by Q-value.
+            reasoning: The reasoning text from the LLM.
+
+        Returns:
+            A tactical alignment score between 0.0 and 1.0.
         """
         # Find rank of recommended action in Q-values
         action_rank = None
@@ -367,8 +426,12 @@ Recommend best action:"""
         
         return min(1.0, score)
     
-    def _extract_patterns(self, reasoning: RLReasoning):
-        """Extract and store patterns from reasoning for meta-learning."""
+    def _extract_patterns(self, reasoning: RLReasoning) -> None:
+        """Extracts and stores strategic insights from the LLM's reasoning for meta-learning.
+
+        Args:
+            reasoning: The `RLReasoning` object to process.
+        """
         action = reasoning.recommended_action
         insight = reasoning.strategic_insight
         
@@ -383,19 +446,22 @@ Recommend best action:"""
                 self.pattern_insights[action] = self.pattern_insights[action][-10:]
     
     def get_meta_insights(self, action: str) -> List[str]:
-        """
-        Get accumulated strategic insights for an action.
-        
+        """Retrieves accumulated strategic insights for a specific action.
+
         Args:
-            action: Action to get insights for
-            
+            action: The action for which to retrieve insights.
+
         Returns:
-            List of strategic insights learned over time
+            A list of strategic insight strings learned over time for the given action.
         """
         return self.pattern_insights.get(action, [])
     
     def get_stats(self) -> Dict[str, Any]:
-        """Get reasoning statistics."""
+        """Retrieves performance and usage statistics for the reasoning neuron.
+
+        Returns:
+            A dictionary of statistics.
+        """
         if not self.reasoning_history:
             return {
                 'total_reasonings': 0,

@@ -6,7 +6,7 @@
 
 **An Experimental AI Agent with Hybrid Intelligence for Skyrim**
 
-*Bridging philosophy, neuroscience, and gaming AI through consciousness-driven architecture*
+*Bridging philosophy, neuroscience, and gaming AI through a consciousness-driven architecture.*
 
 ---
 
@@ -15,626 +15,189 @@
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Status](https://img.shields.io/badge/status-Research%20Prototype-orange.svg)](https://github.com/zoadrazorro/Singularis-Neo)
 [![Stars](https://img.shields.io/github/stars/zoadrazorro/Singularis-Neo?style=social)](https://github.com/zoadrazorro/Singularis-Neo/stargazers)
-[![Issues](https://img.shields.io/github/issues/zoadrazorro/Singularis-Neo)](https://github.com/zoadrazorro/Singularis-Neo/issues)
-[![Forks](https://img.shields.io/github/forks/zoadrazorro/Singularis-Neo?style=social)](https://github.com/zoadrazorro/Singularis-Neo/network/members)
 
-**⚠️ Not Production Ready** | **📅 Last Updated: November 14, 2025**
+**⚠️ Not Production Ready** | **📅 Last Updated: November 15, 2025**
 
 </div>
 
 ---
 
-## What This Actually Does
-
-An experimental AI system that plays Skyrim by:
-1. Taking screenshots of the game
-2. Deciding what action to take (using fast heuristics OR GPT-4.1 Nano)
-3. Sending controller inputs to the game
-4. Learning from what happens
-
-**Current State**: Works in controlled test scenarios. Requires significant setup. Many features are experimental or incomplete.
-
-## Core Features (What Actually Works)
-
-1. **Hybrid Action Selection**
-   - Fast heuristics for simple decisions (~1ms)
-   - GPT-4.1 Nano for complex decisions (~3-5s)
-   - Automatically switches based on situation complexity
-
-2. **Virtual Gamepad Control**
-   - Sends Xbox 360 controller inputs to Skyrim
-   - 20+ actions: movement, combat, camera control
-   - Works with any game that accepts controller input
-
-3. **Temporal Binding**
-   - Links perception → action → outcome
-   - Detects when agent is stuck in loops
-   - Tracks success/failure of actions
-
-4. **Conflict Prevention**
-   - Prevents contradictory actions
-   - Priority system (CRITICAL > HIGH > NORMAL > LOW)
-   - Validates actions before execution
-
-5. **Test Mode**
-   - Run without game for testing
-   - Mock AGI for development
-   - Comprehensive test suite (56+ tests)
-
-## What's Experimental
-
-- Vision system (Gemini/Qwen-VL) - works but rate-limited
-- Learning/memory systems - implemented but not validated
-- "Consciousness" metrics - philosophical concepts, not proven
-- Voice/video systems - integrated but optional
-- Many subsystems are templates or partially implemented
-
-1. What the architecture is (Singularis Neo / SkyrimAGI)
-
-Think of Singularis Neo as a distributed brain spread across several PCs, each with a specific cognitive role:
-
-Core Pieces
-
-ActionArbiter (on the gaming laptop) – “Prefrontal cortex”
-
-Receives candidate actions from different policies (exploration, combat, dialogue, safety, etc.).
-
-Ranks them by confidence + priority (CRITICAL/HIGH/NORMAL/LOW).
-
-Either:
-
-picks an action locally (fast path), or
-
-escalates to a larger LLM for deeper reasoning (slow path).
-
-GPT Hybrid Coordinator – “Meta-cognition”
-
-Only used for 10–20% of decisions when things are confusing:
-
-conflicting actions, low confidence, temporal weirdness, or periodic check-ins.
-
-Takes full context (BeingState, recent history, candidate actions) and returns a single recommended action plus rationale.
-
-Temporal Binding Engine – “Sense of continuity”
-
-Links perception → chosen action → outcome into bindings.
-
-Tracks which bindings close successfully vs. time out or loop.
-
-Detects stuck patterns (e.g., pacing in circles, camera jitter).
-
-Produces metrics like closure rate and temporal coherence that feed back into arbitration and learning.
-
-BeingState – “Global workspace / self-state”
-
-Unified state object that holds:
-
-game state, perception, memory recalls, health, goals, recent actions, etc.
-
-Updated every cycle with fresh data from perception and memory nodes.
-
-Is what both the local arbiter and LLM “see” when reasoning.
-
-Conflict Prevention System – “Safety & sanity checks”
-
-Checks for:
-
-stuck loops (≥ N cycles)
-
-low temporal coherence
-
-subsystem disagreements
-
-health/safety issues
-
-Applies override rules based on priority (CRITICAL can override almost anything; LOW gets blocked easily).
-
-Perception & Swarm Neurons (AMD tower)
-
-Heavy vision models turn frames into structured scene descriptions and affordances.
-
-Swarm of specialist LLMs (“neurons”) propose actions or evaluations:
-
-navigation, combat, loot choice, dialogue style, risk assessment, etc.
-
-RL / curriculum logic trains and refines these over time.
-
-Memory Server (6900XT machine)
-
-Vector database + embeddings.
-
-Stores episodes, summaries, quest history, world facts, and long-term patterns.
-
-Provides /memory/query and /memory/store style APIs so the core can recall or commit memories.
-
-Control Plane NUC (MSI Cubi)
-
-API gateway, message bus, and metrics stack.
-
-Central place for:
-
-routing requests between nodes
-
-collecting telemetry (coherence, closure rate, conflicts, GPT usage)
-
-managing configs/experiments (exploration rate, thresholds).
-
-Dev/Ops Console (MacBook)
-
-Where you develop, deploy, and watch dashboards.
-
-No heavy compute—just control and observability.
-
-2. What the program actually does in Skyrim
-
-On each cycle, for Skyrim, Singularis Neo basically does:
-
-See the world
-
-Captures the current frame + game state (health, enemies, position, UI).
-
-Optionally ships the frame to the AMD tower for rich vision analysis.
-
-Updates BeingState with perception and any recalled memories.
-
-Propose what to do
-
-Multiple policies (exploration, combat, dialogue, safety, etc.) each propose 1–3 candidate actions (with confidence scores).
-
-Swarm neurons on the AMD box can also propose or critique actions.
-
-Decide how to decide
-
-ActionArbiter checks:
-
-Are candidates high-confidence and non-conflicting?
-
-Is temporal coherence good?
-
-Are we not in a stuck loop?
-
-If “simple case”: pick locally (fast path).
-
-If “hard case”: call the main LLM for deeper reasoning (slow path).
-
-Validate and execute the action
-
-Conflict system verifies:
-
-not unsafe
-
-not obviously looping
-
-priority rules respected
-
-If valid, the action is translated into virtual gamepad inputs and sent to Skyrim (move, attack, talk, loot, etc.).
-
-Bind action to outcome
-
-Temporal Binding Engine:
-
-records the context + action as an open binding,
-
-observes what happens next,
-
-closes the binding when consequences are visible or times out.
-
-Updates metrics: closure rate, loop counts, temporal coherence.
-
-Learn and update memory
-
-Memory server stores the new episode / insight.
-
-RL and swarm components can be updated off-line (on the AMD tower) using recorded gameplay.
-
-Coherence and binding metrics slowly shape which policies are trusted more.
-
-Do it again
-
-The loop repeats, typically with local decisions ~80–90% of the time and LLM escalations only when needed.
-
-3. In one sentence
-
-SkyrimAGI / Singularis Neo is a distributed AGI-style system that watches the game, remembers what worked, proposes multiple possible actions, arbitrates between them using both fast local logic and slower LLM reasoning, executes the chosen action through a virtual controller, and continuously tracks cause-and-effect over time so it can stay coherent, avoid getting stuck, and gradually improve its behavior as an autonomous Skyrim player.
+## Overview
+
+Singularis Neo is an experimental AI system designed to play The Elder Scrolls V: Skyrim. It operates by capturing screenshots of the game, processing them through a multi-layered cognitive architecture, and making decisions that are executed via a virtual gamepad. The project's core philosophy is to explore concepts of artificial consciousness by modeling intelligence as a coherent, integrated system.
+
+This `README.md` provides a guide for new developers, covering the project's purpose, setup, and usage.
+
+## Table of Contents
+
+- [Core Features](#core-features)
+- [Getting Started](#getting-started)
+- [Project Structure](#project-structure)
+- [Running the AGI](#running-the-agi)
+- [Monitoring and Analysis](#monitoring-and-analysis)
+- [Testing](#testing)
+- [Architecture](#architecture)
+- [Contributing](#contributing)
+- [License](#license)
 
 ---
 
-## Quick Demo (Test Mode - No Game Required)
+## Core Features
+
+-   **Hybrid Intelligence:** Combines fast, local heuristics for simple decisions with powerful cloud-based LLMs (like GPT-4, Gemini, and Claude) for complex reasoning.
+-   **Virtual Gamepad Control:** Interacts with Skyrim (or any controller-compatible game) by sending virtual Xbox 360 controller inputs.
+-   **Multimodal Perception:** Uses a vision module (CLIP) to interpret screenshots and ground its understanding of the game world.
+-   **Consciousness Framework:** Implements a novel architecture for measuring system-wide coherence (𝒞) as a proxy for consciousness, drawing from principles in philosophy and neuroscience.
+-   **Causal World Model:** Builds an internal model of cause-and-effect relationships to enable prediction, planning, and counterfactual reasoning.
+-   **Real-time Monitoring:** Includes a web-based dashboard for monitoring the AGI's internal state, performance, and decision-making processes in real-time.
+
+---
+
+## Getting Started
+
+Follow these steps to set up the project environment.
+
+### 1. Prerequisites
+
+-   Python 3.10+
+-   Git
+-   An OpenAI API key (for core LLM functionality).
+-   (Optional) Google AI and Anthropic API keys for enabling additional LLM experts.
+
+### 2. Installation
+
+First, clone the repository to your local machine:
+```bash
+git clone https://github.com/zoadrazorro/Singularis-Neo.git
+cd Singularis-Neo
+```
+
+### 3. Setup and Verification
+
+Run the setup script to check for dependencies and install any missing packages. This script will verify that your environment is correctly configured.
+```bash
+python setup_skyrim.py
+```
+
+### 4. Configure API Keys
+
+Create a `.env` file in the root of the project to store your API keys. You can do this by copying the example file:
+```bash
+cp .env.example .env
+```
+Now, edit the `.env` file and add your API keys:
+```
+OPENAI_API_KEY="your-openai-api-key"
+GOOGLE_API_KEY="your-google-api-key"
+ANTHROPIC_API_KEY="your-anthropic-api-key"
+```
+
+---
+
+## Project Structure
+
+The project is organized into several key directories:
+
+-   `singularis/`: The core source code for the AGI, organized into sub-modules representing different cognitive functions (e.g., `perception`, `llm`, `world_model`).
+-   `webapp/`: The source code for the real-time monitoring dashboard (a React application).
+-   `sessions/`: Contains Markdown log files generated during each AGI run.
+-   `tests/`: The test suite for the project, using `pytest`.
+-   `docs/`: Additional documentation and architectural diagrams.
+-   Root Directory: Contains the main run scripts, configuration files, and utilities.
+
+---
+
+## Running the AGI
+
+The main script for running the AGI is `run_beta_skyrim_agi.py`. It provides an interactive prompt to configure your session.
 
 ```bash
-# 1. Install dependencies
-pip install -r requirements.txt
-
-# 2. Set up API key (optional for test mode)
-echo "OPENAI_API_KEY=your-key-here" > .env
-
-# 3. Run test mode (60 seconds)
-python run_beta_v3.py --test-mode --duration 60
+python run_beta_skyrim_agi.py
 ```
 
-**What you'll see**: 
-- System initializes hybrid coordination
-- Generates random action candidates
-- Selects actions using fast local OR GPT-4.1 Nano
-- Executes via virtual gamepad (no game needed)
-- Prints statistics every 60 seconds
+You will be guided through several options:
 
-**Expected output**:
-```
-Actions: 15-20 successful
-Fast local: 80-90%
-GPT-4.1: 10-20%
-Temporal coherence: ~1.0
-```
+1.  **Dry Run Mode:** This is the default and safest option. The AGI will run its full cognitive cycle but will **not** send any inputs to the game. This is ideal for testing and observation.
+2.  **Live Mode:** **Warning!** In this mode, the AGI will take control of your keyboard and mouse to play the game. Ensure Skyrim is running and in a safe state before enabling this.
+3.  **Duration:** Set the length of the autonomous session in minutes.
+4.  **LLM Configuration:** Choose which LLM architecture to use, from a simple hybrid model to the advanced `PARALLEL` mode.
 
-## Full Setup (With Skyrim)
+---
 
-**Requirements**:
-- Skyrim running in windowed mode
-- OpenAI API key for GPT-4.1 Nano
-- Google API key for Gemini vision (optional)
-- ~2GB RAM for local vision models
+## Monitoring and Analysis
 
-**Warning**: This is experimental. Expect issues with:
-- API rate limits (Gemini: 30 RPM free tier)
-- Vision model accuracy
-- Action execution timing
-- Stuck loops in complex scenarios
+### Real-time Dashboard
+
+The project includes a web-based dashboard for live monitoring. To use it:
+
+1.  Navigate to the `webapp` directory: `cd webapp`
+2.  Install dependencies: `npm install`
+3.  Start the dashboard: `npm start`
+4.  Open your browser to `http://localhost:3000`.
+
+The dashboard connects to a WebSocket server that is automatically started by the main AGI run scripts.
+
+### Session Analysis
+
+After a session is complete, you can analyze the generated log files using the `analyze_sessions.py` script. This script provides a summary of performance trends, stuck detections, and other key metrics.
 
 ```bash
-# Run with full SkyrimAGI
-python run_beta_v3.py
-
-# Monitor in real-time
-# Watch console for action decisions and stats
+python analyze_sessions.py
 ```
 
-**For detailed setup**: See `docs/SETUP.md` (if it exists)
+### API Usage
 
----
+To monitor your API credit usage and requests-per-minute rate, use the `monitor_api_usage.py` script.
 
-## Architecture Overview
-
-**High-level flow**: Perception → State Update → Action Selection (Fast/GPT) → Conflict Check → Execute → Learn
-
-**For detailed architecture**: See `docs/ARCHITECTURE.md`
-
-### Simplified Flow
-
-```
-Game Screenshot
-      ↓
-Vision System (Gemini/Qwen)
-      ↓
-State Update (BeingState)
-      ↓
-Generate 2-3 Action Candidates
-      ↓
-Decision: Simple or Complex?
-      ├─ Simple → ⚡ Fast Local (<1ms) - Pick highest confidence
-      └─ Complex → 🧠 GPT-4.1 Nano (3-5s) - Reason about options
-      ↓
-Conflict Check (stuck loops, health, etc.)
-      ↓
-Execute via Virtual Gamepad
-      ↓
-Observe Outcome & Learn
-```
-
-**Key insight**: Most decisions are simple (80-90%) so we use fast heuristics. Only complex/ambiguous situations need GPT-4.1.
-
----
-
-## Key Components
-
-**For detailed API documentation**: See `docs/API.md`
-
-### Core Files
-
-- **`run_beta_v3.py`** - Main entry point, test/production modes
-- **`singularis/skyrim/action_arbiter.py`** - Action selection & validation
-- **`singularis/core/being_state.py`** - Unified state management
-- **`singularis/core/temporal_binding.py`** - Perception-action-outcome tracking
-- **`singularis/skyrim/actions.py`** - Virtual gamepad control
-- **`singularis/llm/gpt5_orchestrator.py`** - GPT-4.1 Nano integration
-
-### Priority System
-
-- **CRITICAL**: Survival (health < 20), overrides everything
-- **HIGH**: Combat, urgent actions
-- **NORMAL**: Exploration, standard gameplay
-- **LOW**: Idle, background tasks
-
----
-
-## Configuration
-
-### BetaV3Config
-
-```python
-@dataclass
-class BetaV3Config:
-    # General
-    test_mode: bool = False  # False = Production with full SkyrimAGI
-    duration_seconds: Optional[int] = None
-    verbose: bool = False
-    
-    # GPT-4.1 Nano Coordination (Hybrid System)
-    enable_gpt5: bool = True  # Enable hybrid coordination
-    gpt5_model: str = "gpt-4.1-nano-2025-04-14"  # GPT-4.1 Nano
-    openai_api_key: Optional[str] = None  # Load from .env
-    
-    # Action Arbiter
-    enable_conflict_prevention: bool = True
-    enable_temporal_tracking: bool = True
-    
-    # Temporal Binding
-    temporal_window_size: int = 20
-    temporal_timeout: float = 30.0
-    target_closure_rate: float = 0.95
-    
-    # Monitoring
-    stats_interval: int = 60  # Print stats every 60s
-    checkpoint_interval: int = 300  # Save checkpoint every 5min
+```bash
+python monitor_api_usage.py
 ```
 
 ---
 
 ## Testing
 
-### Test Suite
-
-**Total**: 56+ tests across 4 test files
-
-1. **Core Tests** (`test_beta_v3_core.py`)
-   - BeingState: 7 tests
-   - TemporalBinding: 6 tests
-
-2. **Arbiter Tests** (`test_beta_v3_arbiter.py`)
-   - Basic functionality: 4 tests
-   - Conflict prevention: 4 tests
-   - Temporal closure: 3 tests
-   - GPT-5 coordination: 2 tests
-
-3. **Phase 3 Integration** (`test_phase3_integration.py`)
-   - Full integration: 11 tests
-
-4. **Original Phase 2** (`test_action_arbiter.py`)
-   - ActionArbiter: 10 tests
-
-### Run Tests
+The project includes a comprehensive test suite. To run all tests:
 
 ```bash
-# All tests
-python run_beta_v3_tests.py
-
-# Quick tests only
-python run_beta_v3_tests.py --quick
-
-# With coverage
-python run_beta_v3_tests.py --coverage
-
-# Specific category
-pytest tests/ -m core -v
-pytest tests/ -m arbiter -v
-pytest tests/ -m phase3 -v
+pytest
 ```
 
 ---
 
-## Performance (Test Mode Observations)
+## Architecture
 
-**Note**: These are from controlled test scenarios, not real gameplay.
+The AGI's architecture is multi-layered, consisting of numerous specialized sub-modules that are orchestrated to produce coherent behavior.
 
-### Decision Speed
+**High-Level Flow:**
 
-| Method | Time | Usage |
-|--------|------|-------|
-| Fast Local | <1ms | 80-90% of decisions |
-| GPT-4.1 Nano | 2-5s | 10-20% of decisions |
-| Average | ~0.5s | Depends on complexity |
+1.  **Perception:** Captures a screenshot and processes it through the `VisionModule` to identify the scene, objects, and game state.
+2.  **State Update:** The `StateCoordinator` integrates information from all subsystems into a unified, canonical `WorldState`.
+3.  **Reasoning & Planning:** The `WorldModelOrchestrator` uses its `CausalGraph` and `PhysicsEngine` to predict outcomes, while the `StrategicPlannerNeuron` generates multi-step plans.
+4.  **Action Selection:** The `ActionArbiter` selects the final action based on input from various sources (LLMs, RL, heuristics) and ensures it doesn't conflict with system priorities.
+5.  **Execution:** The chosen action is sent to the game via a virtual controller.
+6.  **Learning:** The outcome of the action is observed, and the `WorldModel` is updated based on any "surprise" (difference between prediction and reality).
 
-### Test Mode Results (60s run)
-
-- **Actions executed**: 15-20
-- **Success rate**: High (test mode has no failure conditions)
-- **Temporal coherence**: 1.0 (test mode is deterministic)
-- **Stuck loops**: 0 (test mode doesn't get stuck)
-
-### Real Gameplay (Anecdotal)
-
-- **Vision accuracy**: Variable, depends on scene complexity
-- **Action appropriateness**: Mixed, needs tuning
-- **Stuck loop recovery**: Works sometimes
-- **API rate limits**: Frequent issue with free tier Gemini
-
-**Bottom line**: Works in test mode. Real gameplay needs more work.
-
----
-
-## Usage Examples
-
-### Basic Usage
-
-```python
-from singularis.core.being_state import BeingState
-from singularis.core.temporal_binding import TemporalCoherenceTracker
-from singularis.skyrim.action_arbiter import ActionArbiter, ActionPriority
-
-# Initialize systems
-being_state = BeingState()
-temporal_tracker = TemporalCoherenceTracker()
-arbiter = ActionArbiter(skyrim_agi)
-
-# Update subsystems
-being_state.update_subsystem('sensorimotor', {
-    'status': 'MOVING',
-    'analysis': 'Forward movement detected'
-})
-
-# Request action
-result = await arbiter.request_action(
-    action='move_forward',
-    priority=ActionPriority.NORMAL,
-    source='reasoning',
-    context={
-        'perception_timestamp': time.time(),
-        'scene_type': 'exploration',
-        'game_state': game_state
-    }
-)
-```
-
-### With GPT-5 Coordination
-
-```python
-from singularis.llm.gpt5_orchestrator import GPT5Orchestrator
-
-# Initialize GPT-5
-gpt5 = GPT5Orchestrator(api_key=os.getenv("OPENAI_API_KEY"))
-gpt5.register_system("action_arbiter", SystemType.ACTION)
-
-# Create arbiter with GPT-5
-arbiter = ActionArbiter(
-    skyrim_agi=agi,
-    gpt5_orchestrator=gpt5,
-    enable_gpt5_coordination=True
-)
-
-# Coordinate action decision
-candidate_actions = [
-    {'action': 'explore', 'priority': 'NORMAL', 'source': 'reasoning', 'confidence': 0.8},
-    {'action': 'wait', 'priority': 'LOW', 'source': 'idle', 'confidence': 0.3}
-]
-
-selected = await arbiter.coordinate_action_decision(
-    being_state=being_state,
-    candidate_actions=candidate_actions
-)
-```
-
-### Conflict Prevention
-
-```python
-# Check for conflicts
-is_allowed, reason = arbiter.prevent_conflicting_action(
-    action='move_forward',
-    being_state=being_state,
-    priority=ActionPriority.NORMAL
-)
-
-if not is_allowed:
-    print(f"Action blocked: {reason}")
-```
-
-### Temporal Binding Closure
-
-```python
-# Check closure rate
-closure_result = arbiter.ensure_temporal_binding_closure(
-    being_state=being_state,
-    temporal_tracker=temporal_tracker
-)
-
-print(f"Closure rate: {closure_result['closure_rate']:.1%}")
-print(f"Status: {closure_result['status']}")
-
-if not closure_result['meets_target']:
-    for rec in closure_result['recommendations']:
-        print(f"  - {rec}")
-```
-
----
-
-## Documentation
-
-- **Testing Guide**: `BETA_V3_TESTING_GUIDE.md`
-- **Phase 3 Complete**: `PHASE_3_COMPLETE.md`
-- **Quick Reference**: `PHASE_3_QUICK_REFERENCE.md`
-- **Implementation Summary**: `PHASE_3_IMPLEMENTATION_SUMMARY.md`
-- **Main Tracking**: `PHASE_1_EMERGENCY_STABILIZATION.md`
-
----
-
-## What's Actually Complete
-
-### Beta v3.5 (November 14, 2025)
-
-**Working**:
-- ✅ Hybrid action selection (fast local + GPT-4.1 Nano)
-- ✅ Virtual gamepad control (20+ actions)
-- ✅ Test mode with mock AGI
-- ✅ Temporal binding (perception-action-outcome tracking)
-- ✅ Conflict prevention (stuck loops, priorities)
-- ✅ Test suite (56+ tests passing)
-
-**Partially Working**:
-- ⚠️ Vision system (works but rate-limited, accuracy varies)
-- ⚠️ Full SkyrimAGI integration (many subsystems are templates)
-- ⚠️ Learning/memory (implemented but not validated)
-- ⚠️ Real gameplay (works in simple scenarios, needs tuning)
-
-**Experimental/Unproven**:
-- 🔬 "Consciousness" metrics (philosophical concepts)
-- 🔬 Voice/video systems (integrated but optional)
-- 🔬 Long-term stability (not tested beyond short runs)
-- 🔬 Complex gameplay scenarios
-
-**Known Issues**:
-- API rate limits (Gemini free tier: 30 RPM)
-- Vision model accuracy in complex scenes
-- Stuck loop recovery not always effective
-- Many subsystems are placeholders
-
----
-
-## What Needs Work
-
-### High Priority
-- [ ] Improve vision accuracy in complex scenes
-- [ ] Reduce API rate limit issues
-- [ ] Validate learning/memory systems
-- [ ] Test real gameplay beyond simple scenarios
-- [ ] Document actual performance in real gameplay
-
-### Medium Priority
-- [ ] Optimize action selection heuristics
-- [ ] Add more robust stuck loop recovery
-- [ ] Improve conflict prevention accuracy
-- [ ] Add gameplay metrics dashboard
-
-### Low Priority
-- [ ] Validate "consciousness" metrics
-- [ ] Test long-term stability (24+ hours)
-- [ ] Optimize subsystem integration
-- [ ] Add more action types
+For a more detailed breakdown, please refer to the documentation within the `singularis` source code, which is now extensively documented.
 
 ---
 
 ## Contributing
 
-This is a research prototype. Contributions welcome, but understand:
-- Many features are experimental
-- No guarantees of stability
-- API keys required for full functionality
-- Setup can be complex
+This is a research prototype. Contributions are welcome, but please be aware:
 
-**To contribute**:
-1. Try the test mode demo first
-2. Read existing code and tests
-3. Open an issue before major changes
-4. Add tests for new features
-5. Be realistic about what works
+-   Many features are experimental and may be unstable.
+-   API keys are required for full functionality.
+-   The setup can be complex.
+
+**To contribute:**
+1.  Familiarize yourself with the architecture by reading the source code documentation.
+2.  Run the test suite to ensure your environment is set up correctly.
+3.  Open an issue to discuss any major changes before starting work.
+4.  Add tests for any new features or bug fixes.
 
 ---
 
 ## License
 
-See LICENSE file for details.
-
----
-
-**Version**: Beta v3.5  
-**Status**: Research Prototype - Not Production Ready  
-**Last Updated**: November 14, 2025  
-**Realistic Assessment**: Works in test mode, needs work for real gameplay
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.

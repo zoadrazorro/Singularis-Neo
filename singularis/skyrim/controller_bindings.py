@@ -21,25 +21,29 @@ import asyncio
 
 
 class SkyrimControllerBindings:
-    """
-    Skyrim-specific controller bindings using Steam Input style.
-    
-    This class sets up action layers and bindings for different
-    gameplay contexts in Skyrim.
+    """Manages Skyrim-specific controller bindings using a Steam Input-style action layer system.
+
+    This class is responsible for creating and configuring the different action
+    layers (e.g., "Exploration", "Combat", "Menu") and binding high-level game
+    actions to specific controller inputs within each layer. This allows the agent
+    to dynamically switch its control scheme to suit the current gameplay context.
+
+    Attributes:
+        controller: An instance of the VirtualXboxController to which the bindings
+                    will be applied.
     """
     
     def __init__(self, controller: VirtualXboxController):
-        """
-        Initialize Skyrim controller bindings.
-        
+        """Initializes the Skyrim controller bindings.
+
         Args:
-            controller: Virtual Xbox controller instance
+            controller: An instance of the VirtualXboxController.
         """
         self.controller = controller
         self._setup_layers()
     
     def _setup_layers(self):
-        """Set up all action layers and their bindings."""
+        """Sets up all the action layers and their respective bindings."""
         self._setup_exploration_layer()
         self._setup_combat_layer()
         self._setup_menu_layer()
@@ -47,23 +51,10 @@ class SkyrimControllerBindings:
         self._setup_stealth_layer()
     
     def _setup_exploration_layer(self):
-        """
-        Exploration layer - default gameplay.
-        
-        Bindings:
-        - Left stick: Movement
-        - Right stick: Camera
-        - A: Jump
-        - B: Sprint toggle
-        - X: Activate/Use
-        - Y: Switch view
-        - LB: Quick item
-        - RB: Quick magic
-        - LT: Block/Sheath
-        - RT: Attack/Interact
-        - Back: Wait
-        - Start: Menu
-        - DPad: Favorites
+        """Configures the bindings for the 'Exploration' action layer.
+
+        This layer is intended for general gameplay, such as traversing the world,
+        interacting with objects, and basic combat.
         """
         layer = self.controller.create_action_layer("Exploration", priority=0)
         
@@ -206,18 +197,10 @@ class SkyrimControllerBindings:
         self.controller.bind_action("Exploration", "move_object", move_object)
     
     def _setup_combat_layer(self):
-        """
-        Combat layer - active during combat.
-        
-        Bindings optimized for fighting:
-        - RT: Quick attack
-        - LT: Block
-        - RB: Power attack
-        - LB: Bash
-        - Y: Shout
-        - A: Jump (dodge)
-        - B: Sprint (retreat)
-        - X: Quick heal
+        """Configures the bindings for the 'Combat' action layer.
+
+        This layer provides a control scheme optimized for combat, with quick
+        access to attacks, blocks, and special moves.
         """
         layer = self.controller.create_action_layer("Combat", priority=10)
         
@@ -286,17 +269,10 @@ class SkyrimControllerBindings:
         self.controller.bind_action("Combat", "move_right", move_right)
     
     def _setup_menu_layer(self):
-        """
-        Menu layer - for navigating menus.
-        
-        Bindings:
-        - Left stick: Navigate
-        - A: Select
-        - B: Back
-        - X: Drop/Take
-        - Y: Favorite
-        - LB/RB: Tab switch
-        - Start: Close menu
+        """Configures the bindings for the 'Menu' action layer.
+
+        This layer is designed for navigating through game menus, such as the
+        inventory, map, and skills screens.
         """
         layer = self.controller.create_action_layer("Menu", priority=20)
         
@@ -355,13 +331,9 @@ class SkyrimControllerBindings:
         self.controller.bind_action("Menu", "close", close_menu)
     
     def _setup_dialogue_layer(self):
-        """
-        Dialogue layer - for NPC conversations.
-        
-        Bindings:
-        - Left stick: Select dialogue option
-        - A: Confirm choice
-        - B: Exit dialogue
+        """Configures the bindings for the 'Dialogue' action layer.
+
+        This layer is used for navigating conversations with NPCs.
         """
         layer = self.controller.create_action_layer("Dialogue", priority=15)
         
@@ -400,10 +372,10 @@ class SkyrimControllerBindings:
         self.controller.bind_action("Dialogue", "exit", exit_dialogue)
     
     def _setup_stealth_layer(self):
-        """
-        Stealth layer - for sneaking and lockpicking.
-        
-        Bindings optimized for stealth gameplay.
+        """Configures the bindings for the 'Stealth' action layer.
+
+        This layer provides a control scheme optimized for stealth-based gameplay,
+        such as sneaking, pickpocketing, and performing backstabs.
         """
         layer = self.controller.create_action_layer("Stealth", priority=5)
         
@@ -426,39 +398,39 @@ class SkyrimControllerBindings:
     # === Context switching ===
     
     def switch_to_exploration(self):
-        """Switch to exploration mode."""
+        """Switches the controller to the 'Exploration' action layer."""
         self._deactivate_all()
         self.controller.activate_layer("Exploration")
     
     def switch_to_combat(self):
-        """Switch to combat mode."""
+        """Switches the controller to the 'Combat' action layer."""
         self._deactivate_all()
         self.controller.activate_layer("Combat")
     
     def switch_to_menu(self):
-        """Switch to menu mode."""
+        """Switches the controller to the 'Menu' action layer."""
         self._deactivate_all()
         self.controller.activate_layer("Menu")
     
     def switch_to_dialogue(self):
-        """Switch to dialogue mode."""
+        """Switches the controller to the 'Dialogue' action layer."""
         self._deactivate_all()
         self.controller.activate_layer("Dialogue")
     
     def switch_to_stealth(self):
-        """Switch to stealth mode."""
+        """Switches the controller to the 'Stealth' action layer."""
         self._deactivate_all()
         self.controller.activate_layer("Stealth")
     
     def _deactivate_all(self):
-        """Deactivate all layers."""
+        """Deactivates all action layers."""
         for layer_name in self.controller.action_layers:
             self.controller.deactivate_layer(layer_name)
     
     # === High-level action sequences ===
     
     async def combat_combo_light_heavy(self):
-        """Execute light-heavy attack combo."""
+        """Executes a pre-defined light-heavy attack combo."""
         await self.controller.execute_action("attack")
         await asyncio.sleep(0.3)
         await self.controller.execute_action("attack")
@@ -466,17 +438,16 @@ class SkyrimControllerBindings:
         await self.controller.execute_action("power_attack")
     
     async def defensive_maneuver(self):
-        """Execute defensive maneuver (block + bash)."""
+        """Executes a pre-defined defensive maneuver (block followed by a bash)."""
         await self.controller.execute_action("block")
         await asyncio.sleep(0.2)
         await self.controller.execute_action("bash")
     
     async def exploration_scan(self, duration: float = 3.0):
-        """
-        Scan area by looking around slowly.
-        
+        """Performs a slow, 360-degree scan of the surroundings.
+
         Args:
-            duration: How long to scan
+            duration: The duration of the scan.
         """
         # Smooth 360-degree camera rotation
         steps = 8

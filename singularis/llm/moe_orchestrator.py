@@ -117,18 +117,8 @@ class MoEResponse:
 
 class MoEOrchestrator:
     """
-    Mixture of Experts orchestrator using Singularis consciousness principles.
-    
-    Coordinates 2 Gemini + 1 Claude + 1 GPT-4o + 2 Hyperbolic experts in parallel, combining their
-    outputs through coherence-based consensus mechanisms.
-    
-    Rate Limiting:
-    - Gemini Free Tier: 15 RPM (requests per minute), 1 million TPM (tokens per minute)
-    - Gemini 2.0 Flash: 10 RPM, 4 million TPM
-    - Claude Sonnet 4: Tier-dependent (default: 50 RPM for Tier 1)
-    
-    With 2 Gemini experts, we limit to ~5 RPM per expert = 10 RPM total (safe margin)
-    With 3 Claude experts, we limit to ~15 RPM per expert = 45 RPM total (safe margin)
+    Orchestrates a Mixture of Experts (MoE) system, coordinating multiple
+    language and vision models in parallel to generate a consensus decision.
     """
     
     def __init__(
@@ -156,7 +146,39 @@ class MoEOrchestrator:
         openai_tpm_limit: int = 30_000,  # GPT-4o TPM limit
         hyperbolic_tpm_limit: int = 50_000,  # Hyperbolic TPM limit
     ):
-        """Initialize MoE orchestrator with rate limiting."""
+        """
+        Initializes the MoEOrchestrator.
+
+        Args:
+            num_gemini_experts (int, optional): The number of Gemini experts. Defaults to 1.
+            num_claude_experts (int, optional): The number of Claude experts. Defaults to 1.
+            num_openai_experts (int, optional): The number of OpenAI experts. Defaults to 1.
+            num_openai_mini_experts (int, optional): The number of OpenAI mini experts.
+                                                     Defaults to 1.
+            num_hyperbolic_vision_experts (int, optional): The number of Hyperbolic
+                                                          vision experts. Defaults to 1.
+            num_hyperbolic_reasoning_experts (int, optional): The number of Hyperbolic
+                                                             reasoning experts. Defaults to 1.
+            gemini_model (str, optional): The Gemini model to use.
+                                          Defaults to "gemini-2.5-flash".
+            claude_model (str, optional): The Claude model to use.
+                                          Defaults to "claude-sonnet-4-5-20250929".
+            openai_model (str, optional): The OpenAI model to use. Defaults to "gpt-4o".
+            openai_mini_model (str, optional): The OpenAI mini model to use.
+                                               Defaults to "gpt-5-mini".
+            hyperbolic_vision_model (str, optional): The Hyperbolic vision model to use.
+                                                     Defaults to "nvidia/NVIDIA-Nemotron-Nano-12B-v2-VL-BF16".
+            hyperbolic_reasoning_model (str, optional): The Hyperbolic reasoning model to use.
+                                                        Defaults to "Qwen/Qwen3-235B-A22B-Instruct-2507".
+            gemini_rpm_limit (int, optional): The RPM limit for Gemini. Defaults to 30.
+            claude_rpm_limit (int, optional): The RPM limit for Claude. Defaults to 100.
+            openai_rpm_limit (int, optional): The RPM limit for OpenAI. Defaults to 500.
+            hyperbolic_rpm_limit (int, optional): The RPM limit for Hyperbolic. Defaults to 100.
+            gemini_tpm_limit (int, optional): The TPM limit for Gemini. Defaults to 4_000_000.
+            claude_tpm_limit (int, optional): The TPM limit for Claude. Defaults to 40_000.
+            openai_tpm_limit (int, optional): The TPM limit for OpenAI. Defaults to 30_000.
+            hyperbolic_tpm_limit (int, optional): The TPM limit for Hyperbolic. Defaults to 50_000.
+        """
         self.num_gemini_experts = num_gemini_experts
         self.num_claude_experts = num_claude_experts
         self.num_openai_experts = num_openai_experts
@@ -707,15 +729,19 @@ class MoEOrchestrator:
         context: Optional[Dict[str, Any]] = None
     ) -> MoEResponse:
         """
-        Query all vision experts (Gemini + Hyperbolic Nemotron) in parallel.
-        
+        Queries all vision experts in parallel.
+
         Args:
-            prompt: Analysis prompt
-            image: PIL Image
-            context: Additional context
-            
+            prompt (str): The prompt for the analysis.
+            image: The image to analyze.
+            context (Optional[Dict[str, Any]], optional): Additional context.
+                                                          Defaults to None.
+
+        Raises:
+            RuntimeError: If all vision experts fail.
+
         Returns:
-            MoEResponse with consensus from all experts
+            MoEResponse: An aggregated response from the vision experts.
         """
         start_time = time.time()
         
@@ -784,15 +810,20 @@ class MoEOrchestrator:
         context: Optional[Dict[str, Any]] = None
     ) -> MoEResponse:
         """
-        Query all reasoning experts (Claude + Hyperbolic Qwen3) in parallel.
-        
+        Queries all reasoning experts in parallel.
+
         Args:
-            prompt: Reasoning prompt
-            system_prompt: Optional system prompt
-            context: Additional context
-            
+            prompt (str): The prompt for reasoning.
+            system_prompt (Optional[str], optional): An optional system prompt.
+                                                          Defaults to None.
+            context (Optional[Dict[str, Any]], optional): Additional context.
+                                                          Defaults to None.
+
+        Raises:
+            RuntimeError: If all reasoning experts fail.
+
         Returns:
-            MoEResponse with consensus from all experts
+            MoEResponse: An aggregated response from the reasoning experts.
         """
         start_time = time.time()
         
@@ -854,10 +885,21 @@ class MoEOrchestrator:
         context: Optional[Dict[str, Any]] = None
     ) -> Tuple[MoEResponse, MoEResponse]:
         """
-        Query all experts (vision + reasoning) in parallel.
-        
+        Queries all vision and reasoning experts in parallel.
+
+        Args:
+            vision_prompt (str): The prompt for the vision experts.
+            reasoning_prompt (str): The prompt for the reasoning experts.
+            image: The image to analyze.
+            system_prompt (Optional[str], optional): An optional system prompt.
+                                                          Defaults to None.
+            context (Optional[Dict[str, Any]], optional): Additional context.
+                                                          Defaults to None.
+
         Returns:
-            (vision_response, reasoning_response)
+            Tuple[MoEResponse, MoEResponse]: A tuple containing the aggregated
+                                             responses from the vision and
+                                             reasoning experts.
         """
         vision_task = self.query_vision_experts(vision_prompt, image, context)
         reasoning_task = self.query_reasoning_experts(reasoning_prompt, system_prompt, context)
@@ -1152,7 +1194,7 @@ class MoEOrchestrator:
         return overall_coherence
     
     async def close(self):
-        """Close all expert connections."""
+        """Closes the client connections for all experts."""
         for expert in self.gemini_experts:
             await expert.close()
         for expert in self.claude_experts:
@@ -1169,7 +1211,12 @@ class MoEOrchestrator:
         logger.info("MoE Orchestrator closed")
     
     def get_stats(self) -> Dict[str, Any]:
-        """Get MoE statistics."""
+        """
+        Gets a dictionary of statistics about the MoE orchestrator.
+
+        Returns:
+            Dict[str, Any]: A dictionary of statistics.
+        """
         return {
             **self.stats,
             'num_gemini_experts': len(self.gemini_experts),

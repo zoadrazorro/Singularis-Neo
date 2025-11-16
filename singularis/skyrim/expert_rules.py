@@ -18,7 +18,7 @@ import time
 
 
 class Priority(Enum):
-    """Action priority levels."""
+    """Enumerates the priority levels for action recommendations."""
     CRITICAL = 4
     HIGH = 3
     MEDIUM = 2
@@ -27,7 +27,14 @@ class Priority(Enum):
 
 @dataclass
 class Fact:
-    """A fact asserted in working memory."""
+    """Represents a fact asserted in the rule engine's working memory.
+
+    Attributes:
+        name: The unique name of the fact.
+        confidence: The confidence level of the fact, from 0.0 to 1.0.
+        timestamp: The time the fact was asserted.
+        metadata: A dictionary for storing additional data related to the fact.
+    """
     name: str
     confidence: float
     timestamp: float = field(default_factory=time.time)
@@ -36,7 +43,15 @@ class Fact:
 
 @dataclass
 class Recommendation:
-    """An action recommendation."""
+    """Represents an action recommended by a rule.
+
+    Attributes:
+        action: The name of the recommended action.
+        priority: The priority level of the recommendation.
+        reason: A string explaining why the action was recommended.
+        confidence: The confidence level of the recommendation.
+        timestamp: The time the recommendation was made.
+    """
     action: str
     priority: Priority
     reason: str
@@ -46,7 +61,13 @@ class Recommendation:
 
 @dataclass
 class ActionBlock:
-    """Block an action for N cycles."""
+    """Represents a temporary block on a specific action.
+
+    Attributes:
+        action: The name of the action to block.
+        cycles_remaining: The number of game cycles for which the block is active.
+        reason: A string explaining why the action was blocked.
+    """
     action: str
     cycles_remaining: int
     reason: str
@@ -54,22 +75,34 @@ class ActionBlock:
 
 @dataclass
 class Rule:
-    """A rule with condition and consequences."""
+    """Represents a single rule in the expert system.
+
+    Attributes:
+        name: The unique name of the rule.
+        condition: A callable that takes the current context and returns True if
+                   the rule should fire.
+        consequences: A list of callables to be executed when the rule fires.
+        description: A human-readable description of the rule's purpose.
+        priority: The priority of the rule (higher values are evaluated first).
+    """
     name: str
     condition: Callable[[Dict[str, Any]], bool]
     consequences: List[Callable[[Dict[str, Any], 'RuleEngine'], None]]
     description: str
-    priority: int = 1  # Higher priority rules fire first
+    priority: int = 1
 
 
 class RuleEngine:
-    """
-    Rule-based expert system engine.
-    
-    Maintains working memory (facts) and fires rules based on conditions.
+    """A rule-based expert system engine for making fast, deterministic decisions.
+
+    This engine maintains a working memory of 'Facts' and evaluates a set of 'Rules'
+    against the current game context. Firing rules can assert new facts, recommend
+    actions, block actions, or adjust system parameters. It is designed to handle
+    common, recognizable situations without needing to consult a more complex model.
     """
     
     def __init__(self):
+        """Initializes the RuleEngine, setting up data structures and registering core rules."""
         self.rules: List[Rule] = []
         self.facts: Dict[str, Fact] = {}
         self.recommendations: List[Recommendation] = []
@@ -87,7 +120,7 @@ class RuleEngine:
         self._register_core_rules()
     
     def _register_core_rules(self):
-        """Register core expert rules."""
+        """Registers the set of built-in expert rules for common Skyrim situations."""
         
         # Rule 1: Stuck in exploration loop
         self.add_rule(Rule(
@@ -158,8 +191,10 @@ class RuleEngine:
     # ============================================================================
     
     def _cond_stuck_in_loop(self, context: Dict[str, Any]) -> bool:
-        """
-        Condition: visual_similarity > 0.95 AND recent_actions.count("explore") > 2
+        """Condition for the 'stuck_in_loop' rule.
+
+        Fires if visual similarity is high and the agent has been repeatedly
+        trying to 'explore'.
         """
         visual_similarity = context.get('visual_similarity', 0.0)
         recent_actions = context.get('recent_actions', [])
@@ -171,8 +206,10 @@ class RuleEngine:
         return False
     
     def _cond_scene_mismatch(self, context: Dict[str, Any]) -> bool:
-        """
-        Condition: scene_classification != visual_description.scene_type
+        """Condition for the 'scene_mismatch' rule.
+
+        Fires if the high-level scene classification (e.g., from an LLM)
+        disagrees with the low-level visual scene type (e.g., from a CNN).
         """
         scene_classification = context.get('scene_classification')
         visual_scene_type = context.get('visual_scene_type')
@@ -187,8 +224,11 @@ class RuleEngine:
         return False
     
     def _cond_visual_stasis(self, context: Dict[str, Any]) -> bool:
-        """
-        Condition: High visual similarity despite varied actions
+        """Condition for the 'visual_stasis' rule.
+
+        Fires if visual similarity is very high, even though the agent has
+        been trying a variety of different actions. This might indicate a
+        soft-lock or non-obvious obstacle.
         """
         visual_similarity = context.get('visual_similarity', 0.0)
         recent_actions = context.get('recent_actions', [])
@@ -201,8 +241,10 @@ class RuleEngine:
         return False
     
     def _cond_action_thrashing(self, context: Dict[str, Any]) -> bool:
-        """
-        Condition: Actions changing every cycle
+        """Condition for the 'action_thrashing' rule.
+
+        Fires if the agent is rapidly switching between many different actions,
+        indicating indecision or planning instability.
         """
         recent_actions = context.get('recent_actions', [])
         
@@ -213,8 +255,11 @@ class RuleEngine:
         return False
     
     def _cond_unproductive_exploration(self, context: Dict[str, Any]) -> bool:
-        """
-        Condition: Exploring but coherence not improving
+        """Condition for the 'unproductive_exploration' rule.
+
+        Fires if the agent is repeatedly exploring but its internal coherence
+        (a measure of understanding) is not improving, suggesting the exploration
+        is not fruitful.
         """
         recent_actions = context.get('recent_actions', [])
         coherence_history = context.get('coherence_history', [])
@@ -234,60 +279,60 @@ class RuleEngine:
     # ============================================================================
     
     def _cons_set_stuck_fact(self, context: Dict[str, Any], engine: 'RuleEngine'):
-        """Set stuck_in_loop fact."""
+        """Consequence: Asserts a 'stuck_in_loop' fact into working memory."""
         engine.set_fact("stuck_in_loop", confidence=0.95, metadata={
             'visual_similarity': context.get('visual_similarity'),
             'explore_count': sum(1 for a in context.get('recent_actions', [])[-5:] if 'explore' in a.lower())
         })
     
     def _cons_recommend_retreat(self, context: Dict[str, Any], engine: 'RuleEngine'):
-        """Recommend retreat action."""
+        """Consequence: Recommends moving backward to get unstuck."""
         engine.recommend("move_backward", Priority.HIGH, "Stuck in loop - retreat", confidence=0.9)
     
     def _cons_recommend_activate(self, context: Dict[str, Any], engine: 'RuleEngine'):
-        """Recommend activate action."""
+        """Consequence: Recommends using the 'activate' action to interact with a potential obstacle."""
         engine.recommend("activate", Priority.MEDIUM, "Try pressing/activating obstacle", confidence=0.8)
     
     def _cons_block_explore(self, context: Dict[str, Any], engine: 'RuleEngine'):
-        """Block explore action for 3 cycles."""
+        """Consequence: Blocks the 'explore' action for 3 cycles to prevent looping."""
         engine.block_action("explore", duration=3, reason="Stuck in exploration loop")
     
     def _cons_set_sensory_conflict(self, context: Dict[str, Any], engine: 'RuleEngine'):
-        """Set sensory_conflict fact."""
+        """Consequence: Asserts a 'sensory_conflict' fact into working memory."""
         engine.set_fact("sensory_conflict", confidence=0.90, metadata={
             'scene_classification': context.get('scene_classification'),
             'visual_scene_type': context.get('visual_scene_type')
         })
     
     def _cons_recommend_activate_high(self, context: Dict[str, Any], engine: 'RuleEngine'):
-        """Recommend activate with high priority."""
+        """Consequence: Recommends 'activate' with high priority to resolve a sensory mismatch."""
         engine.recommend("activate", Priority.HIGH, "Resolve scene classification mismatch", confidence=0.85)
     
     def _cons_increase_sensorimotor_authority(self, context: Dict[str, Any], engine: 'RuleEngine'):
-        """Increase sensorimotor authority weight."""
+        """Consequence: Increases the 'sensorimotor_authority' parameter to trust low-level vision more."""
         current = engine.parameters.get('sensorimotor_authority', 1.0)
         engine.set_parameter('sensorimotor_authority', current * 1.5)
     
     def _cons_set_visual_stasis_fact(self, context: Dict[str, Any], engine: 'RuleEngine'):
-        """Set visual_stasis fact."""
+        """Consequence: Asserts a 'visual_stasis' fact into working memory."""
         engine.set_fact("visual_stasis", confidence=0.85, metadata={
             'visual_similarity': context.get('visual_similarity')
         })
     
     def _cons_recommend_jump(self, context: Dict[str, Any], engine: 'RuleEngine'):
-        """Recommend jump to break stasis."""
+        """Consequence: Recommends jumping to try and break a soft-lock."""
         engine.recommend("jump", Priority.HIGH, "Break visual stasis", confidence=0.8)
     
     def _cons_recommend_turn_around(self, context: Dict[str, Any], engine: 'RuleEngine'):
-        """Recommend turning around."""
+        """Consequence: Recommends turning around to get a new perspective."""
         engine.recommend("turn_around", Priority.MEDIUM, "Change perspective", confidence=0.75)
     
     def _cons_set_indecision_fact(self, context: Dict[str, Any], engine: 'RuleEngine'):
-        """Set action_thrashing fact."""
+        """Consequence: Asserts an 'action_thrashing' fact into working memory."""
         engine.set_fact("action_thrashing", confidence=0.80)
     
     def _cons_recommend_commit_to_action(self, context: Dict[str, Any], engine: 'RuleEngine'):
-        """Recommend committing to one action."""
+        """Consequence: Recommends repeating the last action to break indecision."""
         # Get most recent action and stick with it
         recent_actions = context.get('recent_actions', [])
         if recent_actions:
@@ -295,11 +340,11 @@ class RuleEngine:
             engine.recommend(action, Priority.MEDIUM, "Commit to action sequence", confidence=0.7)
     
     def _cons_set_unproductive_fact(self, context: Dict[str, Any], engine: 'RuleEngine'):
-        """Set unproductive_exploration fact."""
+        """Consequence: Asserts an 'unproductive_exploration' fact into working memory."""
         engine.set_fact("unproductive_exploration", confidence=0.75)
     
     def _cons_recommend_goal_change(self, context: Dict[str, Any], engine: 'RuleEngine'):
-        """Recommend changing goals."""
+        """Consequence: Asserts a meta-fact suggesting the high-level goal should be revised."""
         # This is a meta-recommendation that should trigger goal replanning
         engine.set_fact("needs_goal_revision", confidence=0.8)
     
@@ -308,13 +353,23 @@ class RuleEngine:
     # ============================================================================
     
     def add_rule(self, rule: Rule):
-        """Add a rule to the engine."""
+        """Adds a new rule to the engine and sorts the rule list by priority.
+
+        Args:
+            rule: The Rule object to add.
+        """
         self.rules.append(rule)
         # Sort by priority
         self.rules.sort(key=lambda r: r.priority, reverse=True)
     
     def set_fact(self, name: str, confidence: float, metadata: Optional[Dict[str, Any]] = None):
-        """Assert a fact in working memory."""
+        """Asserts a fact into the working memory, overwriting any existing fact with the same name.
+
+        Args:
+            name: The name of the fact.
+            confidence: The confidence score for the fact (0.0 to 1.0).
+            metadata: Optional dictionary of related data.
+        """
         self.facts[name] = Fact(
             name=name,
             confidence=confidence,
@@ -322,16 +377,38 @@ class RuleEngine:
         )
     
     def get_fact(self, name: str) -> Optional[Fact]:
-        """Retrieve a fact from working memory."""
+        """Retrieves a fact from working memory by its name.
+
+        Args:
+            name: The name of the fact to retrieve.
+
+        Returns:
+            The Fact object, or None if it doesn't exist.
+        """
         return self.facts.get(name)
     
     def has_fact(self, name: str, min_confidence: float = 0.5) -> bool:
-        """Check if fact exists with minimum confidence."""
+        """Checks if a fact exists in working memory with at least a minimum confidence.
+
+        Args:
+            name: The name of the fact to check.
+            min_confidence: The minimum required confidence level.
+
+        Returns:
+            True if the fact exists with sufficient confidence, False otherwise.
+        """
         fact = self.facts.get(name)
         return fact is not None and fact.confidence >= min_confidence
     
     def recommend(self, action: str, priority: Priority, reason: str, confidence: float):
-        """Add an action recommendation."""
+        """Adds an action recommendation to the current list of recommendations for this cycle.
+
+        Args:
+            action: The name of the action to recommend.
+            priority: The priority of the recommendation.
+            reason: The reason for the recommendation.
+            confidence: The confidence score for the recommendation.
+        """
         self.recommendations.append(Recommendation(
             action=action,
             priority=priority,
@@ -340,21 +417,18 @@ class RuleEngine:
         ))
     
     def is_context_appropriate(self, action: str, context: Dict[str, Any]) -> bool:
-        """
-        Check if an action is appropriate for the current context.
-        
-        Prevents inappropriate actions like:
-        - Combat actions in menus/dialogues
-        - Healing in inventory (potion use requires exiting menu first)
-        - Movement in dialogue scenes
-        - Interaction with objects during combat
-        
+        """Checks if a given action is appropriate for the current game context.
+
+        This crucial method prevents the system from recommending nonsensical
+        actions, such as attacking while in a dialogue menu or trying to move
+        while the inventory is open.
+
         Args:
-            action: The action to check
-            context: Current game state and scene context
-            
+            action: The action to check (e.g., 'attack').
+            context: The current game state context, including scene type.
+
         Returns:
-            True if action is appropriate, False otherwise
+            True if the action is appropriate for the context, False otherwise.
         """
         scene_type = context.get('scene_classification') or context.get('visual_scene_type', '')
         in_combat = context.get('in_combat', False)
@@ -389,13 +463,12 @@ class RuleEngine:
         return True
     
     def filter_recommendations_by_context(self, context: Dict[str, Any]):
-        """
-        Filter recommendations to remove context-inappropriate actions.
-        
-        This should be called after evaluate() and before get_top_recommendation().
-        
+        """Filters the current list of recommendations to remove any that are context-inappropriate.
+
+        This should be called after `evaluate()` and before `get_top_recommendation()`.
+
         Args:
-            context: Current game state and scene context
+            context: The current game state and scene context.
         """
         original_count = len(self.recommendations)
         filtered = []
@@ -418,7 +491,13 @@ class RuleEngine:
         return len(removed)
     
     def block_action(self, action: str, duration: int, reason: str):
-        """Block an action for N cycles."""
+        """Blocks a specified action for a given number of cycles.
+
+        Args:
+            action: The name of the action to block.
+            duration: The number of cycles to block the action for.
+            reason: The reason for the block.
+        """
         self.blocked_actions[action] = ActionBlock(
             action=action,
             cycles_remaining=duration,
@@ -426,22 +505,43 @@ class RuleEngine:
         )
     
     def is_action_blocked(self, action: str) -> bool:
-        """Check if action is currently blocked."""
+        """Checks if an action is currently blocked.
+
+        Args:
+            action: The name of the action to check.
+
+        Returns:
+            True if the action is blocked, False otherwise.
+        """
         block = self.blocked_actions.get(action)
         return block is not None and block.cycles_remaining > 0
     
     def set_parameter(self, name: str, value: float):
-        """Set a system parameter."""
+        """Sets a system-wide parameter that can be used by rules or other systems.
+
+        Args:
+            name: The name of the parameter.
+            value: The float value to set.
+        """
         self.parameters[name] = value
     
     def get_parameter(self, name: str, default: float = 1.0) -> float:
-        """Get a system parameter."""
+        """Retrieves a system parameter.
+
+        Args:
+            name: The name of the parameter.
+            default: The default value to return if the parameter is not set.
+
+        Returns:
+            The value of the parameter or the default.
+        """
         return self.parameters.get(name, default)
     
     def tick_cycle(self):
-        """
-        Advance the cycle counter - should be called once per game cycle.
-        This ensures blocked actions are only decremented once per cycle.
+        """Advances the engine's internal cycle counter.
+
+        This must be called once per game cycle to correctly manage time-based
+        features like action blocks.
         """
         # Decrement blocked action counters
         expired_blocks = []
@@ -455,19 +555,18 @@ class RuleEngine:
             del self.blocked_actions[action]
     
     def evaluate(self, context: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Evaluate all rules against current context.
-        
+        """Evaluates all registered rules against the current context.
+
+        This method clears previous recommendations, iterates through all rules
+        in priority order, and executes the consequences of any rule whose
+        condition is met.
+
         Args:
-            context: Current game state and metrics
-            
+            context: A dictionary representing the current game state and metrics.
+
         Returns:
-            Dict with:
-                - fired_rules: List of rules that fired
-                - recommendations: List of action recommendations
-                - blocked_actions: List of currently blocked actions
-                - facts: Current facts in working memory
-                - parameters: System parameters
+            A dictionary summarizing the results of the evaluation, including
+            which rules fired, the final list of recommendations, and current facts.
         """
         # Clear previous cycle's recommendations
         self.recommendations.clear()
@@ -503,14 +602,14 @@ class RuleEngine:
         }
     
     def get_top_recommendation(self, exclude_blocked: bool = True) -> Optional[Recommendation]:
-        """
-        Get the highest priority recommendation.
-        
+        """Retrieves the single highest-priority recommendation from the last evaluation.
+
         Args:
-            exclude_blocked: If True, skip blocked actions
-            
+            exclude_blocked: If True (default), blocked actions will not be returned.
+
         Returns:
-            Highest priority recommendation, or None
+            The highest-priority Recommendation object, or None if there are no
+            valid recommendations.
         """
         recommendations = sorted(self.recommendations, key=lambda r: (r.priority.value, r.confidence), reverse=True)
         
@@ -520,11 +619,11 @@ class RuleEngine:
         return recommendations[0] if recommendations else None
     
     def clear_facts(self, max_age_seconds: Optional[float] = None):
-        """
-        Clear facts from working memory.
-        
+        """Clears facts from working memory.
+
         Args:
-            max_age_seconds: If provided, only clear facts older than this
+            max_age_seconds: If provided, only facts older than this age will be
+                             cleared. If None, all facts are cleared.
         """
         if max_age_seconds is None:
             self.facts.clear()
@@ -536,7 +635,11 @@ class RuleEngine:
                 del self.facts[name]
     
     def get_status_report(self) -> str:
-        """Get a human-readable status report."""
+        """Generates a human-readable string report of the engine's current state.
+
+        Returns:
+            A formatted string detailing active facts, recommendations, and blocks.
+        """
         lines = [
             "═══════════════════════════════════════════════════════════",
             "                    RULE ENGINE STATUS                     ",

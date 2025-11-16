@@ -1,7 +1,28 @@
 """
-Run Singularis AGI in Skyrim
+Run Singularis AGI in Skyrim - Autonomous Gameplay Runner
 
-Complete autonomous gameplay with all features enabled.
+This script serves as the primary entry point for launching the Singularis AGI to
+play Skyrim autonomously. It provides an interactive command-line interface to
+configure the AGI's operational parameters before starting the session.
+
+Key Features:
+-   **Interactive Configuration:** Guides the user through setting the run duration,
+    enabling/disabling LLM usage, and selecting the LLM architecture.
+-   **Safety First:** Includes a "dry run" mode (default) that runs the AGI without
+    giving it control over the keyboard and mouse, preventing unintended actions.
+    A confirmation step is required to enter "live" mode.
+-   **Flexible LLM Architectures:** Allows the user to choose from several
+    pre-configured LLM modes:
+    -   `Hybrid`: A balanced approach using Gemini for vision and Claude for reasoning.
+    -   `MoE` (Mixture of Experts): A more complex setup using multiple specialized models.
+    -   `PARALLEL`: The most advanced mode, running both Hybrid and MoE systems
+        simultaneously and making decisions by consensus.
+    -   `Local only`: For offline use, relying on models hosted locally via LM Studio.
+-   **Autonomous Operation:** Once configured, the AGI will run for the specified
+    duration, making its own decisions and performing actions in the game.
+
+Usage:
+    python run_skyrim_agi.py
 """
 
 import asyncio
@@ -12,6 +33,10 @@ from singularis.skyrim import SkyrimAGI, SkyrimConfig
 load_dotenv()
 
 async def main():
+    """
+    The main asynchronous function that handles user configuration, initializes,
+    and runs the SkyrimAGI instance.
+    """
     print("=" * 70)
     print("SINGULARIS AGI - SKYRIM AUTONOMOUS GAMEPLAY")
     print("=" * 70)

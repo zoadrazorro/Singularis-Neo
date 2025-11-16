@@ -1,10 +1,26 @@
-"""Quick test for the system prompt fix."""
+"""
+Quick test for the system prompt fix with LM Studio.
+
+This script performs a simple, isolated test to verify that the `LMStudioClient`
+can correctly send a request that includes both a user prompt and a system
+prompt to a locally-hosted model via the LM Studio server.
+
+It works by:
+1.  Configuring and initializing an `LMStudioClient` to connect to a specific
+    model (Mistral-7B Instruct v0.3 in this case).
+2.  Calling the `generate` method with both a `prompt` and a `system_prompt`.
+3.  Printing the result to confirm that the generation was successful and that
+    the model respected the system prompt's instructions for brevity.
+4.  Exiting with a status code of 0 on success or 1 on failure, making it
+    suitable for use in automated testing or CI/CD pipelines.
+"""
 
 import asyncio
 from singularis.llm.lmstudio_client import LMStudioClient, LMStudioConfig
 
 
 async def quick_test():
+    """Sets up the client and runs the test generation."""
     print("Testing Mistral-7B with system prompt...")
     config = LMStudioConfig(
         model_name="mistralai/mistral-7b-instruct-v0.3",

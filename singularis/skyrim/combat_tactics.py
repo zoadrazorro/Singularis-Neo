@@ -15,27 +15,54 @@ from typing import Any, Deque, Dict, Iterable, List, Optional
 
 @dataclass
 class CombatOutcome:
-    """Store outcome statistics for a given tactic."""
+    """Stores and calculates outcome statistics for a given combat tactic.
+
+    Attributes:
+        successes: The number of times the tactic succeeded.
+        attempts: The total number of times the tactic was attempted.
+    """
 
     successes: int = 0
     attempts: int = 0
 
     @property
     def success_rate(self) -> float:
+        """Calculates the success rate of the tactic.
+
+        Returns:
+            The success rate as a float between 0.0 and 1.0. Returns 0.5 if
+            no attempts have been made.
+        """
         if self.attempts == 0:
             return 0.5
         return self.successes / self.attempts
 
     def record(self, success: bool) -> None:
+        """Records the outcome of a tactic attempt.
+
+        Args:
+            success: A boolean indicating whether the tactic was successful.
+        """
         self.attempts += 1
         if success:
             self.successes += 1
 
 
 class SkyrimCombatTactics:
-    """Context-aware combat tactics manager."""
+    """A manager for context-aware combat tactics in Skyrim.
+
+    This class provides recommendations for combat actions based on the type of
+    enemy, the agent's combat style, and the current situation. It also tracks
+    the historical performance of different tactics to refine its suggestions
+    over time.
+
+    Attributes:
+        enemy_patterns: A dictionary of predefined tactics for different enemy types.
+        combat_styles: A dictionary defining the preferred tactics for various combat styles.
+    """
 
     def __init__(self) -> None:
+        """Initializes the SkyrimCombatTactics manager."""
         self.enemy_patterns: Dict[str, Dict[str, List[str]]] = {
             "dragon": {
                 "grounded": ["power_attack", "shout", "block", "heal"],
@@ -68,7 +95,11 @@ class SkyrimCombatTactics:
         self._player_build: str = "hybrid"
 
     def update_player_build(self, build: str) -> None:
-        """Update the inferred combat build."""
+        """Updates the agent's inferred combat build.
+
+        Args:
+            build: The new combat build (e.g., "warrior", "mage").
+        """
 
         if build not in self.combat_styles:
             build = "hybrid"
@@ -81,7 +112,14 @@ class SkyrimCombatTactics:
         success: bool,
         context: Optional[Dict[str, Any]] = None,
     ) -> None:
-        """Persist the outcome of a combat tactic."""
+        """Records the outcome of a combat tactic to track its performance.
+
+        Args:
+            enemy_type: The type of enemy the tactic was used against.
+            tactic: The tactic that was used.
+            success: A boolean indicating whether the tactic was successful.
+            context: Additional context about the combat situation.
+        """
 
         enemy_key = enemy_type.lower() or "unknown"
         self._tactic_stats[enemy_key][tactic].record(success)
@@ -96,7 +134,22 @@ class SkyrimCombatTactics:
         stamina_percent: float = 100.0,
         context: Optional[Dict[str, Any]] = None,
     ) -> List[str]:
-        """Return a ranked list of tactic suggestions."""
+        """Recommends a ranked list of combat tactics based on the current situation.
+
+        The ranking is determined by a combination of predefined enemy patterns,
+        the agent's combat style, current resource levels (health and stamina),
+        and the historical success rate of the tactics.
+
+        Args:
+            enemy_type: The type of enemy being faced.
+            player_build: The agent's current combat build.
+            health_percent: The agent's current health percentage.
+            stamina_percent: The agent's current stamina percentage.
+            context: Additional context about the combat situation.
+
+        Returns:
+            A ranked list of suggested combat tactics.
+        """
 
         enemy_key = (enemy_type or "unknown").lower()
         build = player_build or self._player_build
@@ -139,6 +192,14 @@ class SkyrimCombatTactics:
         return ranked
 
     def _determine_enemy_posture(self, context: Optional[Dict[str, Any]]) -> str:
+        """Determines the enemy's current posture from the combat context.
+
+        Args:
+            context: Additional context about the combat situation.
+
+        Returns:
+            A string representing the enemy's posture (e.g., "flying", "grounded").
+        """
         if not context:
             return "default"
         if context.get("enemy_airborne"):
@@ -150,7 +211,12 @@ class SkyrimCombatTactics:
         return "default"
 
     def describe_recent_performance(self) -> Dict[str, Any]:
-        """Return a lightweight snapshot of recent combat trends."""
+        """Provides a summary of recent combat performance.
+
+        Returns:
+            A dictionary summarizing recent encounters and the success rates of
+            different tactics against various enemies.
+        """
 
         summary: Dict[str, Any] = {"recent_encounters": len(self._recent_context)}
         for enemy, action_stats in self._tactic_stats.items():

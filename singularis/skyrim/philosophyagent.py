@@ -7,10 +7,17 @@ from singularis.llm.hybrid_client import HybridLLMClient
 
 
 def _philosophy_texts_dir() -> Path:
+    """Returns the path to the directory containing philosophy texts."""
     return Path(__file__).resolve().parents[2] / "philosophy_texts"
 
 
 def _choose_random_text_file() -> Optional[Path]:
+    """Selects a random text file from the philosophy texts directory.
+
+    Returns:
+        A Path object to a random file, or None if the directory or files
+        do not exist.
+    """
     pdir = _philosophy_texts_dir()
     if not pdir.exists():
         return None
@@ -21,6 +28,15 @@ def _choose_random_text_file() -> Optional[Path]:
 
 
 def _extract_random_snippet(text: str, max_chars: int = 600) -> str:
+    """Extracts a random paragraph or snippet from a larger body of text.
+
+    Args:
+        text: The source text.
+        max_chars: The maximum character length for the snippet.
+
+    Returns:
+        A random snippet of the text.
+    """
     parts = [p.strip() for p in text.split("\n\n") if p.strip()]
     if not parts:
         parts = [line.strip() for line in text.splitlines() if line.strip()]
@@ -38,6 +54,20 @@ async def get_random_philosophical_context(
     hybrid_llm: Optional[HybridLLMClient] = None,
     max_chars: int = 600,
 ) -> Dict[str, str]:
+    """Injects a random piece of philosophical wisdom to guide the agent.
+
+    This function selects a random text from the philosophy library, extracts a
+    snippet, and optionally uses an LLM to summarize it into a concrete,
+    actionable piece of guidance for the AGI.
+
+    Args:
+        hybrid_llm: An optional LLM client to summarize the philosophical excerpt.
+        max_chars: The maximum length of the initial text snippet.
+
+    Returns:
+        A dictionary containing the source, the raw excerpt, and the final
+        (potentially summarized) philosophical context.
+    """
     path = _choose_random_text_file()
     if path is None:
         fallback = (
@@ -92,6 +122,22 @@ async def inform_consciousness_with_philosophy(
     base_context: Optional[Dict] = None,
     hybrid_llm: Optional[HybridLLMClient] = None,
 ) -> Tuple:
+    """Computes the AGI's consciousness state, augmented with philosophical context.
+
+    This function orchestrates the process of fetching a random philosophical
+    insight and integrating it into the context before computing the final
+    consciousness state for the current cycle.
+
+    Args:
+        bridge: The ConsciousnessBridge to use for the computation.
+        game_state: The current game state.
+        base_context: The base context dictionary for the consciousness computation.
+        hybrid_llm: An optional LLM client for summarizing the philosophy excerpt.
+
+    Returns:
+        A tuple containing the computed consciousness state and the full context
+        used for the computation.
+    """
     ctx = dict(base_context or {})
     phil = await get_random_philosophical_context(hybrid_llm=hybrid_llm)
     ctx.update(phil)

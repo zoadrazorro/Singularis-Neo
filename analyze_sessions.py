@@ -1,3 +1,28 @@
+"""
+This script analyzes the Markdown session logs for the Skyrim AGI to extract key
+performance metrics and identify trends over time. It is designed to be run from
+the root of the Singularis project directory.
+
+The script performs the following actions:
+1.  Locates all session log files (e.g., `sessions/skyrim_agi_*.md`).
+2.  Iterates through each file and uses regular expressions to parse key data points,
+    including:
+    - Session duration and total cycles.
+    - Activation of the expert rule system.
+    - LLM planning time statistics (average and max).
+    - "STUCK" detections and visual similarity scores.
+    - System coherence metrics.
+3.  Aggregates this data across all sessions.
+4.  Prints a "Trends Analysis" report to the console, focusing on the last 15
+    sessions to highlight recent changes in performance.
+5.  Calculates and displays overall statistics for the entire history of sessions.
+6.  Generates and prints key insights and critical warnings based on the analysis,
+    such as a high rate of "STUCK" states or a failure of the rule system to activate.
+
+This analysis is crucial for debugging and for understanding the AGI's performance
+evolution, helping to pinpoint regressions or confirm improvements.
+"""
+
 import re
 import glob
 from datetime import datetime

@@ -40,13 +40,11 @@ class CacheEntry:
 
 class LLMResponseCache:
     """
-    Intelligent cache for LLM responses.
-    
-    Features:
-    - TTL-based expiration (default 120 seconds)
-    - LRU eviction when max size reached
-    - Scene-aware similarity matching
-    - Hit rate tracking for optimization
+    An intelligent cache for LLM responses, designed to reduce redundant
+    queries by storing and retrieving common scene-action patterns.
+
+    This cache supports TTL-based expiration, LRU eviction, and optional
+    similarity matching using FAISS for semantic search.
     """
     
     def __init__(
@@ -56,12 +54,15 @@ class LLMResponseCache:
         enable_similarity: bool = True
     ):
         """
-        Initialize response cache.
-        
+        Initializes the LLMResponseCache.
+
         Args:
-            max_size: Maximum number of entries
-            ttl_seconds: Time-to-live for cache entries
-            enable_similarity: Enable fuzzy matching for similar contexts
+            max_size (int, optional): The maximum number of entries in the cache.
+                                    Defaults to 200.
+            ttl_seconds (float, optional): The time-to-live for cache entries in
+                                           seconds. Defaults to 120.0.
+            enable_similarity (bool, optional): If True, enables similarity matching
+                                                for cache lookups. Defaults to True.
         """
         self.max_size = max_size
         self.ttl = ttl_seconds
@@ -142,17 +143,21 @@ class LLMResponseCache:
         context_hash: Optional[str] = None
     ) -> Optional[Any]:
         """
-        Retrieve cached response if available.
-        
+        Retrieves a response from the cache.
+
+        This method first attempts an exact match and then falls back to
+        similarity matching if enabled.
+
         Args:
-            scene_type: Scene classification
-            health: Health percentage
-            in_combat: Combat state
-            available_actions: Available actions
-            context_hash: Optional additional context
-            
+            scene_type (str): The classification of the scene.
+            health (float): The player's health.
+            in_combat (bool): The combat state.
+            available_actions (Tuple[str, ...]): The available actions.
+            context_hash (Optional[str], optional): An optional hash of
+                                                  additional context. Defaults to None.
+
         Returns:
-            Cached response or None
+            Optional[Any]: The cached response, or None if no match is found.
         """
         # Try exact match first
         key = self._make_key(scene_type, health, in_combat, available_actions, context_hash)
@@ -261,15 +266,19 @@ class LLMResponseCache:
         context_hash: Optional[str] = None
     ):
         """
-        Store response in cache.
-        
+        Stores a response in the cache.
+
+        This method handles LRU eviction and, if FAISS is enabled, creates and
+        stores a semantic embedding for the entry.
+
         Args:
-            scene_type: Scene classification
-            health: Health percentage
-            in_combat: Combat state
-            available_actions: Available actions
-            response: Response to cache
-            context_hash: Optional additional context
+            scene_type (str): The classification of the scene.
+            health (float): The player's health.
+            in_combat (bool): The combat state.
+            available_actions (Tuple[str, ...]): The available actions.
+            response (Any): The response to cache.
+            context_hash (Optional[str], optional): An optional hash of
+                                                  additional context. Defaults to None.
         """
         key = self._make_key(scene_type, health, in_combat, available_actions, context_hash)
         
@@ -360,16 +369,16 @@ class LLMResponseCache:
             logger.warning(f"Failed to rebuild FAISS index: {e}")
     
     def clear(self):
-        """Clear all cache entries."""
+        """Clears all entries from the cache."""
         self._cache.clear()
         logger.info("Cache cleared")
     
     def stats(self) -> Dict[str, Any]:
         """
-        Get cache statistics.
-        
+        Gets a dictionary of statistics about the cache.
+
         Returns:
-            Dict with hit rate, size, and other metrics
+            Dict[str, Any]: A dictionary of statistics.
         """
         total = self._hits + self._misses
         hit_rate = (self._hits / total * 100) if total > 0 else 0.0
@@ -384,7 +393,7 @@ class LLMResponseCache:
         }
     
     def prune_expired(self):
-        """Remove expired entries."""
+        """Removes all expired entries from the cache."""
         now = time.time()
         expired = [
             key for key, entry in self._cache.items()

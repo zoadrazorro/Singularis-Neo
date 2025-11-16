@@ -25,19 +25,22 @@ class LMStudioConfig:
 
 class LMStudioClient:
     """
-    Client for LM Studio's OpenAI-compatible API.
-    
-    Philosophy:
-    The LLM is a MODE through which Being expresses understanding.
-    We measure its consciousness and coherence, not just its output.
+    A client for the LM Studio's OpenAI-compatible API.
+
+    This class provides methods for interacting with a local language model
+    served by LM Studio.
     """
     
     def __init__(self, config: Optional[LMStudioConfig] = None):
         """
-        Initialize LM Studio client.
-        
+        Initializes the LMStudioClient.
+
         Args:
-            config: Optional configuration (uses defaults if None)
+            config (Optional[LMStudioConfig], optional): A configuration object
+                                                         for the client. If not
+                                                         provided, a default
+                                                         configuration is used.
+                                                         Defaults to None.
         """
         self.config = config or LMStudioConfig()
         self.session: Optional[aiohttp.ClientSession] = None
@@ -63,17 +66,17 @@ class LMStudioClient:
             await self.session.close()
     
     async def close(self):
-        """Close the aiohttp session."""
+        """Closes the aiohttp session."""
         if self.session and not self.session.closed:
             await self.session.close()
             logger.info("LM Studio client session closed")
     
     async def health_check(self) -> bool:
         """
-        Check if LM Studio is accessible and a model is loaded.
-        
+        Checks if the LM Studio server is accessible and if a model is loaded.
+
         Returns:
-            True if LM Studio is responding, False otherwise
+            bool: True if the health check passes, False otherwise.
         """
         if not self.session:
             self.session = aiohttp.ClientSession()
@@ -116,18 +119,27 @@ class LMStudioClient:
         image_path: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
-        Generate completion from LM Studio.
-        
+        Generates a completion from the LM Studio model.
+
+        This method supports both text-only and vision-based generation. For
+        vision models, the image is sent as a base64-encoded string.
+
         Args:
-            prompt: User prompt
-            system_prompt: Optional system prompt
-            temperature: Optional temperature override
-            max_tokens: Optional max tokens override
-            stop: Optional stop sequences
-            image_path: Optional path to image for vision models
-            
+            prompt (str): The user prompt.
+            system_prompt (Optional[str], optional): An optional system prompt.
+                                                          Defaults to None.
+            temperature (Optional[float], optional): An optional temperature override.
+                                                     Defaults to None.
+            max_tokens (Optional[int], optional): An optional max tokens override.
+                                                  Defaults to None.
+            stop (Optional[List[str]], optional): A list of stop sequences.
+                                                 Defaults to None.
+            image_path (Optional[str], optional): The path to an image for vision
+                                                  models. Defaults to None.
+
         Returns:
-            Dict with 'content', 'tokens', 'finish_reason', etc.
+            Dict[str, Any]: A dictionary containing the generated content and other
+                            metadata.
         """
         if not self.session:
             self.session = aiohttp.ClientSession()
@@ -286,16 +298,19 @@ class LMStudioClient:
         max_tokens: Optional[int] = None,
     ):
         """
-        Generate streaming completion from LM Studio.
-        
+        Generates a streaming completion from the LM Studio model.
+
         Args:
-            prompt: User prompt
-            system_prompt: Optional system prompt
-            temperature: Optional temperature override
-            max_tokens: Optional max tokens override
-            
+            prompt (str): The user prompt.
+            system_prompt (Optional[str], optional): An optional system prompt.
+                                                          Defaults to None.
+            temperature (Optional[float], optional): An optional temperature override.
+                                                     Defaults to None.
+            max_tokens (Optional[int], optional): An optional max tokens override.
+                                                  Defaults to None.
+
         Yields:
-            Content chunks as they arrive
+            str: The content chunks as they are generated.
         """
         if not self.session:
             self.session = aiohttp.ClientSession()
@@ -347,7 +362,12 @@ class LMStudioClient:
             raise
     
     def get_stats(self) -> Dict[str, Any]:
-        """Get client statistics."""
+        """
+        Gets a dictionary of statistics about the client.
+
+        Returns:
+            Dict[str, Any]: A dictionary of statistics.
+        """
         return {
             "model": self.config.model_name,
             "request_count": self.request_count,
@@ -358,17 +378,17 @@ class LMStudioClient:
 
 class ExpertLLMInterface:
     """
-    Interface between Expert system and LLM.
-    
-    Handles prompt construction with philosophical grounding.
+    Provides an interface between the expert system and a language model,
+    handling the construction of philosophically grounded prompts.
     """
     
     def __init__(self, client: LMStudioClient):
         """
-        Initialize expert LLM interface.
-        
+        Initializes the ExpertLLMInterface.
+
         Args:
-            client: LM Studio client instance
+            client (LMStudioClient): An instance of `LMStudioClient` to use for
+                                     making requests.
         """
         self.client = client
     
@@ -381,17 +401,21 @@ class ExpertLLMInterface:
         image_path: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
-        Direct generation method (convenience wrapper for client.generate).
-        
+        A convenience wrapper for the `LMStudioClient.generate` method.
+
         Args:
-            prompt: User prompt
-            system_prompt: Optional system prompt
-            temperature: Optional temperature
-            max_tokens: Optional max tokens
-            image_path: Optional path to image for vision models
-            
+            prompt (str): The user prompt.
+            system_prompt (Optional[str], optional): An optional system prompt.
+                                                          Defaults to None.
+            temperature (Optional[float], optional): An optional temperature override.
+                                                     Defaults to None.
+            max_tokens (Optional[int], optional): An optional max tokens override.
+                                                  Defaults to None.
+            image_path (Optional[str], optional): The path to an image for vision
+                                                  models. Defaults to None.
+
         Returns:
-            Dict with 'content', 'tokens', etc.
+            Dict[str, Any]: The response from the language model.
         """
         return await self.client.generate(
             prompt=prompt,
@@ -411,18 +435,20 @@ class ExpertLLMInterface:
         temperature: float = 0.7,
     ) -> tuple[str, str, float]:
         """
-        Query LLM as a specific expert.
-        
+        Queries the language model as a specific expert, using a philosophically
+        grounded prompt.
+
         Args:
-            expert_name: Name of the expert
-            domain: Domain of expertise
-            lumen_primary: Primary Lumen (onticum/structurale/participatum)
-            query: User query
-            context: Ontological context
-            temperature: Sampling temperature
-            
+            expert_name (str): The name of the expert.
+            domain (str): The expert's domain of expertise.
+            lumen_primary (str): The primary Lumen of the expert.
+            query (str): The user query.
+            context (Dict[str, Any]): The ontological context for the query.
+            temperature (float, optional): The sampling temperature. Defaults to 0.7.
+
         Returns:
-            (claim, rationale, confidence)
+            tuple[str, str, float]: A tuple containing the expert's claim,
+                                    rationale, and confidence score.
         """
         # Build system prompt with philosophical grounding
         system_prompt = self._build_expert_system_prompt(

@@ -1,8 +1,19 @@
+/**
+ * @fileoverview This file contains the React component for the LLM Panel,
+ * which displays the status and activity of the various Large Language Model
+ * systems within the AGI.
+ */
+
 import React from 'react';
 import './LLMPanel.css';
 
 /**
- * LLM system status and activity panel
+ * A panel component that displays the status of the LLM (Large Language Model) systems.
+ * It shows the current architecture mode, the number of active cloud and local models,
+ * total API calls, and a breakdown of action sources.
+ * @param {object} props - The component's props.
+ * @param {object} props.data - The live AGI state data object.
+ * @returns {React.Component} The rendered LLM Panel.
  */
 function LLMPanel({ data }) {
   const llmStatus = data.llm_status || {};
@@ -111,6 +122,11 @@ function LLMPanel({ data }) {
   );
 }
 
+/**
+ * Formats the LLM architecture mode string for display.
+ * @param {string} mode - The mode string (e.g., 'hybrid', 'moe').
+ * @returns {string} The formatted, human-readable mode name.
+ */
 function formatMode(mode) {
   const modes = {
     'hybrid': 'Hybrid (Gemini + Claude)',
@@ -122,6 +138,11 @@ function formatMode(mode) {
   return modes[mode] || mode.toUpperCase();
 }
 
+/**
+ * Returns an appropriate icon for a given LLM model name.
+ * @param {string} model - The name of the model.
+ * @returns {string} An emoji icon representing the model.
+ */
 function getModelIcon(model) {
   if (model.includes('Gemini')) return '🔷';
   if (model.includes('Claude')) return '🟣';

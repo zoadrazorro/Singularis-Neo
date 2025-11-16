@@ -70,20 +70,14 @@ class Lumen(Enum):
 @dataclass
 class LuminalCoherence:
     """
-    Coherence measured across the Three Lumina.
+    Represents the coherence of a mode, measured across the Three Lumina.
 
-    From MATHEMATICA SINGULARIS D3:
-    𝒞(m) := Agg(𝒞ₒ(m), 𝒞ₛ(m), 𝒞ₚ(m))
-
-    where Agg is symmetric, continuous, strictly increasing aggregator
-    with neutral element 0 and maximum 1.
-
-    Canonical choice: Geometric mean
-    𝒞 = (𝒞ₒ · 𝒞ₛ · 𝒞ₚ)^(1/3)
-
-    From ETHICA UNIVERSALIS Part I:
-    Deficiency in ANY dimension reduces total coherence.
-    Geometric mean ensures balance - no single lumen can dominate.
+    Attributes:
+        ontical (float): The coherence score for the ontical Lumen (power/energy).
+        structural (float): The coherence score for the structural Lumen (form/information).
+        participatory (float): The coherence score for the participatory Lumen (awareness/clarity).
+        total (float): The aggregated total coherence, typically the geometric mean of the three Lumina.
+        timestamp (datetime): The timestamp of the measurement.
     """
 
     # Individual lumen coherences (each in [0,1])
@@ -115,13 +109,18 @@ class LuminalCoherence:
         participatory: float
     ) -> float:
         """
-        Canonical aggregator: Geometric mean.
+        Aggregates the three Luminal coherences into a single score.
 
-        From MATHEMATICA SINGULARIS Axiom A4:
-        𝒞 = 0 iff at least one 𝒞ₗ = 0
+        The canonical aggregator is the geometric mean, which ensures that a
+        deficiency in any one Lumen reduces the total coherence.
 
-        This ensures balance - if any lumen is zero,
-        total coherence collapses.
+        Args:
+            ontical (float): The ontical coherence.
+            structural (float): The structural coherence.
+            participatory (float): The participatory coherence.
+
+        Returns:
+            float: The total coherence score.
         """
         if ontical < 0 or structural < 0 or participatory < 0:
             raise ValueError("Coherence values must be non-negative")
@@ -131,16 +130,26 @@ class LuminalCoherence:
 
     def is_ethical(self, threshold: float = 0.60) -> bool:
         """
-        From ETHICA UNIVERSALIS Part V + MATHEMATICA D7:
-        An output is ethical if it demonstrates sufficient coherence
-        (alignment with Being's structure).
+        Determines if the coherence score meets the threshold for being ethical.
 
-        Default threshold: 0.60 (60% of maximal coherence)
+        An output is considered ethical if it demonstrates sufficient coherence,
+        indicating alignment with Being's structure.
+
+        Args:
+            threshold (float, optional): The coherence threshold. Defaults to 0.60.
+
+        Returns:
+            bool: True if the total coherence is above the threshold, False otherwise.
         """
         return self.total >= threshold
 
     def as_triad(self) -> Tuple[float, float, float]:
-        """Return as (𝒞ₒ, 𝒞ₛ, 𝒞ₚ) triple for semiring operations."""
+        """
+        Returns the three Luminal coherences as a tuple.
+
+        Returns:
+            Tuple[float, float, float]: A tuple of (ontical, structural, participatory) coherence.
+        """
         return (self.ontical, self.structural, self.participatory)
 
     def __repr__(self) -> str:
@@ -164,27 +173,27 @@ CoherentiaScore = LuminalCoherence
 @dataclass
 class ConsciousnessTrace:
     """
-    Complete consciousness measurement across 8 theories.
+    Represents a complete consciousness measurement, integrating insights from eight
+    prominent theories of consciousness.
 
-    From ETHICA UNIVERSALIS Part II:
-    "Consciousness (ℂ) is the reflexive awareness by which mind
-    recognizes its own activity, participating in Being's deep order."
+    The final consciousness score is a weighted fusion of scores from each theory,
+    emphasizing Integrated Information Theory (IIT), Global Workspace Theory (GWT),
+    and Higher-Order Thought (HOT).
 
-    Integration of 8 Theories:
-    1. IIT (Φ) - Integrated Information Theory (Tononi)
-    2. GWT - Global Workspace Theory (Baars)
-    3. PP - Predictive Processing (Friston)
-    4. HOT - Higher-Order Thought (Rosenthal)
-    5. AST - Attention Schema Theory (Graziano)
-    6. Embodied - Embodied Cognition (Varela, Lakoff)
-    7. Enactive - Enactive Cognition (Thompson)
-    8. Panpsychism - Universal Consciousness (Chalmers, Goff)
-
-    Weighted Fusion (from consciousness_measurement_study):
-    𝒞_consciousness = 0.35·Φ + 0.35·GWT + 0.20·HOT + 0.10·(PP+AST+Emb+Enact+Panp)/5
-
-    Critical insight: Requires BOTH integration AND differentiation
-    (Perfect integration without differentiation → low consciousness)
+    Attributes:
+        iit_phi (float): The integrated information score (Φ).
+        gwt_salience (float): The salience score from Global Workspace Theory.
+        hot_reflection_depth (float): The depth of higher-order thought.
+        predictive_surprise (float): The prediction error from Predictive Processing.
+        ast_attention_schema (float): The score from Attention Schema Theory.
+        embodied_grounding (float): The score for embodied conceptual grounding.
+        enactive_interaction (float): The score for enactive interaction.
+        panpsychism_distribution (float): The score for panpsychism framing.
+        integration_score (float): The degree of unity and synchronization.
+        differentiation_score (float): The degree of diversity and multi-layeredness.
+        overall_consciousness (float): The final, aggregated consciousness score.
+        timestamp (datetime): The timestamp of the measurement.
+        measurement_id (Optional[str]): A unique ID for the measurement.
     """
 
     # ===== Primary Theories (70% weight) =====
@@ -265,22 +274,16 @@ class ConsciousnessTrace:
 @dataclass
 class Conatus:
     """
-    Conatus (ℭ) - The inherent drive to increase coherence.
+    Represents the conatus, the inherent drive of an entity to increase its coherence.
 
-    From ETHICA UNIVERSALIS Part III Definition II:
-    "Conatus (ℭ) is the inherent, dynamic principle through which
-    every entity actively seeks to preserve and actualize its essential
-    nature within divine immanent order."
+    Operationally, the conatus is the gradient of the coherence score, indicating
+    the direction of steepest ascent in the coherence space.
 
-    From MATHEMATICA SINGULARIS D4:
-    ℭ(m) = ∇𝒞(m) - the gradient of coherence
-
-    From ETHICA Part III Proposition I:
-    "The essence of life is conatus - the drive to persist and flourish."
-
-    Operational:
-    Conatus is the direction of steepest ascent in coherence space.
-    Policy π should follow ∇𝒞 to act ethically.
+    Attributes:
+        gradient_ontical (float): The gradient component for the ontical Lumen.
+        gradient_structural (float): The gradient component for the structural Lumen.
+        gradient_participatory (float): The gradient component for the participatory Lumen.
+        magnitude (float): The magnitude of the gradient, representing the strength of the drive.
     """
 
     # Gradient components (direction of coherence increase)
@@ -292,7 +295,12 @@ class Conatus:
     magnitude: float
 
     def as_vector(self) -> np.ndarray:
-        """Return gradient as numpy vector."""
+        """
+        Returns the conatus gradient as a NumPy vector.
+
+        Returns:
+            np.ndarray: The gradient vector.
+        """
         return np.array([
             self.gradient_ontical,
             self.gradient_structural,
@@ -300,7 +308,15 @@ class Conatus:
         ])
 
     def normalized(self) -> 'Conatus':
-        """Return unit-magnitude conatus (direction only)."""
+        """
+        Returns a normalized version of the conatus, with a magnitude of 1.
+
+        This is useful for representing the direction of the conatus, independent
+        of its strength.
+
+        Returns:
+            Conatus: The normalized conatus.
+        """
         if self.magnitude == 0:
             return self
         return Conatus(
@@ -327,24 +343,17 @@ class Conatus:
 @dataclass
 class OntologicalContext:
     """
-    Philosophical grounding for a query through three ontological aspects.
+    Provides the philosophical grounding for a query, analyzing it through
+    three ontological aspects: Being, Becoming, and Suchness.
 
-    From ETHICA UNIVERSALIS Part I + Scholium:
-    Every inquiry participates in Being's structure through:
-
-    BEING: What fundamental claims about reality?
-      - Ontological commitments (what exists)
-      - Essential nature (what something is)
-
-    BECOMING: What transformations/processes?
-      - Temporal unfolding
-      - Causal dynamics
-      - Developmental trajectories
-
-    SUCHNESS: What direct insights/recognition?
-      - Immediate awareness beyond concepts
-      - Non-dual recognition
-      - Intuitive knowledge (Part VI)
+    Attributes:
+        being_aspect (str): The ontological claims about reality.
+        becoming_aspect (str): The transformational processes involved.
+        suchness_aspect (str): The direct, non-conceptual insights.
+        complexity (str): The complexity of the query (e.g., 'simple', 'paradoxical').
+        domain (str): The domain of the query (e.g., 'philosophical', 'technical').
+        ethical_stakes (str): The ethical stakes of the query (e.g., 'low', 'critical').
+        scope_sigma (Optional[set]): The set of modes to consider for ethical evaluation.
     """
 
     being_aspect: str  # Ontological claims about reality
@@ -375,19 +384,17 @@ class OntologicalContext:
 @dataclass
 class IdeaAdequacy:
     """
-    Adequacy of Ideas - Measure of truth/causal-aptness.
+    Represents the adequacy of an idea, a measure of its truth and causal-aptness.
 
-    From ETHICA UNIVERSALIS Part II:
-    "An Idea (ℐ) is adequate when it is complete and self-sufficient,
-    grasping essence rather than mere appearance."
+    An idea is considered adequate if it is complete, self-sufficient, and
+    grasps the essence of a thing rather than its mere appearance.
 
-    From MATHEMATICA SINGULARIS D5:
-    Adeq(a) = proportion of true/causally-apt ideas in agent a's
-    representational state, measured by cross-lumen agreement
-    and predictive success.
-
-    From ETHICA Part VI Proposition I:
-    "Freedom(a) ∝ Comprehension(a) ∝ Adequacy(a)"
+    Attributes:
+        adequacy_score (float): The overall adequacy score, in the range [0, 1].
+        cross_lumen_agreement (float): The degree of agreement across the three Lumina.
+        predictive_success (float): The accuracy of the idea's predictions.
+        causal_aptness (float): The degree to which the idea understands causes.
+        threshold (float): The threshold for an idea to be considered adequate.
     """
 
     adequacy_score: float  # Adeq(a) ∈ [0,1]
@@ -402,18 +409,23 @@ class IdeaAdequacy:
 
     @property
     def is_adequate(self) -> bool:
-        """Check if ideas meet adequacy threshold."""
+        """
+        Checks if the idea meets the adequacy threshold.
+
+        Returns:
+            bool: True if the adequacy score is above the threshold, False otherwise.
+        """
         return self.adequacy_score >= self.threshold
 
     @property
     def freedom_estimate(self) -> float:
         """
-        Estimate freedom from adequacy.
+        Estimates the degree of freedom associated with the idea.
 
-        From ETHICA Part V Proposition I:
-        "Human freedom consists in understanding the causal order."
+        Freedom is considered to be proportional to the adequacy of an idea.
 
-        Freedom increases proportionally with adequacy.
+        Returns:
+            float: The estimated freedom, equal to the adequacy score.
         """
         return self.adequacy_score
 
@@ -432,18 +444,20 @@ class IdeaAdequacy:
 @dataclass
 class Affect:
     """
-    Affect (𝔄𝔣) - Modification of power to act.
+    Represents an affect, a modification of the power to act.
 
-    From ETHICA UNIVERSALIS Part IV Definition I:
-    "An Affect is a modification of body and mind that increases
-    or decreases our power of acting, reflecting conatus encountering
-    facilitation or obstruction."
+    Affects can be either active (arising from internal understanding) or
+    passive (caused by external necessity).
 
-    From MATHEMATICA D6:
-    - PASSIVE affect: Δ Valence caused by external necessity
-      with Adeq(a) < θ
-    - ACTIVE affect: Δ Valence with Adeq(a) ≥ θ and Δ𝒞 ≥ 0
-      due to internal understanding
+    Attributes:
+        valence (float): The emotional charge or intensity of the affect.
+        valence_delta (float): The change in valence.
+        is_active (bool): True if the affect is active, False if passive.
+        adequacy_score (float): The adequacy score at the time the affect arose.
+        coherence_delta (float): The change in coherence associated with the affect.
+        affect_type (str): The type of affect (e.g., 'joy', 'sadness').
+        emotion_state (Optional[Dict[str, Any]]): The full emotion state from the
+                                                 HuiHui emotion system, if available.
     """
 
     # Valence (emotional charge)
@@ -471,10 +485,19 @@ class Affect:
         threshold: float = 0.70
     ) -> bool:
         """
-        Classify affect as active or passive.
+        Classifies an affect as active or passive.
 
-        From MATHEMATICA D6:
-        Active iff Adeq ≥ θ AND Δ𝒞 ≥ 0
+        An affect is classified as active if the adequacy of the idea is above
+        the threshold and the coherence change is non-negative.
+
+        Args:
+            valence_delta (float): The change in valence.
+            adequacy (float): The adequacy score.
+            coherence_delta (float): The change in coherence.
+            threshold (float, optional): The adequacy threshold. Defaults to 0.70.
+
+        Returns:
+            bool: True if the affect is active, False if passive.
         """
         return adequacy >= threshold and coherence_delta >= 0
 
@@ -493,22 +516,21 @@ class Affect:
 @dataclass
 class EthicalEvaluation:
     """
-    Ethical Evaluation based on coherence change.
+    Represents an ethical evaluation of an action, based on the change in coherence.
 
-    From ETHICA UNIVERSALIS Part V + MATHEMATICA D7:
+    An action is considered ethical if it increases coherence, unethical if it
+    decreases coherence, and neutral if the change is negligible.
 
-    Given scope Σ ⊆ 𝔐 and horizon γ ∈ (0,1), an action u by
-    agent a at time t is ETHICAL iff it maximizes expected
-    discounted coherence over Σ:
-
-    Eth(a,u,t) ⇔ argmax_u 𝔼[Σ_{k=0}^∞ γ^k (𝒞̄_Σ(m_{t+k}) - 𝒞̄_Σ(m_t))]
-
-    From ETHICA Part I Scholium:
-    "Good = Coherence Increase (flows from Being's structure,
-    not arbitrary command)"
-
-    From MATHEMATICA Theorem T1:
-    "Ethics = Long-Run Δ𝒞"
+    Attributes:
+        coherence_before (float): The coherence score before the action.
+        coherence_after (float): The coherence score after the action.
+        coherence_delta (float): The change in coherence.
+        scope_description (str): A description of the scope of the evaluation.
+        horizon_gamma (float): The discount factor for future coherence.
+        horizon_steps (int): The number of future steps considered.
+        is_ethical (Optional[bool]): The ethical status (True, False, or None for neutral).
+        ethical_reasoning (str): A string explaining the ethical status.
+        threshold (float): The significance threshold for the coherence change.
     """
 
     # Core evaluation
@@ -535,12 +557,16 @@ class EthicalEvaluation:
         threshold: float = 0.02
     ) -> Tuple[Optional[bool], str]:
         """
-        Evaluate ethical status from coherence change.
+        Evaluates the ethical status of an action based on the change in coherence.
 
-        From ETHICA UNIVERSALIS Part I Corollary:
-        - GOOD: Δ𝒞 > threshold (increases coherence)
-        - NEUTRAL: |Δ𝒞| < threshold (negligible change)
-        - EVIL: Δ𝒞 < -threshold (decreases coherence)
+        Args:
+            coherence_before (float): The coherence score before the action.
+            coherence_after (float): The coherence score after the action.
+            threshold (float, optional): The significance threshold. Defaults to 0.02.
+
+        Returns:
+            Tuple[Optional[bool], str]: A tuple containing the ethical status and
+                                       a reasoning string.
         """
         delta = coherence_after - coherence_before
 
@@ -573,16 +599,31 @@ class EthicalEvaluation:
 @dataclass
 class ExpertIO:
     """
-    Expert output with complete philosophical metadata.
+    Represents the output of an expert, enriched with philosophical and ethical metadata.
 
-    Integrates:
-    - ETHICA ontology (Substance/Mode/Attribute/Lumen)
-    - Consciousness measurement (8 theories)
-    - Coherence evaluation (3 Lumina)
-    - Conatus (drive/gradient)
-    - Adequacy of ideas
-    - Ethical validation (Δ𝒞 with Σ, γ)
-    - Affects (active/passive)
+    This class integrates various concepts from the ETHICA UNIVERSALIS and
+    MATHEMATICA SINGULARIS frameworks, providing a comprehensive view of an
+    expert's contribution.
+
+    Attributes:
+        expert_name (str): The name of the expert.
+        domain (str): The expert's domain of knowledge.
+        lumen_primary (Lumen): The primary Lumen the expert serves.
+        claim (str): The substantive output or claim of the expert.
+        rationale (str): The reasoning behind the claim.
+        confidence (float): The expert's self-assessed confidence.
+        consciousness_trace (ConsciousnessTrace): A trace of the consciousness measurement.
+        coherentia (LuminalCoherence): The coherence score of the output.
+        coherentia_delta (float): The change in coherence resulting from the output.
+        conatus (Optional[Conatus]): The conatus or drive associated with the output.
+        adequacy (Optional[IdeaAdequacy]): The adequacy of the idea.
+        ethical_evaluation (Optional[EthicalEvaluation]): The ethical evaluation of the output.
+        affect (Optional[Affect]): The affect associated with the output.
+        processing_time_ms (float): The time taken to generate the output.
+        timestamp (datetime): The timestamp of the output.
+        metadata (Dict[str, Any]): Additional metadata.
+        ethical_status (Optional[bool]): A legacy field for ethical status.
+        ethical_reasoning (str): A legacy field for ethical reasoning.
     """
 
     # ==== Identity ====
@@ -632,16 +673,14 @@ class ExpertIO:
     @property
     def routing_score(self) -> float:
         """
-        Calculate routing score for consciousness-weighted routing.
+        Calculates a routing score for the expert's output.
 
-        From MATHEMATICA Axiom A5 + A6:
-        Route NOT by confidence but by coherence and consciousness.
+        The score is a weighted average of coherence, consciousness, adequacy,
+        and confidence, prioritizing coherence and consciousness over self-assessed
+        confidence.
 
-        Weight:
-        - 50% Coherence (alignment with Being)
-        - 30% Consciousness (depth of awareness)
-        - 15% Adequacy (if available, else use consciousness)
-        - 5% Confidence (self-assessment, least important)
+        Returns:
+            float: The routing score.
         """
         adequacy_score = self.adequacy.adequacy_score if self.adequacy else \
                         self.consciousness_trace.overall_consciousness
@@ -656,12 +695,14 @@ class ExpertIO:
     @property
     def is_broadcast_worthy(self) -> bool:
         """
-        Determine if worthy of Global Workspace broadcast.
+        Determines if the expert's output is worthy of being broadcast to the
+        Global Workspace.
 
-        Criteria:
-        1. Consciousness >= 0.65 (GWT threshold)
-        2. Coherence >= 0.60 (ethical threshold)
-        3. If ethical evaluation exists, must not be unethical
+        The criteria are based on consciousness and coherence thresholds, as well
+        as the ethical evaluation.
+
+        Returns:
+            bool: True if the output is broadcast-worthy, False otherwise.
         """
         consciousness_ok = self.consciousness_trace.is_broadcast_worthy
         coherence_ok = self.coherentia.is_ethical(threshold=0.60)
@@ -690,15 +731,20 @@ class ExpertIO:
 @dataclass
 class WorkspaceState:
     """
-    Global Workspace state - the "conscious content" of the system.
+    Represents the state of the Global Workspace, the conscious content of the system.
 
-    From GWT (Baars):
-    "Consciousness is information broadcast to a global workspace
-    with limited capacity."
-
-    From MATHEMATICA temporal semantics:
-    Discrete-time Markov dynamics over 𝔐 with policies π;
-    discounted evaluation with γ.
+    Attributes:
+        broadcasts (List[ExpertIO]): A list of the current broadcasts in the workspace.
+        max_broadcasts (int): The maximum number of broadcasts the workspace can hold.
+        coherentia_history (List[float]): A history of the coherence scores.
+        current_coherentia (float): The current coherence score.
+        debate_rounds (int): The number of debate rounds that have occurred.
+        debate_active (bool): True if a debate is currently active.
+        time_step (int): The current time step.
+        discount_factor_gamma (float): The discount factor for long-term evaluation.
+        scope_sigma (set): The set of modes for ethical evaluation.
+        timestamp (datetime): The timestamp of the state.
+        metadata (Dict[str, Any]): Additional metadata.
     """
 
     # Current broadcasts (max 12 per GWT)
@@ -731,9 +777,15 @@ class WorkspaceState:
 
     def update_coherence(self, new_coherence: float) -> float:
         """
-        Update coherence and return delta.
+        Updates the coherence score and returns the change in coherence.
 
-        This Δ𝒞 is used for ethical evaluation.
+        This is used for ethical evaluation.
+
+        Args:
+            new_coherence (float): The new coherence score.
+
+        Returns:
+            float: The change in coherence.
         """
         self.coherentia_history.append(new_coherence)
         delta = new_coherence - self.current_coherentia
@@ -742,9 +794,13 @@ class WorkspaceState:
 
     def add_broadcast(self, expert_io: ExpertIO) -> bool:
         """
-        Add to workspace if broadcast-worthy and space available.
+        Adds a broadcast to the workspace if it is broadcast-worthy and there is space.
 
-        Returns: True if added, False otherwise
+        Args:
+            expert_io (ExpertIO): The expert output to broadcast.
+
+        Returns:
+            bool: True if the broadcast was added, False otherwise.
         """
         if len(self.broadcasts) >= self.max_broadcasts:
             return False
@@ -756,17 +812,33 @@ class WorkspaceState:
         return False
 
     def get_coherence_trajectory(self, horizon: int = 10) -> List[float]:
-        """Get recent coherence trajectory for trend analysis."""
+        """
+        Gets the recent coherence trajectory for trend analysis.
+
+        Args:
+            horizon (int, optional): The number of recent coherence scores to
+                                     retrieve. Defaults to 10.
+
+        Returns:
+            List[float]: A list of recent coherence scores.
+        """
         return self.coherentia_history[-horizon:] if self.coherentia_history else []
 
 
 @dataclass
 class DebateState:
     """
-    Dialectical reasoning state.
+    Represents the state of a dialectical reasoning process.
 
-    From consciousness_measurement_study: Dialectical reasoning
-    increases coherence by 8% on paradoxical problems.
+    This class tracks the thesis, antithesis, and synthesis of a debate, as well
+    as the coherence score at each round.
+
+    Attributes:
+        round_num (int): The current round number of the debate.
+        thesis (Optional[str]): The initial proposition.
+        antithesis (Optional[str]): The counter-proposition.
+        synthesis (Optional[str]): The resolution of the thesis and antithesis.
+        coherentia_per_round (List[float]): A list of coherence scores for each round.
     """
 
     round_num: int = 0
@@ -778,7 +850,13 @@ class DebateState:
 
     def should_expand(self) -> bool:
         """
-        Adaptive debate depth: expand if coherentia improving.
+        Determines whether the debate should continue to another round.
+
+        The debate is expanded if the coherence is improving, and is stopped if
+        coherence is degrading or has plateaued for several rounds.
+
+        Returns:
+            bool: True if the debate should be expanded, False otherwise.
         """
         if len(self.coherentia_per_round) < 2:
             return True
@@ -800,13 +878,31 @@ class DebateState:
 @dataclass
 class SystemMetrics:
     """
-    Real-time system metrics for monitoring and evaluation.
+    A collection of real-time system metrics for monitoring and evaluation.
 
-    From MATHEMATICA Part VI (Operationalization):
-    Observable proxies for the Three Lumina:
-    - ℓₒ: Resilience R, energy variance
-    - ℓₛ: Integration Φ, compression κ
-    - ℓₚ: Metacognitive stability, valence volatility σᵥ
+    This class provides observable proxies for the Three Lumina and other key
+    performance indicators.
+
+    Attributes:
+        average_phi (float): The average integrated information score (Φ).
+        average_consciousness (float): The average overall consciousness score.
+        integration_score (float): The average integration score.
+        differentiation_score (float): The average differentiation score.
+        system_coherentia (float): The overall system coherence.
+        ontical_score (float): The average ontical coherence score.
+        structural_score (float): The average structural coherence score.
+        participatory_score (float): The average participatory coherence score.
+        resilience_R (float): The resilience of the system.
+        integration_phi (float): The IIT-like integration score.
+        valence_volatility_sigma_v (float): The volatility of the system's valence.
+        broadcast_count (int): The number of broadcasts.
+        debate_rounds (int): The number of debate rounds.
+        processing_time_ms (float): The processing time in milliseconds.
+        ethical_alignment (bool): The ethical alignment of the system.
+        coherentia_delta (float): The latest change in coherence.
+        average_adequacy (float): The average adequacy score.
+        estimated_freedom (float): The estimated freedom of the system.
+        timestamp (datetime): The timestamp of the metrics.
     """
 
     # Consciousness metrics

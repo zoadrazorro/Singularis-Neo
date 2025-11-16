@@ -46,19 +46,24 @@ class TemporalBinding:
 
 class TemporalCoherenceTracker:
     """
-    Ensures perception→action→outcome loops close properly.
-    
-    Solves the perception-action decoupling problem where the system
-    sees but doesn't act on what it sees.
+    Tracks and manages the temporal binding of perception, action, and outcome.
+
+    This class is crucial for ensuring that the AGI's actions are coherently
+    linked to its perceptions and their resulting outcomes. It helps solve the
+    perception-action decoupling problem by tracking loops and detecting when
+    the system is stuck.
     """
     
     def __init__(self, window_size: int = 20, unclosed_timeout: float = 30.0):
         """
-        Initialize temporal coherence tracker.
-        
+        Initializes the TemporalCoherenceTracker.
+
         Args:
-            window_size: Number of recent bindings to track
-            unclosed_timeout: Seconds before auto-closing stale bindings
+            window_size (int, optional): The number of recent bindings to track.
+                                         Defaults to 20.
+            unclosed_timeout (float, optional): The time in seconds before an unclosed
+                                                binding is considered stale and
+                                                automatically closed. Defaults to 30.0.
         """
         self.bindings: deque[TemporalBinding] = deque(maxlen=window_size)
         self.unclosed_loops = 0
@@ -93,18 +98,23 @@ class TemporalCoherenceTracker:
         bdh_sigma_snapshots: Optional[Dict[str, Any]] = None
     ) -> str:
         """
-        Create perception→action binding with multi-modal visual analysis.
-        
+        Creates a temporal binding between a perception and a subsequent action.
+
+        This method records the perception, the action taken, and various
+        multi-modal visual analyses. It also checks for potential stuck loops
+        based on visual similarity.
+
         Args:
-            perception: Perception data at time T
-            action: Action taken at time T+1
-            gemini_visual: Gemini visual analysis
-            hyperbolic_visual: Hyperbolic Nemotron visual analysis
-            video_interpretation: Streaming video interpreter output
-            gpt_video_analysis: GPT-4 video analysis
-            
+            perception (Dict[str, Any]): The perception data at the time of the action.
+            action (str): The action that was taken.
+            gemini_visual (Optional[str], optional): Gemini visual analysis. Defaults to None.
+            hyperbolic_visual (Optional[str], optional): Hyperbolic Nemotron visual analysis. Defaults to None.
+            video_interpretation (Optional[str], optional): Streaming video interpreter output. Defaults to None.
+            gpt_video_analysis (Optional[str], optional): GPT-4 video analysis. Defaults to None.
+            bdh_sigma_snapshots (Optional[Dict[str, Any]], optional): BDH sigma snapshots. Defaults to None.
+
         Returns:
-            Binding ID for later closure
+            str: The unique ID of the created binding, which can be used to close the loop later.
         """
         binding = TemporalBinding(
             perception_timestamp=time.time(),
@@ -152,13 +162,17 @@ class TemporalCoherenceTracker:
         success: bool = True
     ):
         """
-        Close perception→action→outcome loop.
-        
+        Closes a perception-action-outcome loop.
+
+        This method updates the specified binding with the outcome of the action,
+        the change in coherence, and whether the action was successful. It also
+        checks for perception-action mismatches based on the coherence delta.
+
         Args:
-            binding_id: ID from bind_perception_to_action
-            outcome: Observed outcome
-            coherence_delta: Change in coherence
-            success: Whether the action was successful
+            binding_id (str): The ID of the binding to close, as returned by `bind_perception_to_action`.
+            outcome (str): The observed outcome of the action.
+            coherence_delta (float): The change in coherence resulting from the action.
+            success (bool, optional): Whether the action was successful. Defaults to True.
         """
         for binding in self.bindings:
             if binding.binding_id == binding_id:
@@ -192,17 +206,22 @@ class TemporalCoherenceTracker:
     
     def get_unclosed_ratio(self) -> float:
         """
-        Get ratio of unclosed loops.
-        
+        Gets the ratio of unclosed loops to the total number of bindings.
+
         Returns:
-            Ratio (0.0=all closed, 1.0=all open)
+            float: A ratio between 0.0 (all loops closed) and 1.0 (all loops open).
         """
         if not self.bindings:
             return 0.0
         return self.unclosed_loops / len(self.bindings)
     
     def get_success_rate(self) -> float:
-        """Get success rate of closed loops."""
+        """
+        Gets the success rate of the closed loops.
+
+        Returns:
+            float: The success rate, between 0.0 and 1.0.
+        """
         if self.total_bindings == 0:
             return 0.0
         
@@ -213,15 +232,34 @@ class TemporalCoherenceTracker:
         return self.successful_loops / closed_loops
     
     def is_stuck(self) -> bool:
-        """Check if system appears stuck in a loop."""
+        """
+        Checks if the system appears to be stuck in a loop.
+
+        Returns:
+            bool: True if the stuck loop count is 3 or more, False otherwise.
+        """
         return self.stuck_loop_count >= 3
     
     def get_recent_bindings(self, count: int = 5) -> List[TemporalBinding]:
-        """Get recent bindings for analysis."""
+        """
+        Gets a list of the most recent temporal bindings.
+
+        Args:
+            count (int, optional): The number of recent bindings to retrieve.
+                                 Defaults to 5.
+
+        Returns:
+            List[TemporalBinding]: A list of the most recent bindings.
+        """
         return list(self.bindings)[-count:]
     
     def get_statistics(self) -> Dict[str, Any]:
-        """Get temporal coherence statistics."""
+        """
+        Gets a dictionary of statistics about the temporal coherence tracker.
+
+        Returns:
+            Dict[str, Any]: A dictionary of statistics.
+        """
         return {
             'total_bindings': self.total_bindings,
             'unclosed_loops': self.unclosed_loops,
@@ -235,7 +273,7 @@ class TemporalCoherenceTracker:
         }
     
     def reset_stuck_counter(self):
-        """Reset stuck loop counter after successful action."""
+        """Resets the stuck loop counter, typically after a successful action."""
         if self.stuck_loop_count > 0:
             logger.info(
                 f"[TEMPORAL] Stuck loop broken after {self.stuck_loop_count} cycles"
@@ -243,7 +281,7 @@ class TemporalCoherenceTracker:
         self.stuck_loop_count = 0
     
     async def start(self):
-        """Start background cleanup task."""
+        """Starts the background task that cleans up stale bindings."""
         if self._cleanup_task is None:
             self._running = True
             self._cleanup_task = asyncio.create_task(self._cleanup_stale_bindings())
@@ -283,7 +321,7 @@ class TemporalCoherenceTracker:
                 logger.error(f"[TEMPORAL] Cleanup error: {e}")
     
     async def close(self):
-        """Cleanup on shutdown."""
+        """Shuts down the temporal tracker and cleans up the background task."""
         self._running = False
         
         if self._cleanup_task:

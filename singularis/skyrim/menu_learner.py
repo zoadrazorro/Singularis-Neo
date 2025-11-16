@@ -21,8 +21,16 @@ import time
 
 @dataclass
 class MenuState:
-    """Represents a menu state."""
-    menu_type: str  # 'inventory', 'map', 'skills', 'magic', etc.
+    """Represents a snapshot of a specific menu screen.
+
+    Attributes:
+        menu_type: The type of menu (e.g., 'inventory', 'map').
+        timestamp: The time the menu was entered.
+        actions_available: A list of actions that were available in this menu.
+        successful_actions: A list of actions that were successfully performed
+                            from this menu state.
+    """
+    menu_type: str
     timestamp: float
     actions_available: List[str]
     successful_actions: List[str]
@@ -30,7 +38,15 @@ class MenuState:
 
 @dataclass
 class MenuTransition:
-    """Represents a transition between menu states."""
+    """Represents a learned transition between two menu states.
+
+    Attributes:
+        from_menu: The starting menu type.
+        to_menu: The resulting menu type.
+        action: The action that caused the transition.
+        success: Whether the transition was successful.
+        duration: The time spent in the 'from_menu' before transitioning.
+    """
     from_menu: str
     to_menu: str
     action: str
@@ -39,15 +55,16 @@ class MenuTransition:
 
 
 class MenuLearner:
-    """
-    Learns menu navigation through experience.
-    
-    Builds a graph of menu states and transitions,
-    learning optimal paths through menu systems.
+    """Learns to navigate and interact with game menus through experience.
+
+    This class builds a model of the game's menu system by observing which
+    actions lead to which menu states. It tracks the success rate of different
+    actions within each menu and can use this learned graph to find optimal
+    paths to achieve menu-based goals (e.g., equipping an item).
     """
     
     def __init__(self):
-        """Initialize menu learner."""
+        """Initializes the MenuLearner."""
         # Menu state history
         self.menu_history: List[MenuState] = []
         
@@ -95,12 +112,11 @@ class MenuLearner:
         print("[MENU] Menu Learner initialized")
     
     def enter_menu(self, menu_type: str, available_actions: List[str]):
-        """
-        Record entering a menu.
-        
+        """Records that the agent has entered a menu.
+
         Args:
-            menu_type: Type of menu entered
-            available_actions: Actions available in this menu
+            menu_type: The type of menu that was entered (e.g., 'inventory').
+            available_actions: A list of actions available in this menu.
         """
         self.current_menu = menu_type
         self.menu_entry_time = time.time()
@@ -122,13 +138,16 @@ class MenuLearner:
         success: bool,
         resulted_in_menu: Optional[str] = None
     ):
-        """
-        Record an action taken in a menu.
-        
+        """Records an action performed within a menu and updates the learned model.
+
+        This method updates action success rates and, if the menu changes,
+        updates the transition graph.
+
         Args:
-            action: Action taken
-            success: Whether action succeeded
-            resulted_in_menu: Menu state after action (if changed)
+            action: The action that was taken.
+            success: Whether the action was successful.
+            resulted_in_menu: The new menu type if the action caused a
+                              transition, otherwise None.
         """
         if not self.current_menu:
             return
@@ -169,21 +188,22 @@ class MenuLearner:
             self.menu_entry_time = time.time()
     
     def exit_menu(self):
-        """Record exiting menu system."""
+        """Records that the agent has exited the menu system."""
         if self.current_menu:
             duration = time.time() - self.menu_entry_time
             print(f"[MENU] Exited {self.current_menu} (duration: {duration:.1f}s)")
             self.current_menu = None
     
     def get_recommended_actions(self, menu_type: str) -> List[Tuple[str, float]]:
-        """
-        Get recommended actions for a menu based on learned success rates.
-        
+        """Gets a list of recommended actions for a given menu type, sorted by learned
+        success rate.
+
         Args:
-            menu_type: Menu type
-            
+            menu_type: The type of menu to get recommendations for.
+
         Returns:
-            List of (action, success_rate) tuples, sorted by success rate
+            A list of (action, success_rate) tuples, sorted from highest to
+            lowest success rate.
         """
         if menu_type not in self.action_success:
             # No experience with this menu, return common actions
@@ -203,15 +223,17 @@ class MenuLearner:
         return sorted_actions
     
     def get_menu_path(self, from_menu: str, to_menu: str) -> Optional[List[str]]:
-        """
-        Find path from one menu to another using learned transitions.
-        
+        """Finds the shortest sequence of actions to navigate from one menu to another.
+
+        This uses a Breadth-First Search (BFS) on the learned transition graph.
+
         Args:
-            from_menu: Starting menu
-            to_menu: Target menu
-            
+            from_menu: The starting menu type.
+            to_menu: The target menu type.
+
         Returns:
-            List of actions to take, or None if no path found
+            A list of action strings representing the path, or None if no path
+            has been learned.
         """
         # Simple BFS to find path
         from collections import deque
@@ -239,15 +261,14 @@ class MenuLearner:
         menu_type: str,
         goal: str = 'explore'
     ) -> Optional[str]:
-        """
-        Suggest best action to take in current menu.
-        
+        """Suggests the best single action to take within a menu, given a high-level goal.
+
         Args:
-            menu_type: Current menu type
-            goal: High-level goal ('explore', 'equip', 'navigate', 'exit')
-            
+            menu_type: The current menu type.
+            goal: The agent's current goal (e.g., 'exit', 'explore').
+
         Returns:
-            Suggested action, or None
+            The name of the suggested action, or None if no suitable action is found.
         """
         # Get recommended actions
         recommendations = self.get_recommended_actions(menu_type)
@@ -272,14 +293,14 @@ class MenuLearner:
         return recommendations[0][0]
     
     def get_menu_knowledge(self, menu_type: str) -> Dict[str, Any]:
-        """
-        Get learned knowledge about a specific menu.
-        
+        """Retrieves all learned knowledge about a specific menu type.
+
         Args:
-            menu_type: Menu type
-            
+            menu_type: The menu to query.
+
         Returns:
-            Dict of learned knowledge
+            A dictionary summarizing the learned information, including visit
+            count, learned actions, and transitions.
         """
         knowledge = {
             'menu_type': menu_type,
@@ -309,11 +330,11 @@ class MenuLearner:
         return knowledge
     
     def get_stats(self) -> Dict[str, Any]:
-        """
-        Get menu learner statistics.
-        
+        """Retrieves statistics about the menu learning process.
+
         Returns:
-            Dict of statistics
+            A dictionary of statistics, including the number of menus explored,
+            total actions taken, and transitions learned.
         """
         total_actions = sum(
             sum(attempts.values())
@@ -333,7 +354,7 @@ class MenuLearner:
         }
     
     def print_menu_graph(self):
-        """Print learned menu transition graph."""
+        """Prints a human-readable representation of the learned menu transition graph to the console."""
         print("\n[MENU] Learned Menu Transition Graph:")
         for from_menu, transitions in self.transition_graph.items():
             for action, to_menu in transitions.items():

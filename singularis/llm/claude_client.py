@@ -9,7 +9,12 @@ import aiohttp
 
 
 class ClaudeClient:
-    """Thin async wrapper around the Anthropic messages API."""
+    """
+    An asynchronous client for the Anthropic Claude API.
+
+    This class provides a thin wrapper around the Claude messages API, with
+    support for asynchronous requests.
+    """
 
     def __init__(
         self,
@@ -18,6 +23,19 @@ class ClaudeClient:
         base_url: str = "https://api.anthropic.com/v1",
         timeout: int = 60,
     ) -> None:
+        """
+        Initializes the ClaudeClient.
+
+        Args:
+            api_key (Optional[str], optional): The Anthropic API key. If not provided,
+                                             it will be read from the ANTHROPIC_API_KEY
+                                             environment variable. Defaults to None.
+            model (str, optional): The Claude model to use.
+                                   Defaults to "claude-sonnet-4-5-20250929".
+            base_url (str, optional): The base URL for the Anthropic API.
+                                      Defaults to "https://api.anthropic.com/v1".
+            timeout (int, optional): The request timeout in seconds. Defaults to 60.
+        """
         self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
         self.model = model
         self.base_url = base_url.rstrip("/")
@@ -30,10 +48,17 @@ class ClaudeClient:
         return self._session
 
     async def close(self) -> None:
+        """Closes the aiohttp session."""
         if self._session and not self._session.closed:
             await self._session.close()
 
     def is_available(self) -> bool:
+        """
+        Checks if the client is available to make requests.
+
+        Returns:
+            bool: True if an API key is configured, False otherwise.
+        """
         return bool(self.api_key)
 
     async def generate(
@@ -44,14 +69,24 @@ class ClaudeClient:
         max_tokens: int = 512,
         thinking: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
-        """Send a single-turn message request to Claude.
-        
+        """
+        Sends a single-turn message request to the Claude API.
+
         Args:
-            prompt: User prompt
-            system_prompt: System prompt
-            temperature: Sampling temperature
-            max_tokens: Max tokens to generate
-            thinking: Extended thinking config, e.g. {"type": "enabled", "budget_tokens": 10000}
+            prompt (str): The user prompt.
+            system_prompt (Optional[str], optional): The system prompt. Defaults to None.
+            temperature (float, optional): The sampling temperature. Defaults to 0.7.
+            max_tokens (int, optional): The maximum number of tokens to generate. Defaults to 512.
+            thinking (Optional[Dict[str, Any]], optional): Extended thinking configuration.
+                                                         This is now handled by the model name.
+                                                         Defaults to None.
+
+        Raises:
+            RuntimeError: If the API key is not configured.
+
+        Returns:
+            Dict[str, Any]: A dictionary containing the generated content, any "thinking"
+                            content, and the raw API response.
         """
 
         if not self.is_available():
@@ -107,7 +142,20 @@ class ClaudeClient:
         temperature: float = 0.7,
         max_tokens: int = 512,
     ) -> str:
-        """Convenience helper returning only the generated text."""
+        """
+        A convenience method that calls the `generate` method and returns only
+        the generated text content.
+
+        Args:
+            prompt (str): The user prompt.
+            system_prompt (Optional[str], optional): The system prompt. Defaults to None.
+            temperature (float, optional): The sampling temperature. Defaults to 0.7.
+            max_tokens (int, optional): The maximum number of tokens to generate.
+                                      Defaults to 512.
+
+        Returns:
+            str: The generated text.
+        """
 
         response = await self.generate(
             prompt=prompt,

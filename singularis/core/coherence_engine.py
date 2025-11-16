@@ -29,10 +29,11 @@ class CoherenceEngine:
     
     def __init__(self, verbose: bool = True):
         """
-        Initialize the CoherenceEngine.
-        
+        Initializes the CoherenceEngine.
+
         Args:
-            verbose: Print coherence calculations
+            verbose (bool, optional): If True, prints detailed coherence calculations
+                                    during computation. Defaults to True.
         """
         self.verbose = verbose
         
@@ -66,13 +67,17 @@ class CoherenceEngine:
     
     def _lumina_coherence(self, lumina: LuminaState) -> float:
         """
-        Compute coherence from the Three Lumina.
-        
-        Uses geometric mean to ensure all three dimensions are present.
-        Balance matters - you can't just max one Lumina and ignore others.
-        
+        Computes the coherence score from the Three Lumina.
+
+        This score is a combination of the geometric mean of the Lumina values
+        (ensuring all are present) and a balance score that rewards equilibrium
+        between them.
+
+        Args:
+            lumina (LuminaState): The current state of the Three Lumina.
+
         Returns:
-            Lumina coherence [0, 1]
+            float: The coherence score for the Lumina, in the range [0, 1].
         """
         # Geometric mean - all three must be present
         vals = [
@@ -90,30 +95,33 @@ class CoherenceEngine:
     
     def _consciousness_coherence(self, state: BeingState) -> float:
         """
-        Compute coherence from consciousness metrics.
-        
-        Combines:
-        - C (coherence) - how coherent the conscious state is
-        - Phi (phi) - integrated information
-        - Unity index - how unified subsystems are
-        
+        Computes the coherence score from consciousness-related metrics.
+
+        This score is an average of the `coherence_C`, `unity_index`, and `phi_hat`
+        values from the BeingState.
+
+        Args:
+            state (BeingState): The current state of the being.
+
         Returns:
-            Consciousness coherence [0, 1]
+            float: The coherence score for consciousness, in the range [0, 1].
         """
         # Average of the three consciousness metrics
         return (state.coherence_C + state.unity_index + state.phi_hat) / 3.0
     
     def _cognitive_coherence(self, state: BeingState) -> float:
         """
-        Compute coherence from Mind system.
-        
-        Rewards:
-        - High cognitive coherence
-        - Few dissonances
-        - Active heuristics
-        
+        Computes the coherence score from the cognitive system.
+
+        The score is based on the cognitive coherence from the BeingState,
+        penalized by the number of cognitive dissonances and bonused by
+        the number of active heuristics.
+
+        Args:
+            state (BeingState): The current state of the being.
+
         Returns:
-            Cognitive coherence [0, 1]
+            float: The coherence score for the cognitive system, in the range [0, 1].
         """
         base_coherence = state.cognitive_coherence
         
@@ -127,15 +135,16 @@ class CoherenceEngine:
     
     def _temporal_coherence(self, state: BeingState) -> float:
         """
-        Compute coherence from temporal binding.
-        
-        Rewards:
-        - High temporal coherence
-        - Few unclosed bindings
-        - No stuck loops
-        
+        Computes the coherence score from temporal binding.
+
+        This score is based on the temporal coherence from the BeingState,
+        penalized by the number of unclosed bindings and stuck loops.
+
+        Args:
+            state (BeingState): The current state of the being.
+
         Returns:
-            Temporal coherence [0, 1]
+            float: The coherence score for temporal binding, in the range [0, 1].
         """
         base_temporal = state.temporal_coherence
         
@@ -149,13 +158,16 @@ class CoherenceEngine:
     
     def _rl_coherence(self, state: BeingState) -> float:
         """
-        Compute coherence from RL performance.
-        
-        Uses average reward as proxy for how well
-        the being is achieving its goals.
-        
+        Computes the coherence score from reinforcement learning performance.
+
+        The score is based on the average reward and the exploration rate,
+        rewarding a balance between high rewards and a healthy level of exploration.
+
+        Args:
+            state (BeingState): The current state of the being.
+
         Returns:
-            RL coherence [0, 1]
+            float: The coherence score for reinforcement learning, in the range [0, 1].
         """
         # Normalize reward to [0, 1]
         # Assumes rewards are roughly in [-1, 1] range
@@ -169,12 +181,16 @@ class CoherenceEngine:
     
     def _meta_rl_coherence(self, state: BeingState) -> float:
         """
-        Compute coherence from Meta-RL.
-        
-        Rewards meta-learning quality and knowledge transfer.
-        
+        Computes the coherence score from meta-reinforcement learning.
+
+        This score is based on the meta-score from the BeingState, with a bonus
+        for the number of meta-analyses performed.
+
+        Args:
+            state (BeingState): The current state of the being.
+
         Returns:
-            Meta-RL coherence [0, 1]
+            float: The coherence score for meta-reinforcement learning, in the range [0, 1].
         """
         # Meta score (if available)
         meta_score = state.meta_score
@@ -186,12 +202,16 @@ class CoherenceEngine:
     
     def _emotion_coherence(self, state: BeingState) -> float:
         """
-        Compute coherence from emotion system.
-        
-        Checks if emotions are coherent with situation.
-        
+        Computes the coherence score from the emotion system.
+
+        This score considers the coherence of the emotion with the current situation
+        and the balance of the emotion's intensity.
+
+        Args:
+            state (BeingState): The current state of the being.
+
         Returns:
-            Emotion coherence [0, 1]
+            float: The coherence score for the emotion system, in the range [0, 1].
         """
         # Get emotion coherence from state
         emotion_coh = state.emotion_state.get('coherence', 0.5)
@@ -204,28 +224,34 @@ class CoherenceEngine:
     
     def _voice_coherence(self, state: BeingState) -> float:
         """
-        Compute coherence from voice system.
-        
-        Measures alignment between inner state and outer expression.
-        
+        Computes the coherence score from the voice system.
+
+        This score measures the alignment between the being's inner state and its
+        outer vocal expression.
+
+        Args:
+            state (BeingState): The current state of the being.
+
         Returns:
-            Voice coherence [0, 1]
+            float: The coherence score for the voice system, in the range [0, 1].
         """
         # Voice alignment (how well voice matches inner state)
         return state.voice_alignment
     
     def compute(self, state: BeingState) -> float:
         """
-        Compute the single global coherence C_global from BeingState.
-        
-        This is the metaphysical 'how well am I being?' score.
-        Everything optimizes this one number.
-        
+        Computes the single global coherence score (C_global) from the BeingState.
+
+        This score represents the overall coherence of the being at a given moment.
+        It is a weighted sum of the coherence scores from all major subsystems.
+        The result is a single value that all learning and decision-making
+        processes aim to optimize.
+
         Args:
-            state: The current BeingState
-            
+            state (BeingState): The current state of the being.
+
         Returns:
-            Global coherence C_global in [0, 1]
+            float: The global coherence score, in the range [0, 1].
         """
         # Compute component coherences
         lumina_C = self._lumina_coherence(state.lumina)
@@ -273,15 +299,17 @@ class CoherenceEngine:
     
     def get_component_breakdown(self, state: BeingState) -> Dict[str, float]:
         """
-        Get breakdown of coherence by component.
-        
-        Useful for debugging and optimization.
-        
+        Gets a breakdown of the coherence scores by individual component.
+
+        This is useful for debugging and understanding which subsystems are
+        contributing to or detracting from the global coherence.
+
         Args:
-            state: The current BeingState
-            
+            state (BeingState): The current state of the being.
+
         Returns:
-            Dictionary of component name -> coherence value
+            Dict[str, float]: A dictionary mapping component names to their
+                              coherence scores.
         """
         return {
             'lumina': self._lumina_coherence(state.lumina),
@@ -296,13 +324,14 @@ class CoherenceEngine:
     
     def get_trend(self, window: int = 10) -> str:
         """
-        Get coherence trend over recent history.
-        
+        Determines the trend of the coherence score over a recent window.
+
         Args:
-            window: How many recent samples to analyze
-            
+            window (int, optional): The number of recent coherence samples to analyze.
+                                  Defaults to 10.
+
         Returns:
-            "increasing", "decreasing", or "stable"
+            str: "increasing", "decreasing", "stable", or "insufficient_data".
         """
         if len(self.coherence_history) < window:
             return "insufficient_data"
@@ -323,7 +352,13 @@ class CoherenceEngine:
             return "stable"
     
     def get_stats(self) -> Dict[str, Any]:
-        """Get coherence engine statistics."""
+        """
+        Gets a dictionary of statistics about the coherence scores.
+
+        Returns:
+            Dict[str, Any]: A dictionary containing the number of samples,
+                            current coherence, average, min, max, and trend.
+        """
         if not self.coherence_history:
             return {
                 'samples': 0,
@@ -346,7 +381,7 @@ class CoherenceEngine:
         }
     
     def print_stats(self):
-        """Print coherence statistics."""
+        """Prints a formatted summary of coherence statistics to the console."""
         stats = self.get_stats()
         
         print("\n" + "="*80)

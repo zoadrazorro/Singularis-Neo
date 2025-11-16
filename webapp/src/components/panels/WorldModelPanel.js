@@ -1,6 +1,19 @@
+/**
+ * @fileoverview This file contains the React component for the World Model Panel,
+ * which displays the AGI's internal beliefs, goals, and current strategy.
+ */
+
 import React from 'react';
 import './WorldModelPanel.css';
 
+/**
+ * A panel component that displays information about the AGI's internal world model.
+ * It shows the current high-level strategy, a list of active goals, and a grid
+ * of the AGI's key beliefs about the world state.
+ * @param {object} props - The component's props.
+ * @param {object} props.data - The live AGI state data object.
+ * @returns {React.Component} The rendered World Model Panel.
+ */
 function WorldModelPanel({ data }) {
   const worldModel = data.world_model || {};
   const beliefs = worldModel.beliefs || {};

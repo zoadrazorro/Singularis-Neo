@@ -27,9 +27,20 @@ except ImportError:  # pragma: no cover - optional dependency
 
 
 class EnhancedVision:
-    """Optional OCR utilities."""
+    """Provides optional OCR (Optical Character Recognition) utilities.
+
+    This class can extract text-based information from the game's HUD, such as
+    health, magicka, stamina, and location, by processing screenshots. It is
+    designed to work with either the `easyocr` or `pytesseract` libraries if
+    they are installed, providing a fallback if neither is available.
+    """
 
     def __init__(self) -> None:
+        """Initializes the EnhancedVision system.
+
+        This sets up the OCR reader if available and defines the screen regions
+        for various HUD elements.
+        """
         self.reader = self._init_reader()
         self.ui_regions = {
             "health_bar": (60, 1000, 460, 1040),
@@ -40,6 +51,11 @@ class EnhancedVision:
         }
 
     def _init_reader(self) -> Optional[Any]:
+        """Initializes the easyocr.Reader if the library is available.
+
+        Returns:
+            An easyocr.Reader instance if successful, otherwise None.
+        """
         if _EASY_OCR_AVAILABLE:
             try:
                 return easyocr.Reader(["en"], gpu=False)
@@ -48,6 +64,17 @@ class EnhancedVision:
         return None
 
     def extract_hud_info(self, screenshot: Any) -> Dict[str, Any]:
+        """Extracts information from the HUD elements of a game screenshot.
+
+        This method orchestrates the OCR process, trying `easyocr` first, then
+        falling back to `pytesseract` if available.
+
+        Args:
+            screenshot: The game screenshot image (e.g., a PIL Image object).
+
+        Returns:
+            A dictionary containing the extracted and processed HUD information.
+        """
         info: Dict[str, Any] = {}
         if screenshot is None:
             return info
@@ -60,6 +87,14 @@ class EnhancedVision:
         return info
 
     def _extract_with_easyocr(self, screenshot: Any) -> Dict[str, Any]:
+        """Extracts HUD text using the easyocr library.
+
+        Args:
+            screenshot: The game screenshot image.
+
+        Returns:
+            A dictionary of the raw extracted text from defined UI regions.
+        """
         data: Dict[str, Any] = {}
         try:
             for key, region in self.ui_regions.items():
@@ -74,6 +109,14 @@ class EnhancedVision:
         return self._post_process(data)
 
     def _extract_with_pytesseract(self, screenshot: Any) -> Dict[str, Any]:
+        """Extracts HUD text using the pytesseract library.
+
+        Args:
+            screenshot: The game screenshot image.
+
+        Returns:
+            A dictionary of the raw extracted text from defined UI regions.
+        """
         data: Dict[str, Any] = {}
         try:
             for key, region in self.ui_regions.items():
@@ -88,6 +131,15 @@ class EnhancedVision:
         return self._post_process(data)
 
     def _crop_image(self, screenshot: Any, region: tuple) -> Optional[Any]:
+        """Crops an image to a specified region.
+
+        Args:
+            screenshot: The source image to crop.
+            region: A tuple (left, top, right, bottom) defining the crop box.
+
+        Returns:
+            The cropped image object, or None if an error occurs.
+        """
         try:
             if hasattr(screenshot, "crop"):
                 left, top, right, bottom = region
@@ -97,6 +149,17 @@ class EnhancedVision:
         return None
 
     def _post_process(self, raw: Dict[str, Any]) -> Dict[str, Any]:
+        """Cleans and structures the raw data extracted by OCR.
+
+        This method converts extracted text for resource bars into percentages
+        and cleans up location text.
+
+        Args:
+            raw: A dictionary of raw string data from OCR.
+
+        Returns:
+            A dictionary with processed and cleaned data.
+        """
         processed: Dict[str, Any] = {}
         if "health_bar" in raw:
             processed["health_percent"] = self._extract_percentage(raw["health_bar"])
@@ -109,6 +172,14 @@ class EnhancedVision:
         return processed
 
     def _extract_percentage(self, text: str) -> Optional[float]:
+        """Extracts a numerical percentage from a string using regex.
+
+        Args:
+            text: The string to search for a number.
+
+        Returns:
+            The extracted number as a float between 0 and 100, or None.
+        """
         if not text:
             return None
         import re
@@ -120,6 +191,17 @@ class EnhancedVision:
         return max(0.0, min(100.0, value))
 
     def detect_interactive_prompt(self, screenshot: Any) -> Optional[str]:
+        """Detects if there is an interactive prompt on the screen.
+
+        This is a placeholder for future functionality to read prompts like
+        "Press E to open".
+
+        Args:
+            screenshot: The game screenshot image.
+
+        Returns:
+            The text of the detected prompt, or None.
+        """
         info = self.extract_hud_info(screenshot)
         prompt = info.get("prompt")
         if prompt:

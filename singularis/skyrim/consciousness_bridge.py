@@ -27,13 +27,43 @@ from .emotional_valence import EmotionalValenceComputer, ValenceState
 
 @dataclass
 class ConsciousnessState:
-    """
-    Unified consciousness state combining game and philosophical coherence.
+    """Represents the unified state of the agent's consciousness at a single moment.
 
-    This bridges:
-    - Game-specific quality (survival, progression, etc.)
-    - Singularis coherence 𝒞 (ontological, structural, participatory)
-    - Emotional valence (affective states from ETHICA Part IV)
+    This data class is a cornerstone of the Singularis architecture, bridging the gap
+    between concrete game metrics and abstract philosophical concepts of consciousness.
+    It integrates three primary dimensions:
+    1.  **Singularis Coherence (𝒞):** A measure of the unity and integrity of the
+        agent's being, based on the ETHICA framework. It is a composite of ontical,
+        structural, and participatory coherence.
+    2.  **Game Quality:** A pragmatic assessment of the agent's performance and
+        situation within the game world, including survival, progression, and
+        resource management.
+    3.  **Emotional Valence:** An affective dimension based on Spinoza's philosophy,
+        representing the agent's emotional state and power to act.
+
+    Attributes:
+        coherence: The overall coherence score (𝒞), representing the unified
+                   integrity of the agent's state.
+        coherence_ontical: The ontical component of coherence (𝒞ₒ), related to
+                           the agent's power and existence.
+        coherence_structural: The structural component of coherence (𝒞ₛ), related
+                              to form, logic, and information.
+        coherence_participatory: The participatory component of coherence (𝒞ₚ),
+                                 related to awareness and self-consciousness.
+        game_quality: A score representing the agent's effectiveness and success
+                      within the game.
+        consciousness_level: A simplified measure of integrated information (Φ̂),
+                             approximating the level of consciousness.
+        self_awareness: A measure of the agent's meta-cognitive awareness of its
+                        own state.
+        valence: The emotional charge of the agent's state, where positive values
+                 (joy) increase the power to act and negative values (sadness)
+                 decrease it.
+        valence_delta: The change in valence from the previous state (ΔVal).
+        affect_type: The dominant emotional affect (e.g., "joy", "sadness", "fear").
+        is_active_affect: A boolean indicating if the affect is active (arising from
+                          understanding) or passive (caused by external factors).
+        affect_stability: The stability of the current emotional state.
     """
     # Singularis consciousness measurements
     coherence: float  # Overall 𝒞 = (𝒞ₒ · 𝒞ₛ · 𝒞ₚ)^(1/3)
@@ -58,16 +88,15 @@ class ConsciousnessState:
     affect_stability: float = 0.5  # Stability of current affect (0-1)
     
     def overall_value(self) -> float:
-        """
-        Compute overall state value combining consciousness, game quality, and valence.
+        """Computes a single value representing the overall quality of this state.
 
-        Uses weighted combination:
-        - 55% consciousness 𝒞 (primary)
-        - 35% game quality (secondary)
-        - 10% valence (affective contribution)
+        This value is a weighted combination of coherence, game quality, and emotional
+        valence, with coherence being the most significant factor. This reflects the
+        core philosophy of the Singularis architecture, where the ultimate goal is
+        the maximization of coherence.
 
-        This makes consciousness the primary judge of state quality,
-        with emotional valence providing affective dimension.
+        Returns:
+            The overall value of the state, normalized to a range of approximately [0, 1].
         """
         # Normalize valence to [0, 1] using sigmoid
         valence_normalized = 1.0 / (1.0 + np.exp(-self.valence))
@@ -75,56 +104,86 @@ class ConsciousnessState:
         return 0.55 * self.coherence + 0.35 * self.game_quality + 0.10 * valence_normalized
     
     def coherence_delta(self, other: 'ConsciousnessState') -> float:
-        """Compute change in coherence (Δ𝒞)."""
+        """Calculates the change in coherence (Δ𝒞) between this state and another.
+
+        Args:
+            other: The other ConsciousnessState to compare against.
+
+        Returns:
+            The difference in coherence (self.coherence - other.coherence).
+        """
         return self.coherence - other.coherence
     
     def is_ethical(self, previous: 'ConsciousnessState', threshold: float = 0.01) -> bool:
-        """
-        Determine if transition to this state is ethical.
+        """Determines if the transition from a previous state to this one is ethical.
 
-        Per ETHICA: An action is ethical iff Δ𝒞 > 0
+        According to the ETHICA framework, an action or transition is considered
+        ethical if it results in an increase in coherence (Δ𝒞 > 0).
 
         Args:
-            previous: Previous consciousness state
-            threshold: Minimum coherence increase (default 0.01 for sensitivity)
+            previous: The previous consciousness state.
+            threshold: A small positive value that the coherence delta must exceed for
+                       the transition to be considered ethical.
+
+        Returns:
+            True if the transition is ethical, False otherwise.
         """
         delta = self.coherence_delta(previous)
         return delta > threshold
 
     def get_power_to_act(self) -> float:
-        """
-        Estimate current power to act from valence.
+        """Estimates the agent's current power to act, based on its emotional valence.
 
-        From ETHICA Part IV:
-        "Joy increases our power of acting, sadness decreases it."
+        This method is inspired by Spinoza's philosophy, where joy is an increase in
+        the power of acting, and sadness is a decrease.
 
         Returns:
-            Power to act normalized to [0, 1]
+            The agent's power to act, normalized to a range of (0, 1).
         """
         # Use sigmoid to map unbounded valence to (0, 1)
         return 1.0 / (1.0 + np.exp(-self.valence))
 
     def get_affective_quality(self) -> float:
-        """
-        Get affective quality score combining valence and stability.
+        """Calculates a score for the quality of the agent's emotional state.
 
-        High quality = positive valence + stable affects
-        Low quality = negative valence + volatile affects
+        A high-quality affective state is characterized by positive valence and high
+        stability, while a low-quality state has negative valence and is volatile.
 
         Returns:
-            Affective quality score (0-1)
+            The affective quality score, in a range of approximately [0, 1].
         """
         valence_norm = 1.0 / (1.0 + np.exp(-self.valence))
         return 0.7 * valence_norm + 0.3 * self.affect_stability
 
 
 class _HybridReasoningAdapter:
-    """Wrap HybridLLMClient to match the legacy generate() contract."""
+    """An adapter to make the HybridLLMClient compatible with a legacy interface.
+
+    This class wraps the `HybridLLMClient` and exposes a `generate` method that
+    matches an older contract, which allows for a smoother transition of dependent
+    components.
+    """
 
     def __init__(self, hybrid_llm):
+        """Initializes the adapter.
+
+        Args:
+            hybrid_llm: An instance of the HybridLLMClient to be wrapped.
+        """
         self._hybrid = hybrid_llm
 
     async def generate(self, prompt: str, max_tokens: int = 256, system_prompt: Optional[str] = None, temperature: float = 0.4) -> Dict[str, Any]:
+        """Generates a response using the wrapped HybridLLMClient.
+
+        Args:
+            prompt: The prompt to send to the LLM.
+            max_tokens: The maximum number of tokens to generate.
+            system_prompt: An optional system prompt.
+            temperature: The temperature for the generation.
+
+        Returns:
+            A dictionary containing the generated text under the "content" key.
+        """
         text = await self._hybrid.generate_reasoning(
             prompt=prompt,
             system_prompt=system_prompt,
@@ -135,21 +194,27 @@ class _HybridReasoningAdapter:
 
 
 class ConsciousnessBridge:
-    """
-    Bridge between Skyrim game state and Singularis consciousness.
-    
-    This computes consciousness measurements (𝒞, Φ̂) from game state,
-    creating a unified evaluation framework.
+    """Connects the Skyrim game environment to the Singularis consciousness model.
+
+    This class serves as a crucial link, translating concrete game-state information
+    into the abstract, philosophical metrics of the Singularis consciousness framework.
+    It computes the agent's coherence (𝒞) and consciousness level (Φ̂) from game
+    data, creating a unified framework for evaluating the agent's state and guiding
+    its learning process.
+
+    Attributes:
+        history: A list of the most recent ConsciousnessState objects.
+        valence_computer: An instance of EmotionalValenceComputer for calculating
+                          the agent's emotional state.
     """
     
     def __init__(self, consciousness_llm=None, world_understanding_llm=None, strategic_planning_llm=None):
-        """
-        Initialize consciousness bridge.
+        """Initializes the ConsciousnessBridge.
 
         Args:
-            consciousness_llm: Optional MetaOrchestratorLLM (DEPRECATED - too slow)
-            world_understanding_llm: Fast world understanding LLM (eva-qwen2.5-14b)
-            strategic_planning_llm: Fast strategic reasoning LLM (phi-4)
+            consciousness_llm: A (deprecated) LLM for consciousness-related tasks.
+            world_understanding_llm: An LLM specialized for world understanding.
+            strategic_planning_llm: An LLM specialized for strategic reasoning.
         """
         self.consciousness_llm = consciousness_llm  # Kept for compatibility but not used
         self.world_understanding_llm = world_understanding_llm
@@ -180,7 +245,11 @@ class ConsciousnessBridge:
         print("[BRIDGE] Emotional Valence System: ENABLED")
 
     def set_hybrid_llm(self, hybrid_llm) -> None:
-        """Attach HybridLLMClient so Gemini/Claude can drive consciousness."""
+        """Attaches a HybridLLMClient to enable cloud-based consciousness assessment.
+
+        Args:
+            hybrid_llm: An instance of the HybridLLMClient.
+        """
         self.hybrid_llm = hybrid_llm
         if hybrid_llm:
             adapter = _HybridReasoningAdapter(hybrid_llm)
@@ -191,7 +260,11 @@ class ConsciousnessBridge:
             print("[BRIDGE] Cloud Consciousness Engine: Disabled (no hybrid client)")
 
     def set_moe(self, moe) -> None:
-        """Optional hook for MoE orchestrator."""
+        """Attaches a Mixture of Experts (MoE) orchestrator.
+
+        Args:
+            moe: An instance of the MoE orchestrator.
+        """
         self.moe = moe
         if moe:
             print("[BRIDGE] MoE Consciousness advisors connected")
@@ -201,21 +274,20 @@ class ConsciousnessBridge:
         game_state: Dict[str, Any],
         context: Optional[Dict[str, Any]] = None
     ) -> ConsciousnessState:
-        """
-        Compute consciousness state from game state.
-        
-        This is the KEY integration point:
-        1. Extract game-specific cognitive dimensions
-        2. Map to Singularis Lumina (ℓₒ, ℓₛ, ℓₚ)
-        3. Compute overall coherence 𝒞
-        4. Optionally use consciousness_llm for deeper analysis
-        
+        """Computes the agent's current consciousness state from the game state.
+
+        This is the core method of the ConsciousnessBridge. It performs a multi-step
+        process to translate game data into a rich, unified ConsciousnessState object.
+        This process includes heuristic calculations, optional cloud-based LLM
+        assessments, and emotional valence computation.
+
         Args:
-            game_state: Current game state dict
-            context: Optional additional context
-            
+            game_state: A dictionary containing the current game state.
+            context: A dictionary with additional context, such as visual similarity
+                     and recent events.
+
         Returns:
-            ConsciousnessState with unified measurements
+            A ConsciousnessState object representing the agent's current unified state.
         """
         context = context or {}
         
@@ -388,6 +460,16 @@ class ConsciousnessBridge:
         return state
 
     def _clamp(self, value: Optional[float], minimum: float = 0.0, maximum: float = 1.0) -> float:
+        """Clamps a value to a specified range.
+
+        Args:
+            value: The value to clamp.
+            minimum: The minimum allowed value.
+            maximum: The maximum allowed value.
+
+        Returns:
+            The clamped value.
+        """
         if value is None:
             return minimum
         return max(minimum, min(maximum, float(value)))
@@ -398,7 +480,21 @@ class ConsciousnessBridge:
         heuristics: Dict[str, float],
         context: Dict[str, Any]
     ) -> Optional[Dict[str, Any]]:
-        """Use Gemini + Claude via Hybrid client to score consciousness."""
+        """Performs a consciousness assessment using cloud-based LLMs.
+
+        This method leverages the HybridLLMClient to get a more nuanced and
+        context-aware assessment of the agent's consciousness state, using both
+        vision and reasoning capabilities.
+
+        Args:
+            game_state: The current game state.
+            heuristics: A dictionary of baseline heuristic measurements.
+            context: Additional context for the assessment.
+
+        Returns:
+            A dictionary with the cloud-based consciousness assessment, or None
+            if the assessment fails.
+        """
         if not self.hybrid_llm or not getattr(self.hybrid_llm, 'claude', None):
             return None
 
@@ -458,6 +554,14 @@ class ConsciousnessBridge:
         return parsed
 
     def _parse_cloud_json(self, text: Optional[str]) -> Optional[Dict[str, Any]]:
+        """Parses a JSON object from a string, handling common formatting issues.
+
+        Args:
+            text: The string to parse.
+
+        Returns:
+            A dictionary parsed from the JSON, or None if parsing fails.
+        """
         if not text:
             return None
         candidate = text.strip()
@@ -475,6 +579,14 @@ class ConsciousnessBridge:
             return None
 
     def _summarize_state(self, game_state: Dict[str, Any]) -> str:
+        """Creates a compact, human-readable summary of the game state.
+
+        Args:
+            game_state: The game state dictionary.
+
+        Returns:
+            A string summarizing the game state.
+        """
         return (
             f"health={game_state.get('health', 'unknown')}, "
             f"stamina={game_state.get('stamina', 'unknown')}, "
@@ -486,7 +598,16 @@ class ConsciousnessBridge:
         )
     
     def _compute_social_dimension(self, game_state: Dict[str, Any]) -> float:
-        """Compute social awareness dimension from game state."""
+        """Computes the social dimension of the agent's state.
+
+        This is based on factors like the number of nearby NPCs and faction affiliations.
+
+        Args:
+            game_state: The current game state.
+
+        Returns:
+            A score representing the social dimension, in a range of [0, 1].
+        """
         # Number of NPCs met, relationships, faction standing
         npcs_met = len(game_state.get('nearby_npcs', []))
         # Normalize: 0-10 NPCs → 0-1
@@ -506,12 +627,20 @@ class ConsciousnessBridge:
         coherence_s: float,
         coherence_p: float
     ) -> float:
-        """
-        Compute consciousness level Φ̂.
-        
-        Uses simplified integration of:
-        - IIT (Integrated Information): How unified is the state?
-        - GWT (Global Workspace): How much is being processed?
+        """Computes the agent's consciousness level (Φ̂).
+
+        This is a simplified implementation inspired by Integrated Information Theory (IIT)
+        and Global Workspace Theory (GWT), estimating the level of integrated information
+        and cognitive processing.
+
+        Args:
+            game_state: The current game state.
+            coherence_o: The ontical coherence score.
+            coherence_s: The structural coherence score.
+            coherence_p: The participatory coherence score.
+
+        Returns:
+            The computed consciousness level, in a range of [0, 1].
         """
         # Integration (IIT): How connected are different aspects?
         # High when all three Lumina are balanced
@@ -547,13 +676,18 @@ class ConsciousnessBridge:
         game_state: Dict[str, Any],
         context: Dict[str, Any]
     ) -> float:
-        """
-        Compute self-awareness (HOT - Higher Order Thought).
-        
-        Agent is self-aware when it:
-        - Knows its own state (health, resources)
-        - Reflects on its actions
-        - Has meta-cognitive awareness
+        """Computes the agent's self-awareness.
+
+        This is a simplified implementation of Higher-Order Thought (HOT) theory,
+        where self-awareness is related to the agent's ability to reflect on its
+        own state and actions.
+
+        Args:
+            game_state: The current game state.
+            context: Additional context, including the agent's motivations.
+
+        Returns:
+            The computed self-awareness score, in a range of [0, 1].
         """
         # Awareness of own health state
         health = game_state.get('health', 100)
@@ -576,20 +710,20 @@ class ConsciousnessBridge:
         base_consciousness: float,
         context: Dict[str, Any]
     ) -> Optional[Dict[str, float]]:
-        """
-        Use big model LLMs in parallel to enhance measurements.
-        
-        Calls eva-qwen2.5-14b (world understanding) and phi-4 (strategic reasoning)
-        simultaneously for fast consciousness assessment.
-        
+        """Enhances consciousness measurements using parallel calls to specialized LLMs.
+
+        This method queries world understanding and strategic planning LLMs
+        concurrently to get a faster, more nuanced assessment of the agent's state.
+
         Args:
-            game_state: Current game state
-            base_coherence: Heuristic coherence
-            base_consciousness: Heuristic consciousness level
-            context: Additional context
-            
+            game_state: The current game state.
+            base_coherence: The baseline coherence score from heuristics.
+            base_consciousness: The baseline consciousness level from heuristics.
+            context: Additional context for the assessment.
+
         Returns:
-            Optional dict with enhanced measurements
+            A dictionary with the enhanced measurements, or None if the
+            assessment fails.
         """
         import asyncio
         
@@ -657,11 +791,14 @@ class ConsciousnessBridge:
         }
     
     def get_coherence_trend(self, window: int = 10) -> str:
-        """
-        Analyze coherence trend over recent history.
-        
+        """Analyzes the trend of the coherence score over a recent window of time.
+
+        Args:
+            window: The number of recent history states to consider.
+
         Returns:
-            'increasing', 'stable', or 'decreasing'
+            A string indicating the trend: "increasing", "decreasing", "stable",
+            or "insufficient_data".
         """
         if len(self.history) < window:
             return 'insufficient_data'
@@ -681,7 +818,14 @@ class ConsciousnessBridge:
             return 'stable'
     
     def get_average_coherence(self, window: int = 10) -> float:
-        """Get average coherence over recent history."""
+        """Calculates the average coherence score over a recent window of time.
+
+        Args:
+            window: The number of recent history states to consider.
+
+        Returns:
+            The average coherence score.
+        """
         if not self.history:
             return 0.5
         
@@ -689,7 +833,14 @@ class ConsciousnessBridge:
         return np.mean([s.coherence for s in recent])
     
     def get_stats(self) -> Dict[str, Any]:
-        """Get consciousness bridge statistics including emotional valence."""
+        """Retrieves a dictionary of statistics about the consciousness bridge.
+
+        This includes metrics on coherence, consciousness level, game quality,
+        and emotional valence.
+
+        Returns:
+            A dictionary of statistics.
+        """
         if not self.history:
             return {
                 'total_measurements': 0,
@@ -731,7 +882,7 @@ class ConsciousnessBridge:
         }
     
     def get_statistics(self) -> Dict[str, Any]:
-        """Alias for get_stats() for compatibility."""
+        """An alias for get_stats() for compatibility with other components."""
         stats = self.get_stats()
         # Add additional fields for compatibility
         stats['average_coherence'] = stats.get('avg_coherence', 0.0)

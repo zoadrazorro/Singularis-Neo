@@ -18,19 +18,28 @@ from singularis.core.being_state import BeingState, LuminaState
 
 
 async def update_being_state_from_all_subsystems(agi: 'SkyrimAGI') -> BeingState:
-    """
-    Update the unified BeingState from ALL subsystems.
-    
-    This is the central integration point where:
-    - All 20+ subsystems write to ONE BeingState
-    - Wolfram telemetry provides mathematical analysis
-    - Everything feeds into one coherence calculation
-    
+    """Updates the unified BeingState by aggregating data from all AGI subsystems.
+
+    This function serves as the central integration point for the AGI's state.
+    It collects information from over 20 different subsystems, including perception,
+    cognition, memory, and action control, and consolidates them into a single,
+    snapshot of the agent's existence at a given moment. This unified state is
+    then used for coherence calculations and high-level decision-making.
+
+    The process includes:
+    - Capturing temporal information like timestamps and cycle numbers.
+    - Recording the agent's physical and in-game state (health, location, etc.).
+    - Aggregating sensorimotor data and the latest perceptual inputs.
+    - Summarizing the state of the cognitive and consciousness models.
+    - Logging emotional state, RL metrics, and expert system activity.
+    - Incorporating insights from Wolfram Alpha telemetry analysis.
+
     Args:
-        agi: The SkyrimAGI instance with all subsystems
-        
+        agi: The main SkyrimAGI instance containing all active subsystems.
+
     Returns:
-        Updated BeingState
+        The updated BeingState object, representing a comprehensive snapshot
+        of the agent's current state.
     """
     being = agi.being_state
     
@@ -269,14 +278,16 @@ async def update_being_state_from_all_subsystems(agi: 'SkyrimAGI') -> BeingState
 
 
 def broadcast_global_coherence_to_all_subsystems(agi: 'SkyrimAGI', C_global: float):
-    """
-    Broadcast global coherence to ALL subsystems.
-    
-    Everyone now knows the unified coherence score and can optimize for it.
-    
+    """Broadcasts the calculated global coherence score to all relevant subsystems.
+
+    After the global coherence (C_global) is calculated, this function distributes
+    it to all subsystems that can use this information for self-optimization.
+    Each subsystem can then adjust its internal parameters or behavior to align
+    with the overarching goal of maximizing system-wide coherence.
+
     Args:
-        agi: The SkyrimAGI instance
-        C_global: The global coherence score [0, 1]
+        agi: The main SkyrimAGI instance.
+        C_global: The global coherence score, a float between 0 and 1.
     """
     # Consciousness Bridge
     if hasattr(agi, 'consciousness_bridge') and agi.consciousness_bridge:
@@ -328,17 +339,19 @@ def broadcast_global_coherence_to_all_subsystems(agi: 'SkyrimAGI', C_global: flo
 
 
 async def perform_wolfram_analysis_if_needed(agi: 'SkyrimAGI', cycle_number: int):
-    """
-    Perform Wolfram telemetry analysis if appropriate.
-    
-    Uses Wolfram Alpha for advanced mathematical analysis of:
-    - Coherence trends
-    - System performance
-    - Optimization recommendations
-    
+    """Triggers Wolfram Alpha telemetry analysis at regular intervals.
+
+    This function calls out to the WolframAlpha a sub-system to perform advanced
+    mathematical and statistical analysis on the AGI's performance metrics,
+    such as coherence trends. This analysis provides deeper insights into the
+    system's behavior and can be used for long-term optimization.
+
+    The analysis is performed periodically, as defined by the modulo operation
+    on the cycle number.
+
     Args:
-        agi: The SkyrimAGI instance
-        cycle_number: Current cycle number
+        agi: The main SkyrimAGI instance.
+        cycle_number: The current cycle number of the main loop.
     """
     if not hasattr(agi, 'wolfram_analyzer') or not agi.wolfram_analyzer:
         return

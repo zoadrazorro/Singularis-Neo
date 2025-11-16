@@ -1,8 +1,18 @@
+/**
+ * @fileoverview This file contains the React component for the Vision Panel,
+ * which displays information from the AGI's perception and vision systems.
+ */
+
 import React from 'react';
 import './VisionPanel.css';
 
 /**
- * Vision and perception system panel
+ * A panel component that displays the AGI's visual perception and game state data.
+ * It shows the current scene classification, detected objects, character vitals
+ * (health, magicka, stamina), and other relevant environmental information.
+ * @param {object} props - The component's props.
+ * @param {object} props.data - The live AGI state data object.
+ * @returns {React.Component} The rendered Vision Panel.
  */
 function VisionPanel({ data }) {
   const perception = data.perception || {};
@@ -125,6 +135,11 @@ function VisionPanel({ data }) {
   );
 }
 
+/**
+ * Returns an appropriate emoji icon for a given scene type.
+ * @param {string} sceneType - The scene type string (e.g., 'outdoor_wilderness').
+ * @returns {string} An emoji icon representing the scene.
+ */
 function getSceneIcon(sceneType) {
   const icons = {
     'outdoor_wilderness': '🌲',
@@ -138,6 +153,11 @@ function getSceneIcon(sceneType) {
   return icons[sceneType] || icons['unknown'];
 }
 
+/**
+ * Formats a scene name string for display (e.g., "outdoor_wilderness" -> "Outdoor Wilderness").
+ * @param {string} scene - The scene name string.
+ * @returns {string} The formatted scene name.
+ */
 function formatScene(scene) {
   return scene.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 }

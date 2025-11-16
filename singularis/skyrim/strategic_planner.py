@@ -22,7 +22,18 @@ import numpy as np
 
 @dataclass
 class ActionPlan:
-    """A planned sequence of actions."""
+    """Represents a structured, multi-step plan to achieve a specific goal.
+
+    Attributes:
+        goal: A string describing the high-level objective of the plan.
+        steps: A list of action strings to be executed in sequence.
+        expected_outcome: A dictionary describing the anticipated state after the
+                          plan is successfully executed.
+        confidence: A float (0.0-1.0) indicating the planner's confidence in
+                    the plan's success.
+        priority: A float (0.0-1.0) representing the urgency or importance of the plan.
+        terrain_context: A string classifying the terrain for which this plan is intended.
+    """
     goal: str
     steps: List[str]
     expected_outcome: Dict[str, Any]
@@ -33,7 +44,18 @@ class ActionPlan:
 
 @dataclass
 class MemoryPattern:
-    """A learned pattern from past experiences."""
+    """Represents a learned pattern of actions and outcomes from past experiences.
+
+    These patterns form the basis of the strategic planner's knowledge, allowing it
+    to construct new plans based on previously successful sequences.
+
+    Attributes:
+        context: The initial state or context in which the action sequence was performed.
+        action_sequence: The list of actions that were taken.
+        outcome: The resulting state or outcome of the action sequence.
+        success_rate: The historical success rate of this pattern.
+        frequency: The number of times this pattern has been observed.
+    """
     context: Dict[str, Any]
     action_sequence: List[str]
     outcome: Dict[str, Any]
@@ -42,23 +64,23 @@ class MemoryPattern:
 
 
 class StrategicPlannerNeuron:
-    """
-    Strategic planning neuron that learns from memory and plans ahead.
-    
-    Uses episodic memory to:
-    - Identify successful action patterns
-    - Predict outcomes of action sequences
-    - Generate multi-step plans
-    - Adapt to terrain and context
+    """A strategic planning component that learns from memory to generate multi-step plans.
+
+    This "neuron" analyzes its episodic memory of past actions and their outcomes
+    to identify successful patterns. It uses these learned patterns to construct
+    new `ActionPlan` objects tailored to the current state and high-level goals.
+    It can integrate with a reinforcement learner to further refine its plan
+    selection with Q-values.
     """
     
     def __init__(self, memory_capacity: int = 100, rl_learner=None):
-        """
-        Initialize strategic planner.
+        """Initializes the StrategicPlannerNeuron.
 
         Args:
-            memory_capacity: How many recent experiences to keep
-            rl_learner: Optional ReinforcementLearner for Q-value integration
+            memory_capacity: The maximum number of recent experiences to store in
+                             episodic memory.
+            rl_learner: An optional instance of a reinforcement learner for integrating
+                        Q-values into planning.
         """
         self.memory_capacity = memory_capacity
         self.rl_learner = rl_learner
@@ -85,27 +107,38 @@ class StrategicPlannerNeuron:
         print("[PLANNER] Strategic Planner Neuron initialized")
 
     def set_rl_learner(self, rl_learner):
-        """
-        Set RL learner for Q-value integration.
+        """Sets the reinforcement learning (RL) learner for Q-value integration.
 
         Args:
-            rl_learner: ReinforcementLearner instance
+            rl_learner: An instance of the `ReinforcementLearner`.
         """
         self.rl_learner = rl_learner
         print("[PLANNER] Integrated with RL learner")
     
     def set_hybrid_llm(self, hybrid_llm):
-        """Set hybrid LLM for cloud-based planning."""
+        """Sets the hybrid LLM for cloud-based planning.
+
+        Args:
+            hybrid_llm: An instance of the hybrid LLM client.
+        """
         self.hybrid_llm = hybrid_llm
         print("[PLANNER] ✓ Hybrid LLM connected")
     
     def set_moe(self, moe):
-        """Set MoE for expert consensus planning."""
+        """Sets the Mixture of Experts (MoE) for expert consensus planning.
+
+        Args:
+            moe: An instance of the MoE orchestrator.
+        """
         self.moe = moe
         print("[PLANNER] ✓ MoE connected")
     
     def set_parallel_agi(self, agi):
-        """Set reference to main AGI for parallel queries."""
+        """Sets the reference to the main AGI for parallel queries.
+
+        Args:
+            agi: The main AGI instance.
+        """
         self.parallel_agi = agi
         print("[PLANNER] ✓ Parallel AGI reference connected")
     
@@ -116,14 +149,15 @@ class StrategicPlannerNeuron:
         outcome: Dict[str, Any],
         success: bool
     ):
-        """
-        Record an experience in episodic memory.
-        
+        """Records a single experience tuple in the planner's episodic memory.
+
+        After recording, it periodically triggers the pattern learning process.
+
         Args:
-            context: Context before action (scene, health, location, etc.)
-            action: Action taken
-            outcome: Result after action
-            success: Whether the action was successful
+            context: The state/context before the action was taken.
+            action: The action that was performed.
+            outcome: The resulting outcome or state change.
+            success: A boolean indicating whether the action was successful.
         """
         experience = {
             'context': context,
@@ -140,9 +174,7 @@ class StrategicPlannerNeuron:
             self._learn_patterns()
     
     def _learn_patterns(self):
-        """
-        Analyze episodic memory to extract successful patterns.
-        """
+        """Analyzes episodic memory to extract and record successful action sequences."""
         if len(self.episodic_memory) < 5:
             return
         
@@ -156,12 +188,7 @@ class StrategicPlannerNeuron:
                     self._record_pattern(sequence)
     
     def _record_pattern(self, sequence: List[Dict[str, Any]]):
-        """
-        Record a successful action sequence as a pattern.
-        
-        Args:
-            sequence: List of experiences forming a pattern
-        """
+        """Creates or updates a MemoryPattern from a successful sequence of experiences."""
         # Extract action sequence
         actions = [exp['action'] for exp in sequence]
         context = sequence[0]['context']
@@ -195,16 +222,19 @@ class StrategicPlannerNeuron:
         goal: str,
         terrain_type: str
     ) -> Optional[ActionPlan]:
-        """
-        Generate a multi-step action plan based on memory and RL Q-values.
+        """Generates a multi-step action plan to achieve a goal.
+
+        This method finds relevant learned patterns from memory, scores them based
+        on historical success and (if available) RL Q-values, and constructs an
+        `ActionPlan` from the best-scoring pattern.
 
         Args:
-            current_state: Current game state
-            goal: High-level goal (e.g., "explore", "survive", "progress")
-            terrain_type: Current terrain classification
+            current_state: The current game state.
+            goal: A string describing the high-level goal (e.g., "explore").
+            terrain_type: A string classifying the current terrain.
 
         Returns:
-            ActionPlan if one can be generated, None otherwise
+            An `ActionPlan` object if a suitable plan can be generated, otherwise None.
         """
         # Find relevant patterns from memory
         relevant_patterns = self._find_relevant_patterns(
@@ -273,16 +303,7 @@ class StrategicPlannerNeuron:
         current_state: Dict[str, Any],
         terrain_type: str
     ) -> List[MemoryPattern]:
-        """
-        Find patterns relevant to current context.
-        
-        Args:
-            current_state: Current state
-            terrain_type: Terrain classification
-            
-        Returns:
-            List of relevant patterns
-        """
+        """Finds learned patterns that are relevant to the current game context."""
         relevant = []
         
         for pattern in self.learned_patterns:
@@ -302,16 +323,7 @@ class StrategicPlannerNeuron:
         context1: Dict[str, Any],
         context2: Dict[str, Any]
     ) -> float:
-        """
-        Calculate similarity between two contexts.
-        
-        Args:
-            context1: First context
-            context2: Second context
-            
-        Returns:
-            Similarity score (0-1)
-        """
+        """Calculates a similarity score between two context dictionaries."""
         # Simple similarity based on matching keys
         common_keys = set(context1.keys()) & set(context2.keys())
         
@@ -326,15 +338,7 @@ class StrategicPlannerNeuron:
         return matches / len(common_keys)
     
     def _default_exploration_plan(self, terrain_type: str) -> ActionPlan:
-        """
-        Generate default exploration plan when no patterns exist.
-        
-        Args:
-            terrain_type: Terrain classification
-            
-        Returns:
-            Default exploration plan
-        """
+        """Generates a default exploration plan for when no learned patterns are available."""
         if terrain_type == 'indoor_spaces':
             steps = ['interact', 'explore', 'navigate']
         elif terrain_type == 'outdoor_spaces':
@@ -358,16 +362,7 @@ class StrategicPlannerNeuron:
         goal: str,
         current_state: Dict[str, Any]
     ) -> float:
-        """
-        Calculate priority of a goal based on current state.
-        
-        Args:
-            goal: Goal string
-            current_state: Current state
-            
-        Returns:
-            Priority score (0-1)
-        """
+        """Calculates the priority of a goal based on the current state's urgency."""
         priority = 0.5  # Base priority
         
         # Increase priority based on urgency
@@ -382,11 +377,11 @@ class StrategicPlannerNeuron:
         return min(1.0, priority)
     
     def execute_plan_step(self) -> Optional[str]:
-        """
-        Get next action from active plan.
-        
+        """Executes the next step in the currently active plan.
+
         Returns:
-            Next action string, or None if no active plan
+            The next action string from the plan, or None if the plan is complete
+            or no plan is active.
         """
         if not self.active_plan or self.plan_step >= len(self.active_plan.steps):
             return None
@@ -399,22 +394,20 @@ class StrategicPlannerNeuron:
         return action
     
     def activate_plan(self, plan: ActionPlan):
-        """
-        Activate a plan for execution.
-        
+        """Sets a new plan as the active plan and resets the step counter.
+
         Args:
-            plan: Plan to activate
+            plan: The `ActionPlan` to activate.
         """
         self.active_plan = plan
         self.plan_step = 0
         print(f"[PLANNER] Activated plan: {plan.goal}")
     
     def complete_plan(self, success: bool):
-        """
-        Mark current plan as complete.
-        
+        """Marks the current plan as complete and updates success/failure statistics.
+
         Args:
-            success: Whether plan succeeded
+            success: A boolean indicating whether the plan's execution was successful.
         """
         if success:
             self.plan_successes += 1
@@ -427,14 +420,16 @@ class StrategicPlannerNeuron:
         self.plan_step = 0
     
     def should_replan(self, current_state: Dict[str, Any]) -> bool:
-        """
-        Determine if we should abandon current plan and replan.
-        
+        """Determines if the current plan should be abandoned in favor of replanning.
+
+        Replanning is recommended if the context has changed significantly (e.g.,
+        entering combat) or if the current plan is finished.
+
         Args:
-            current_state: Current state
-            
+            current_state: The current game state.
+
         Returns:
-            True if should replan
+            True if the planner should generate a new plan, False otherwise.
         """
         if not self.active_plan:
             return True
@@ -452,11 +447,11 @@ class StrategicPlannerNeuron:
         return False
     
     def get_stats(self) -> Dict[str, Any]:
-        """
-        Get planner statistics.
-        
+        """Retrieves statistics about the planner's performance.
+
         Returns:
-            Dict of statistics
+            A dictionary of statistics, including the number of learned patterns,
+            executed plans, and the overall success rate.
         """
         total_plans = self.plan_successes + self.plan_failures
         success_rate = (

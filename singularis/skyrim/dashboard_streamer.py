@@ -12,26 +12,32 @@ from datetime import datetime
 
 
 class DashboardStreamer:
-    """
-    Streams Skyrim AGI state to JSON file for real-time webapp monitoring.
-    
-    Exports comprehensive state including:
+    """Streams the complete state of the Skyrim AGI to a JSON file.
+
+    This class is responsible for collecting various pieces of state information
+    from the AGI, formatting them into a comprehensive JSON object, and writing
+    it to a file. This allows for real-time monitoring of the AGI's status
+    through a web-based dashboard or other external tools.
+
+    The exported state includes:
     - Session metadata (ID, cycle, uptime)
-    - Current action and recent history
-    - Perception data (scene, objects, health)
+    - Current action and recent action history
+    - Perception data (scene, objects, NPCs, enemies)
     - Consciousness metrics (coherence, phi)
-    - LLM system status
-    - Performance metrics
-    - Diversity and strategy data
+    - LLM system status (active models, API calls)
+    - Performance metrics (FPS, cycle times)
+    - Action diversity and strategy data
+    - In-game character status (health, magicka, stamina)
+    - The AGI's internal world model (beliefs, goals)
     """
     
     def __init__(self, output_path: str = "skyrim_agi_state.json", max_history: int = 50):
-        """
-        Initialize dashboard streamer.
-        
+        """Initializes the DashboardStreamer.
+
         Args:
-            output_path: Path to output JSON file
-            max_history: Maximum number of historical actions/metrics to keep
+            output_path: The file path for the output JSON file.
+            max_history: The maximum number of historical entries (e.g., actions,
+                         metrics) to keep in memory and include in the output.
         """
         self.output_path = Path(output_path)
         self.max_history = max_history
@@ -50,23 +56,25 @@ class DashboardStreamer:
         print(f"[DASHBOARD] Streamer initialized -> {self.output_path}")
     
     def set_session_id(self, session_id: str) -> None:
-        """Set the session ID."""
+        """Sets the unique identifier for the current AGI session.
+
+        Args:
+            session_id: The session ID string.
+        """
         self.session_id = session_id
         self.session_start = time.time()
     
     def update(self, agi_state: Dict[str, Any]) -> None:
-        """
-        Update dashboard state with current AGI data.
-        
+        """Updates the dashboard state with the latest data from the AGI.
+
+        This method compiles the complete state object from the provided AGI data,
+        updates historical records, calculates derived metrics, and writes the
+        result to the JSON output file atomically.
+
         Args:
-            agi_state: Current AGI state dictionary with keys:
-                - cycle: Current cycle number
-                - action: Current action being executed
-                - perception: Perception data dict
-                - consciousness: Consciousness metrics dict
-                - llm_status: LLM system status dict
-                - performance: Performance metrics dict
-                - game_state: Game state data dict
+            agi_state: A dictionary containing the current state of the AGI. Expected
+                       keys include 'cycle', 'action', 'perception', 'consciousness',
+                       'llm_status', 'performance', and 'game_state'.
         """
         try:
             current_time = time.time()
@@ -226,7 +234,15 @@ class DashboardStreamer:
             print(f"[DASHBOARD] Error updating state: {e}")
     
     def _calculate_trend(self, history: List[Dict[str, Any]]) -> str:
-        """Calculate trend from history (increasing/decreasing/stable)."""
+        """Calculates the trend of coherence from a history of values.
+
+        Args:
+            history: A list of dictionaries, where each dictionary contains
+                     a 'coherence' key.
+
+        Returns:
+            A string indicating the trend: 'increasing', 'decreasing', or 'stable'.
+        """
         if len(history) < 5:
             return 'stable'
         
@@ -246,7 +262,11 @@ class DashboardStreamer:
             return 'stable'
     
     def reset(self) -> None:
-        """Reset all historical data."""
+        """Resets all historical data and session metadata.
+
+        This should be called at the beginning of a new session to clear out
+        data from the previous run.
+        """
         self.action_history.clear()
         self.coherence_history.clear()
         self.performance_history.clear()

@@ -33,13 +33,8 @@ class TelemetryCalculation:
 
 class WolframTelemetryAnalyzer:
     """
-    Wolfram Alpha integration for AGI telemetry analysis.
-    
-    Uses OpenAI Responses API with custom Wolfram GPT to perform:
-    - Statistical analysis of coherence metrics
-    - Differential equation modeling of consciousness evolution
-    - Optimization calculations for system performance
-    - Predictive modeling of AGI behavior
+    Integrates with Wolfram Alpha via a custom Wolfram GPT to perform advanced
+    calculations on AGI telemetry data.
     """
     
     def __init__(
@@ -49,12 +44,16 @@ class WolframTelemetryAnalyzer:
         verbose: bool = True
     ):
         """
-        Initialize Wolfram telemetry analyzer.
-        
+        Initializes the WolframTelemetryAnalyzer.
+
         Args:
-            api_key: OpenAI API key
-            wolfram_gpt_id: Custom GPT ID with Wolfram Alpha integration
-            verbose: Print verbose output
+            api_key (Optional[str], optional): The OpenAI API key. If not provided,
+                                             it is read from the OPENAI_API_KEY
+                                             environment variable. Defaults to None.
+            wolfram_gpt_id (str, optional): The ID of the custom Wolfram GPT.
+                                            Defaults to "gpt-4o".
+            verbose (bool, optional): If True, prints verbose output.
+                                      Defaults to True.
         """
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
         self.wolfram_gpt_id = wolfram_gpt_id
@@ -82,7 +81,7 @@ class WolframTelemetryAnalyzer:
         return self._session
     
     async def close(self):
-        """Close aiohttp session."""
+        """Closes the aiohttp session."""
         if self._session and not self._session.closed:
             await self._session.close()
     
@@ -92,14 +91,16 @@ class WolframTelemetryAnalyzer:
         context: str = "AGI consciousness coherence"
     ) -> TelemetryCalculation:
         """
-        Calculate advanced statistics on coherence data using Wolfram Alpha.
-        
+        Calculates advanced statistics on coherence data using Wolfram Alpha.
+
         Args:
-            coherence_samples: List of coherence measurements
-            context: Description of what the data represents
-            
+            coherence_samples (List[float]): A list of coherence measurements.
+            context (str, optional): A description of the data.
+                                     Defaults to "AGI consciousness coherence".
+
         Returns:
-            TelemetryCalculation with statistical analysis
+            TelemetryCalculation: A `TelemetryCalculation` object with the
+                                  statistical analysis.
         """
         if not coherence_samples:
             return TelemetryCalculation(
@@ -133,14 +134,17 @@ Provide numerical results and interpretation."""
         context: str = "consciousness evolution"
     ) -> TelemetryCalculation:
         """
-        Model coherence evolution using differential equations.
-        
+        Models the evolution of coherence over time using differential equations.
+
         Args:
-            time_series: List of (time, coherence) tuples
-            context: Description of the evolution
-            
+            time_series (List[tuple[float, float]]): A list of (time, coherence)
+                                                     tuples.
+            context (str, optional): A description of what is evolving.
+                                     Defaults to "consciousness evolution".
+
         Returns:
-            TelemetryCalculation with differential equation model
+            TelemetryCalculation: A `TelemetryCalculation` object with the
+                                  differential equation model.
         """
         if len(time_series) < 3:
             return TelemetryCalculation(
@@ -180,15 +184,17 @@ Provide the differential equation and predictions."""
         objective: str = "maximize coherence"
     ) -> TelemetryCalculation:
         """
-        Optimize AGI system parameters using Wolfram Alpha.
-        
+        Optimizes AGI system parameters using Wolfram Alpha.
+
         Args:
-            performance_metrics: Current system metrics
-            constraints: Parameter constraints {param: (min, max)}
-            objective: Optimization objective
-            
+            performance_metrics (Dict[str, float]): The current system metrics.
+            constraints (Dict[str, tuple[float, float]]): The parameter constraints.
+            objective (str, optional): The optimization objective.
+                                     Defaults to "maximize coherence".
+
         Returns:
-            TelemetryCalculation with optimal parameters
+            TelemetryCalculation: A `TelemetryCalculation` object with the
+                                  optimal parameters.
         """
         # Format metrics
         metrics_str = ", ".join(f"{k}={v:.4f}" for k, v in performance_metrics.items())
@@ -223,14 +229,16 @@ Provide optimal values and expected performance."""
         other_samples: List[float]
     ) -> TelemetryCalculation:
         """
-        Analyze differential coherence between GPT-5 and other nodes.
-        
+        Analyzes the differential coherence between GPT-5 and other consciousness nodes.
+
         Args:
-            gpt5_samples: GPT-5 coherence measurements
-            other_samples: Other nodes coherence measurements
-            
+            gpt5_samples (List[float]): A list of GPT-5 coherence measurements.
+            other_samples (List[float]): A list of coherence measurements from other
+                                         nodes.
+
         Returns:
-            TelemetryCalculation with differential analysis
+            TelemetryCalculation: A `TelemetryCalculation` object with the
+                                  differential analysis.
         """
         if len(gpt5_samples) != len(other_samples):
             return TelemetryCalculation(
@@ -267,14 +275,17 @@ Provide statistical analysis and interpretation."""
         prediction_horizon: int = 5
     ) -> TelemetryCalculation:
         """
-        Predict future system behavior using time series analysis.
-        
+        Predicts future system behavior using time series analysis.
+
         Args:
-            historical_data: Dictionary of metric name -> values
-            prediction_horizon: How many steps ahead to predict
-            
+            historical_data (Dict[str, List[float]]): A dictionary of historical
+                                                     metric data.
+            prediction_horizon (int, optional): The number of steps to predict
+                                                into the future. Defaults to 5.
+
         Returns:
-            TelemetryCalculation with predictions
+            TelemetryCalculation: A `TelemetryCalculation` object with the
+                                  predictions.
         """
         # Format historical data
         data_summary = []
@@ -306,13 +317,16 @@ Provide predictions with confidence intervals."""
         system_states: List[Dict[str, Any]]
     ) -> TelemetryCalculation:
         """
-        Calculate information theory metrics (entropy, mutual information, etc.).
-        
+        Calculates information theory metrics, such as entropy and mutual
+        information, from a series of system states.
+
         Args:
-            system_states: List of system state dictionaries
-            
+            system_states (List[Dict[str, Any]]): A list of system state
+                                                  dictionaries.
+
         Returns:
-            TelemetryCalculation with information metrics
+            TelemetryCalculation: A `TelemetryCalculation` object with the
+                                  information theory metrics.
         """
         # Extract key metrics from states
         if not system_states:
@@ -464,7 +478,12 @@ Provide information-theoretic analysis."""
             )
     
     def get_stats(self) -> Dict[str, Any]:
-        """Get analyzer statistics."""
+        """
+        Gets a dictionary of statistics about the analyzer.
+
+        Returns:
+            Dict[str, Any]: A dictionary of statistics.
+        """
         return {
             "total_calculations": self.total_calculations,
             "avg_computation_time": self.total_computation_time / max(self.total_calculations, 1),
@@ -473,7 +492,7 @@ Provide information-theoretic analysis."""
         }
     
     def print_stats(self):
-        """Print statistics to console."""
+        """Prints a formatted summary of analyzer statistics to the console."""
         if not self.verbose:
             return
         

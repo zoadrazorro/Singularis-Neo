@@ -24,7 +24,7 @@ import time
 
 
 class ConflictType(Enum):
-    """Types of state conflicts between subsystems."""
+    """Enumerates the types of state conflicts that can occur between subsystems."""
     SCENE_MISMATCH = "scene_mismatch"  # Different scenes reported
     LOCATION_MISMATCH = "location_mismatch"  # Different locations
     COMBAT_MISMATCH = "combat_mismatch"  # Disagreement on combat status
@@ -34,7 +34,15 @@ class ConflictType(Enum):
 
 @dataclass
 class StateConflict:
-    """Detected conflict between subsystem states."""
+    """Represents a detected conflict between the states reported by different subsystems.
+
+    Attributes:
+        conflict_type: The type of conflict, as defined by the `ConflictType` enum.
+        subsystems: A list of the names of the subsystems involved in the conflict.
+        values: A dictionary mapping subsystem names to their conflicting state values.
+        severity: A float from 0.0 to 1.0 indicating how critical the mismatch is.
+        timestamp: The time when the conflict was detected.
+    """
     conflict_type: ConflictType
     subsystems: List[str]
     values: Dict[str, Any]
@@ -49,32 +57,49 @@ class StateConflict:
 
 @dataclass
 class SubsystemView:
-    """A subsystem's view of the current state."""
+    """Represents a subsystem's view of the current state at a specific point in time.
+
+    Attributes:
+        subsystem_name: The name of the subsystem providing the state view.
+        state: The dictionary representing the state as seen by this subsystem.
+        timestamp: The time when this state view was generated.
+        confidence: A float from 0.0 to 1.0 indicating the subsystem's confidence
+                    in the accuracy of its view.
+    """
     subsystem_name: str
     state: Dict[str, Any]
     timestamp: float
     confidence: float = 1.0  # How confident is this subsystem about its view
     
     def age(self) -> float:
-        """How old is this view?"""
+        """Calculates the age of this state view in seconds.
+
+        Returns:
+            The time elapsed since the view was created.
+        """
         return time.time() - self.timestamp
     
     def is_stale(self, threshold: float = 2.0) -> bool:
-        """Is this view too old to be trusted?"""
+        """Determines if this state view is too old to be considered reliable.
+
+        Args:
+            threshold: The age in seconds beyond which the view is considered stale.
+
+        Returns:
+            True if the view is stale, False otherwise.
+        """
         return self.age() > threshold
 
 
 class StateCoordinator:
-    """
-    Coordinates state across subsystems to ensure epistemic coherence.
-    
-    All subsystems should agree on basic facts about reality:
-    - What scene are we in?
-    - Where are we?
-    - Are we in combat?
-    - Are we in a menu?
-    
-    When disagreements occur, this coordinator resolves them.
+    """Coordinates state across multiple subsystems to ensure epistemic coherence.
+
+    This class acts as a central authority for truth about the game state. It
+    receives state updates from various subsystems, detects and resolves any
+    conflicts or disagreements, and maintains a single, unified "canonical"
+    state that all other parts of the system can rely on. This prevents logical
+    contradictions and ensures all components are working from a consistent
+    understanding of reality.
     """
     
     def __init__(
@@ -82,12 +107,14 @@ class StateCoordinator:
         staleness_threshold: float = 2.0,
         conflict_history_size: int = 100
     ):
-        """
-        Initialize state coordinator.
-        
+        """Initializes the StateCoordinator.
+
         Args:
-            staleness_threshold: Seconds after which a view is considered stale
-            conflict_history_size: How many past conflicts to track
+            staleness_threshold: The time in seconds after which a subsystem's
+                                 state view is considered too old and is discarded
+                                 from conflict resolution.
+            conflict_history_size: The maximum number of past conflicts to store
+                                   in the history log.
         """
         self.staleness_threshold = staleness_threshold
         
@@ -126,13 +153,16 @@ class StateCoordinator:
         state: Dict[str, Any],
         confidence: float = 1.0
     ):
-        """
-        Update state from a subsystem.
-        
+        """Updates the state view for a given subsystem and triggers conflict resolution.
+
+        This is the main entry point for subsystems to report their understanding
+        of the current state. After receiving an update, the coordinator detects
+        and resolves any resulting conflicts, then updates the canonical state.
+
         Args:
-            subsystem: Name of subsystem providing update
-            state: State dict from that subsystem
-            confidence: How confident is the subsystem (0-1)
+            subsystem: The name of the subsystem providing the update.
+            state: The state dictionary from that subsystem.
+            confidence: The subsystem's confidence in its provided state (0.0 to 1.0).
         """
         view = SubsystemView(
             subsystem_name=subsystem,
@@ -165,11 +195,13 @@ class StateCoordinator:
         self._update_canonical_state()
     
     def detect_conflicts(self) -> List[StateConflict]:
-        """
-        Detect conflicts between subsystem views.
-        
+        """Detects conflicts between the current, fresh views of all subsystems.
+
+        It compares key state variables (like scene, combat status, and menu status)
+        across all non-stale subsystem views.
+
         Returns:
-            List of detected conflicts
+            A list of `StateConflict` objects representing any detected discrepancies.
         """
         conflicts = []
         
@@ -244,16 +276,15 @@ class StateCoordinator:
         return conflicts
     
     def resolve_conflicts(self, conflicts: List[StateConflict]):
-        """
-        Resolve detected conflicts using authority weights and recency.
-        
-        Resolution Strategy:
-        1. Trust most authoritative source (authority_weights)
-        2. If equal authority, trust most recent
-        3. If still tied, use majority vote
-        
+        """Resolves a list of detected conflicts.
+
+        The resolution strategy involves scoring each conflicting view based on the
+        authority of its source subsystem, its recency, and its confidence. The
+        view with the highest score is declared the "winner," and its version of
+        the state is considered the truth for the conflicting variable.
+
         Args:
-            conflicts: List of conflicts to resolve
+            conflicts: The list of `StateConflict` objects to resolve.
         """
         for conflict in conflicts:
             print(f"\n[STATE-COORD] Resolving: {conflict.conflict_type.value}")
@@ -298,11 +329,7 @@ class StateCoordinator:
                 self.conflict_history.pop(0)
     
     def _update_canonical_state(self):
-        """
-        Update canonical (resolved) state from all subsystem views.
-        
-        Uses weighted voting based on authority and recency.
-        """
+        """Updates the canonical state by performing a weighted vote for each state variable."""
         if not self.subsystem_views:
             return
         
@@ -345,30 +372,25 @@ class StateCoordinator:
         self.canonical_timestamp = time.time()
     
     def get_canonical_state(self) -> Dict[str, Any]:
-        """
-        Get the resolved canonical state.
-        
-        This is the "ground truth" that all subsystems should use.
-        
+        """Returns the current, resolved canonical state.
+
+        This state represents the system's single source of truth and should be
+        used by all subsystems for decision-making.
+
         Returns:
-            Canonical state dict
+            A copy of the canonical state dictionary.
         """
         return self.canonical_state.copy()
     
     def get_coherence(self) -> float:
-        """
-        Compute epistemic coherence (0-1).
-        
-        0.0 = Total disagreement
-        1.0 = Perfect agreement
-        
-        Based on:
-        - Number of active conflicts (fewer is better)
-        - Severity of conflicts (lower is better)
-        - Staleness of views (fresher is better)
-        
+        """Calculates the current epistemic coherence of the system.
+
+        Coherence is a score from 0.0 (total disagreement) to 1.0 (perfect agreement).
+        It is based on the number and severity of active conflicts, as well as the
+        staleness of subsystem views.
+
         Returns:
-            Coherence score 0-1
+            The coherence score.
         """
         if len(self.subsystem_views) < 2:
             return 1.0  # Can't have conflicts with <2 views
@@ -395,7 +417,12 @@ class StateCoordinator:
         return coherence
     
     def get_stats(self) -> Dict[str, Any]:
-        """Get coordination statistics."""
+        """Retrieves statistics about the state coordinator's performance.
+
+        Returns:
+            A dictionary containing statistics on updates, conflicts, coherence,
+            and the age of the canonical state.
+        """
         return {
             **self.stats,
             'active_conflicts': len(self.active_conflicts),

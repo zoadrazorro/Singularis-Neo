@@ -66,14 +66,21 @@ class HybridConfig:
 
 class HybridLLMClient:
     """
-    Unified client that orchestrates multiple LLM providers.
-    
-    Primary: Gemini (vision) + Claude Sonnet 4 (reasoning)
-    Fallback: Local LLMs (optional)
+    A unified client that orchestrates multiple LLM providers, including
+    Gemini for vision, Claude for reasoning, and local LLMs as a fallback.
     """
     
     def __init__(self, config: Optional[HybridConfig] = None):
-        """Initialize hybrid LLM client."""
+        """
+        Initializes the HybridLLMClient.
+
+        Args:
+            config (Optional[HybridConfig], optional): A `HybridConfig` object
+                                                     containing the configuration for
+                                                     the client. If not provided, a
+                                                     default configuration is used.
+                                                     Defaults to None.
+        """
         self.config = config or HybridConfig()
         
         # Primary clients
@@ -109,7 +116,7 @@ class HybridLLMClient:
         })
     
     async def initialize(self):
-        """Initialize all LLM clients."""
+        """Initializes all configured LLM clients."""
         logger.info("Initializing hybrid LLM system...")
         
         # Initialize Gemini (primary vision)
@@ -230,16 +237,21 @@ class HybridLLMClient:
         max_tokens: int = 768
     ) -> str:
         """
-        Analyze image using Gemini (primary) or local vision model (fallback).
-        
+        Analyzes an image using the primary vision model (Gemini) with a fallback
+        to a local vision model.
+
         Args:
-            prompt: Analysis prompt
-            image: PIL Image object
-            temperature: Sampling temperature
-            max_tokens: Maximum output tokens
-            
+            prompt (str): The prompt for the analysis.
+            image: The image to analyze (e.g., a PIL Image object).
+            temperature (float, optional): The sampling temperature. Defaults to 0.4.
+            max_tokens (int, optional): The maximum number of tokens to generate.
+                                      Defaults to 768.
+
+        Raises:
+            RuntimeError: If no vision model is available.
+
         Returns:
-            Analysis text
+            str: The analysis of the image.
         """
         start_time = time.time()
         
@@ -370,16 +382,22 @@ class HybridLLMClient:
         max_tokens: int = 2048
     ) -> str:
         """
-        Generate reasoning using Claude (primary) or local model (fallback).
-        
+        Generates reasoning using the primary reasoning model (Claude) with a
+        fallback to a local reasoning model.
+
         Args:
-            prompt: User prompt
-            system_prompt: Optional system prompt
-            temperature: Sampling temperature
-            max_tokens: Maximum output tokens
-            
+            prompt (str): The user prompt.
+            system_prompt (Optional[str], optional): An optional system prompt.
+                                                          Defaults to None.
+            temperature (float, optional): The sampling temperature. Defaults to 0.7.
+            max_tokens (int, optional): The maximum number of tokens to generate.
+                                      Defaults to 2048.
+
+        Raises:
+            RuntimeError: If no reasoning model is available.
+
         Returns:
-            Generated text
+            str: The generated text.
         """
         start_time = time.time()
         
@@ -460,16 +478,21 @@ class HybridLLMClient:
         max_tokens: int = 512
     ) -> str:
         """
-        Generate fast action decision using Claude or local action model.
-        
+        Generates a fast action decision using Claude or a local action model.
+
         Args:
-            prompt: Action context
-            system_prompt: Optional system prompt
-            temperature: Sampling temperature
-            max_tokens: Maximum output tokens
-            
+            prompt (str): The prompt containing the action context.
+            system_prompt (Optional[str], optional): An optional system prompt.
+                                                          Defaults to None.
+            temperature (float, optional): The sampling temperature. Defaults to 0.6.
+            max_tokens (int, optional): The maximum number of tokens to generate.
+                                      Defaults to 512.
+
+        Raises:
+            RuntimeError: If no action model is available.
+
         Returns:
-            Action decision
+            str: The action decision.
         """
         start_time = time.time()
         
@@ -537,25 +560,25 @@ class HybridLLMClient:
         max_tokens: int = 4096
     ) -> str:
         """
-        Generate unified consciousness narrative using GPT-5-thinking.
-        
-        This model integrates ALL perspectives into coherent self-referential experience:
-        - Sensorimotor embodiment (what the body feels)
-        - Perceptual awareness (what the eyes see)
-        - Cognitive reasoning (what the mind thinks)
-        - Meta-cognition (thinking about thinking)
-        - Motor intentionality (why actions are chosen)
-        
-        Creates first-person narrative that unifies fragmented expert perspectives.
-        
+        Generates a unified consciousness narrative using GPT-5-thinking, with a
+        fallback to Claude.
+
+        This method is intended to integrate all perspectives into a coherent,
+        self-referential experience.
+
         Args:
-            prompt: Integration prompt with all perspectives
-            system_prompt: System prompt defining consciousness role
-            temperature: Sampling temperature (higher for creative synthesis)
-            max_tokens: Maximum output tokens (longer for rich narrative)
-            
+            prompt (str): The integration prompt with all perspectives.
+            system_prompt (Optional[str], optional): A system prompt defining the
+                                                          consciousness role. Defaults to None.
+            temperature (float, optional): The sampling temperature. Defaults to 0.8.
+            max_tokens (int, optional): The maximum number of tokens to generate.
+                                      Defaults to 4096.
+
+        Raises:
+            RuntimeError: If no world modeling model is available.
+
         Returns:
-            Unified consciousness narrative
+            str: The unified consciousness narrative.
         """
         start_time = time.time()
         
@@ -629,7 +652,7 @@ class HybridLLMClient:
         self.last_request_time = time.time()
     
     async def close(self):
-        """Close all client connections."""
+        """Closes all client connections."""
         if self.gemini:
             await self.gemini.close()
         if self.claude:
@@ -640,7 +663,12 @@ class HybridLLMClient:
         logger.info("Hybrid LLM client closed")
     
     def get_stats(self) -> Dict[str, Any]:
-        """Get usage statistics."""
+        """
+        Gets a dictionary of usage statistics for the client.
+
+        Returns:
+            Dict[str, Any]: A dictionary of statistics.
+        """
         total_calls = (
             self.stats['gemini_calls'] + 
             self.stats['claude_calls'] + 

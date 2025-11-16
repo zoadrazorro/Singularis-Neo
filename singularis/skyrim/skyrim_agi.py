@@ -91,7 +91,12 @@ from ..bdh import BDHPolicyHead, BDHMetaCortex
 
 @dataclass
 class SkyrimConfig:
-    """Configuration for Skyrim AGI."""
+    """Configuration settings for the Skyrim AGI.
+
+    This dataclass holds all the tunable parameters and feature flags that
+    control the behavior of the AGI, from its core LLM architecture to
+    gameplay settings and advanced consciousness features.
+    """
     # Base AGI config
     base_config: Optional[AGIConfig] = None
 
@@ -262,7 +267,7 @@ class SkyrimConfig:
     gemini_max_output_tokens: int = 768
 
     def __post_init__(self):
-        """Initialize base config if not provided."""
+        """Initializes the base AGIConfig if it's not provided."""
         if self.base_config is None:
             self.base_config = AGIConfig(
                 use_vision=True,
@@ -275,21 +280,25 @@ class SkyrimConfig:
 
 
 class SkyrimAGI:
-    """
-    Complete AGI system for Skyrim.
+    """The main class that integrates all AGI components for autonomous Skyrim gameplay.
 
-    This integrates:
-    - Perception → Understanding → Goals → Actions → Learning
-    - Driven by game-specific motivation (survival, progression, exploration)
-    - Decisions based on tactical evaluation and reinforcement learning
+    This class orchestrates the entire perception-action-learning loop. It
+    initializes and connects dozens of specialized subsystems, including perception,
+    action execution, world modeling, various LLM architectures (Hybrid, MoE),
+    reinforcement learning, and multiple layers of consciousness and strategic
+    reasoning. Its core innovation is the use of consciousness coherence (ΔC)
+    as the primary reward signal to guide learning.
     """
 
     def __init__(self, config: Optional[SkyrimConfig] = None):
-        """
-        Initialize Skyrim AGI.
+        """Initializes the complete Skyrim AGI system.
+
+        This method sets up all the necessary components based on the provided
+        configuration, including perception, action controllers, world models,
+        LLM clients, and various learning and reasoning systems.
 
         Args:
-            config: Skyrim configuration
+            config: A `SkyrimConfig` object containing the desired settings.
         """
         self.config = config or SkyrimConfig()
 
@@ -1301,8 +1310,12 @@ class SkyrimAGI:
         print("[OK] Skyrim AGI initialized with CONSCIOUSNESS INTEGRATION\n")
 
 
-    def _register_consciousness_nodes(self):
-        """Register all system components for consciousness monitoring."""
+    def _register_consciousness_nodes(self) -> None:
+        """Registers all major subsystems with the SystemConsciousnessMonitor.
+
+        This allows the monitor to track the coherence and contribution of each
+        component to the overall consciousness of the AGI.
+        """
         # Perception nodes
         self.consciousness_monitor.register_node(
             "perception_vision", "perception", weight=1.5,
@@ -1384,8 +1397,8 @@ class SkyrimAGI:
         
         logger.info(f"Registered {len(self.consciousness_monitor.registered_nodes)} consciousness nodes")
     
-    def _register_llm_nodes(self):
-        """Register LLM nodes after initialization."""
+    def _register_llm_nodes(self) -> None:
+        """Dynamically registers the configured LLM experts with the consciousness monitor."""
         if self.moe:
             # Register MoE experts
             for i in range(self.config.num_gemini_experts):
@@ -1429,11 +1442,15 @@ class SkyrimAGI:
         logger.info(f"Registered LLM nodes, total: {len(self.consciousness_monitor.registered_nodes)}")
     
     async def measure_system_consciousness(self) -> SystemConsciousnessState:
-        """
-        Measure consciousness across the entire system.
-        
+        """Measures and aggregates the consciousness state across the entire AGI system.
+
+        This method queries each registered subsystem to get its current coherence
+        and other consciousness-related metrics. It then uses the
+        `SystemConsciousnessMonitor` to compute a global consciousness state,
+        including overall coherence, integration (Φ), and unity.
+
         Returns:
-            SystemConsciousnessState with all metrics
+            A `SystemConsciousnessState` object representing the holistic state of the AGI.
         """
         node_measurements = {}
         
@@ -1641,30 +1658,21 @@ class SkyrimAGI:
         
         return system_state
     
-    async def initialize_llm(self):
-        """
-        Initialize hybrid LLM architecture: Gemini (vision) + Claude Sonnet 4 (reasoning).
-        
-        Primary Architecture:
-        - Gemini 2.0 Flash: Vision and visual perception
-          * Fast, efficient image analysis
-          * Scene understanding and spatial awareness
-          * Real-time visual feedback
-        
-        - Claude Sonnet 4: Strategic reasoning and planning
-          * High-level strategic thinking
-          * Complex decision making
-          * World understanding and causal reasoning
-          * Action planning and tactical decisions
-        
-        Optional Fallback (if enabled):
-        - Local LLMs via LM Studio
-          * Vision: qwen3-vl-8b
-          * Reasoning: mistral-7b-instruct-v0.3
-          * Action: mistral-nemo
-        
-        This hybrid approach leverages cloud AI for primary intelligence with
-        optional local fallback for reliability.
+    async def initialize_llm(self) -> None:
+        """Initializes the multi-faceted LLM architecture.
+
+        This complex method sets up the AGI's "brain," which can be configured
+        to run in several modes:
+        - **Hybrid Mode:** Uses a combination of cloud-based models (like Gemini for
+          vision and Claude for reasoning) with an optional local fallback.
+        - **Mixture of Experts (MoE) Mode:** Utilizes an orchestrator to query
+          multiple specialized LLM experts in parallel and synthesize their responses.
+        - **Parallel Mode:** Runs both Hybrid and MoE modes simultaneously,
+          blending their outputs for maximum intelligence.
+
+        It also handles the initialization and connection of various auxiliary LLM-based
+        subsystems, such as the consciousness bridge, RL reasoning neuron, and
+        meta-strategist, to the appropriate LLM interfaces.
         """
         print("=" * 70)
         print("INITIALIZING HYBRID LLM ARCHITECTURE")
@@ -1968,8 +1976,12 @@ class SkyrimAGI:
         self.consciousness_monitor.print_dashboard()
         print()
 
-    async def _connect_moe(self):
-        """Connect MoE system to all AGI components."""
+    async def _connect_moe(self) -> None:
+        """Connects the Mixture of Experts (MoE) system to all relevant AGI components.
+
+        This method sets the `moe` attribute on various subsystems, allowing them
+        to leverage the MoE for their LLM-based tasks.
+        """
         if not self.moe:
             return
         
@@ -2017,8 +2029,14 @@ class SkyrimAGI:
         
         print("[MoE] Component connection complete\n")
     
-    async def _connect_hybrid_llm(self):
-        """Connect hybrid LLM system to all AGI components."""
+    async def _connect_hybrid_llm(self) -> None:
+        """Connects the Hybrid LLM system to all relevant AGI components.
+
+        This method sets the `hybrid_llm` attribute on various subsystems,
+        allowing them to use the hybrid client for their LLM tasks. It also
+        handles the registration of subsystems with the GPT-5 orchestrator and
+        initializes the Wolfram Alpha telemetry analyzer.
+        """
         if not self.hybrid_llm:
             return
         
@@ -2077,8 +2095,21 @@ class SkyrimAGI:
             await self.video_interpreter.start_streaming()
             print("[VIDEO] Streaming started\n")
     
-    def _update_being_state_comprehensive(self, cycle_count: int, game_state, perception, current_consciousness, mot_state, action):
-        """Update BeingState with all subsystem outputs - THE ONE UNIFIED STATE."""
+    def _update_being_state_comprehensive(self, cycle_count: int, game_state: Any, perception: Dict[str, Any], current_consciousness: Any, mot_state: Any, action: Any) -> None:
+        """Updates the central `BeingState` with data from all subsystems.
+
+        This method acts as a convergence point, collecting the latest information
+        from perception, consciousness, emotion, motivation, RL, and other systems
+        to create a single, unified snapshot of the AGI's current state of being.
+
+        Args:
+            cycle_count: The current main loop cycle number.
+            game_state: The current state of the game.
+            perception: The latest perception data.
+            current_consciousness: The latest consciousness measurement.
+            mot_state: The current motivation state.
+            action: The action that was just taken or is being planned.
+        """
         if not hasattr(self, 'being_state'):
             return
         
@@ -2240,7 +2271,15 @@ class SkyrimAGI:
             self.being_state.session_id = self.main_brain.session_id
 
     def _prepare_bdh_policy_inputs(self, perception: Dict[str, Any], fallback_action: str) -> tuple[np.ndarray, Dict[str, float]]:
-        """Construct inputs for the BDH policy head."""
+        """Constructs the inputs required by the BDH (Behavioral Decision Hypothesis) policy head.
+
+        Args:
+            perception: The current perception data.
+            fallback_action: A fallback action to ensure there's at least one affordance.
+
+        Returns:
+            A tuple containing the situation vector and a dictionary of affordance scores.
+        """
 
         bdh_payload = perception.get('bdh_perception', {})
         vector_source = bdh_payload.get('situation_vector') or perception.get('unified_embedding')
@@ -2261,8 +2300,15 @@ class SkyrimAGI:
 
         return vector, affordances
 
-    def _build_bdh_sigma_snapshots(self, policy_proposal) -> Dict[str, Any]:
-        """Aggregate BDH sigma snapshots for temporal binding."""
+    def _build_bdh_sigma_snapshots(self, policy_proposal: Any) -> Dict[str, Any]:
+        """Aggregates BDH sigma snapshots for temporal binding and analysis.
+
+        Args:
+            policy_proposal: The policy proposal object from the BDH policy head.
+
+        Returns:
+            A dictionary of sigma snapshots from different BDH components.
+        """
 
         snapshots: Dict[str, Any] = {}
         if policy_proposal and getattr(policy_proposal, 'sigma_snapshot', None):
@@ -2275,8 +2321,13 @@ class SkyrimAGI:
 
         return snapshots
 
-    async def _register_systems_with_gpt5(self):
-        """Register all subsystems with GPT-5 orchestrator."""
+    async def _register_systems_with_gpt5(self) -> None:
+        """Registers all major subsystems with the GPT-5 orchestrator.
+
+        This enables the GPT-5 orchestrator to have a comprehensive view of the
+        entire AGI architecture, allowing it to perform meta-cognitive coordination
+        and send targeted messages to specific systems.
+        """
         if not self.gpt5_orchestrator:
             return
         
@@ -2360,8 +2411,8 @@ class SkyrimAGI:
         print(f"[GPT-5] Registered {len(self.gpt5_orchestrator.registered_systems)} subsystems")
         print("[GPT-5] Meta-cognitive coordination ready\n")
     
-    async def _initialize_wolfram_telemetry(self):
-        """Initialize Wolfram Alpha telemetry analyzer."""
+    async def _initialize_wolfram_telemetry(self) -> None:
+        """Initializes the Wolfram Alpha telemetry analyzer for advanced mathematical analysis."""
         try:
             from ..llm.wolfram_telemetry import WolframTelemetryAnalyzer
             
@@ -2378,7 +2429,11 @@ class SkyrimAGI:
             self.wolfram_analyzer = None
     
     async def aggregate_unified_metrics(self) -> Dict[str, Any]:
-        """Aggregate metrics from all systems."""
+        """Aggregates performance and state metrics from all major subsystems.
+
+        Returns:
+            A dictionary containing a comprehensive snapshot of the AGI's current metrics.
+        """
         metrics = {}
         
         # Consciousness metrics
@@ -2440,8 +2495,18 @@ class SkyrimAGI:
         self.unified_metrics = metrics
         return metrics
     
-    async def send_gpt5_message(self, system_id: str, message_type: str, content: str, metadata: Optional[Dict] = None):
-        """Send message to GPT-5 orchestrator."""
+    async def send_gpt5_message(self, system_id: str, message_type: str, content: str, metadata: Optional[Dict] = None) -> Optional[Any]:
+        """Sends a message from a subsystem to the GPT-5 orchestrator for meta-cognitive processing.
+
+        Args:
+            system_id: The ID of the system sending the message.
+            message_type: The type or category of the message.
+            content: The main content of the message.
+            metadata: Optional dictionary of additional data.
+
+        Returns:
+            The response from the GPT-5 orchestrator, or None if it's disabled or an error occurs.
+        """
         if not self.gpt5_orchestrator:
             return None
         
@@ -2457,8 +2522,14 @@ class SkyrimAGI:
             logger.error(f"[GPT-5] Message failed: {e}")
             return None
     
-    def _register_haack_callbacks(self):
-        """Register Python callbacks for HaackLang modules to call."""
+    def _register_haack_callbacks(self) -> None:
+        """Registers Python callback functions for the HaackLang cognitive calculus engine.
+
+        This allows HaackLang modules (`.haack` files) to query the state of
+        various Python-based AGI subsystems (like perception and emotion) and
+        to trigger actions, effectively bridging the symbolic calculus with the
+        rest of the AGI architecture.
+        """
         if not self.haack_bridge:
             return
         
@@ -2558,8 +2629,13 @@ class SkyrimAGI:
         
         print(f"    [OK] Registered {8} Python callbacks for HaackLang")
     
-    async def speak_decision(self, action: str, reason: str):
-        """Voice system speaks a decision."""
+    async def speak_decision(self, action: str, reason: str) -> None:
+        """Uses the voice system to speak a decision and its reasoning aloud.
+
+        Args:
+            action: The action being taken.
+            reason: The reason for taking the action.
+        """
         if not self.voice_system:
             return
         
@@ -2572,8 +2648,16 @@ class SkyrimAGI:
         except Exception as e:
             logger.error(f"[VOICE] Speech failed: {e}")
     
-    async def interpret_video_frame(self, image, scene_type: str):
-        """Video interpreter analyzes frame."""
+    async def interpret_video_frame(self, image: Any, scene_type: str) -> Optional[str]:
+        """Passes a video frame to the StreamingVideoInterpreter for analysis.
+
+        Args:
+            image: The image data of the video frame.
+            scene_type: The classified scene type for the frame.
+
+        Returns:
+            The textual interpretation of the frame, or None if the system is disabled or fails.
+        """
         if not self.video_interpreter:
             return None
         
@@ -2593,15 +2677,18 @@ class SkyrimAGI:
             return None
     
     def bind_perception_action(self, perception: Dict[str, Any], action: str) -> str:
-        """
-        Bind perception to action for temporal tracking.
-        
+        """Creates a temporal binding between a perception and the action taken in response.
+
+        This is a key part of the temporal coherence tracking system. It returns a
+        unique ID for the binding, which can be used later to `close_temporal_loop`
+        once the outcome of the action is known.
+
         Args:
-            perception: Perception data
-            action: Action being taken
-            
+            perception: The perception data that led to the action.
+            action: The action that is being taken.
+
         Returns:
-            Binding ID for later closure
+            A unique string ID for the temporal binding.
         """
         if not self.temporal_tracker:
             return ""
@@ -2614,15 +2701,18 @@ class SkyrimAGI:
         outcome: str,
         coherence_delta: float,
         success: bool
-    ):
-        """
-        Close temporal loop after action execution.
-        
+    ) -> None:
+        """Closes a temporal loop by providing the outcome of a previously bound action.
+
+        This method updates the temporal coherence tracker with the results of an
+        action, allowing the system to learn from the consequences of its decisions
+        and to detect stuck loops or unexpected outcomes.
+
         Args:
-            binding_id: ID from bind_perception_action
-            outcome: Observed outcome
-            coherence_delta: Change in coherence
-            success: Whether action was successful
+            binding_id: The unique ID returned by `bind_perception_action`.
+            outcome: A string describing the observed outcome.
+            coherence_delta: The change in consciousness coherence resulting from the action.
+            success: A boolean indicating whether the action was successful.
         """
         if not self.temporal_tracker:
             return
@@ -2642,7 +2732,16 @@ class SkyrimAGI:
             )
     
     def check_stuck_loop(self) -> bool:
-        """Check if system is stuck in a loop."""
+        """Checks if the system is stuck in a repetitive loop.
+
+        This method queries the `TemporalCoherenceTracker` to determine if the
+        system's state indicates a stuck loop (e.g., high similarity between
+        recent perception-action cycles). If a stuck loop is detected, it logs
+        a warning.
+
+        Returns:
+            True if a stuck loop is detected, False otherwise.
+        """
         if not self.temporal_tracker:
             return False
         
@@ -2657,15 +2756,21 @@ class SkyrimAGI:
         return is_stuck
     
     def _is_perception_fresh(self, perception_timestamp: float, max_age_seconds: float = 2.0) -> bool:
-        """
-        Check if perception is still fresh enough to act on.
-        
+        """Checks if the perception data is recent enough to be acted upon.
+
+        This validation step prevents the AGI from acting on stale information,
+        which could lead to inappropriate or ineffective actions in a dynamic
+        game environment.
+
         Args:
-            perception_timestamp: Timestamp when perception was captured
-            max_age_seconds: Maximum age in seconds (default 2.0)
-            
+            perception_timestamp: The timestamp (from `time.time()`) when the
+                perception was captured.
+            max_age_seconds: The maximum allowed age of the perception in
+                seconds. Defaults to 2.0.
+
         Returns:
-            True if perception is fresh, False if stale
+            True if the perception's age is within the `max_age_seconds` limit,
+            False otherwise.
         """
         age = time.time() - perception_timestamp
         if age > max_age_seconds:
@@ -2680,17 +2785,27 @@ class SkyrimAGI:
         original_scene: str,
         original_health: float
     ) -> tuple[bool, str]:
-        """
-        Validate that action is still appropriate given current context.
-        
+        """Validates that a planned action is still appropriate for the current game context.
+
+        This method performs critical safety checks before executing an action
+        to ensure that the game state has not changed in a way that would make
+        the action nonsensical or dangerous. It checks for perception freshness
+        and significant changes in scene or player health.
+
         Args:
-            action: Action to validate
-            perception_timestamp: When perception was captured
-            original_scene: Scene type when action was planned
-            original_health: Health when action was planned
-            
+            action: The action string that is being validated.
+            perception_timestamp: The timestamp when the perception that prompted
+                the action was captured.
+            original_scene: The scene type (e.g., 'COMBAT', 'EXPLORATION') that
+                was active when the action was planned.
+            original_health: The player's health percentage when the action
+                was planned.
+
         Returns:
-            (is_valid, reason)
+            A tuple containing:
+            - A boolean indicating whether the action is still valid (True) or
+              should be rejected (False).
+            - A string providing the reason for the validation result.
         """
         # Check 1: Perception freshness
         if not self._is_perception_fresh(perception_timestamp):
@@ -2714,10 +2829,16 @@ class SkyrimAGI:
         return (True, "Valid")
     
     async def _handle_action_result(self, result):
-        """
-        Handle action result callback from arbiter.
-        
-        Phase 2.4: Action result tracking and notifications
+        """Handles the callback result from the Action Arbiter.
+
+        This method is registered as a callback with the `ActionArbiter`. It
+        processes the outcome of a requested action, updating statistics based
+        on whether the action was executed, succeeded, failed, or was rejected.
+        It also logs information about any overrides that occurred.
+
+        Args:
+            result: An `ActionResult` object from the `ActionArbiter` containing
+                details about the action's execution.
         """
         from .action_arbiter import ActionResult
         
@@ -2748,15 +2869,22 @@ class SkyrimAGI:
         subsystem_outputs: Dict[str, Any],
         integration_score: float
     ) -> Dict[str, float]:
-        """
-        Compute 4D enhanced coherence.
-        
+        """Computes the 4D enhanced coherence score.
+
+        This method leverages the `EnhancedCoherenceMetrics` system to calculate
+        a multi-dimensional coherence score that includes not just subsystem
+        integration, but also temporal, causal, and predictive coherence.
+
         Args:
-            subsystem_outputs: Outputs from all subsystems
-            integration_score: Current integration score
-            
+            subsystem_outputs: A dictionary containing the current outputs from
+                various AGI subsystems.
+            integration_score: The current integration score (Φ) of the system.
+
         Returns:
-            Dict with overall, integration, temporal, causal, predictive scores
+            A dictionary containing the overall coherence score and its four
+            dimensional components (integration, temporal, causal, predictive).
+            Returns a dictionary with only the overall score if the enhanced
+            coherence system is disabled.
         """
         if not self.enhanced_coherence:
             return {'overall': integration_score}
@@ -2777,14 +2905,19 @@ class SkyrimAGI:
         return coherence
     
     def retrieve_semantic_memory(self, scene_type: str) -> Optional[Any]:
-        """
-        Retrieve semantic memory for scene type.
-        
+        """Retrieves a consolidated semantic memory pattern for a given scene type.
+
+        This method queries the `HierarchicalMemory` system to find learned
+        patterns and strategies associated with a specific type of scene (e.g.,
+        'COMBAT', 'INDOOR_DUNGEON'). This allows the AGI to leverage past
+        experiences to inform its current decision-making.
+
         Args:
-            scene_type: Type of scene
-            
+            scene_type: The string identifier for the type of scene.
+
         Returns:
-            Semantic pattern or None
+            A semantic pattern object from the hierarchical memory if a relevant
+            pattern with sufficient confidence is found, otherwise None.
         """
         if not self.hierarchical_memory:
             return None
@@ -2795,14 +2928,22 @@ class SkyrimAGI:
         )
     
     def compute_lumen_balance(self, active_systems: Dict[str, Any]) -> Optional[Any]:
-        """
-        Compute Lumen balance across onticum/structurale/participatum.
-        
+        """Computes the balance of the three Lumina of consciousness.
+
+        This method uses the `LumenIntegratedSystem` to measure the balance
+        between the Onticum (raw experience), Structurale (internal models),
+        and Participatum (awareness and action) aspects of consciousness. It
+        can use weights from the Double Helix architecture to inform the balance
+        calculation. If an imbalance is detected, it logs recommendations for
+        rebalancing.
+
         Args:
-            active_systems: Currently active systems
-            
+            active_systems: A dictionary of currently active AGI subsystems
+                and their activation levels.
+
         Returns:
-            LumenBalance or None
+            A `LumenBalance` object containing the balance scores, or None if
+            the Lumen integration system is disabled.
         """
         if not self.lumen_integration:
             return None
@@ -2835,17 +2976,26 @@ class SkyrimAGI:
         image=None,
         context: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
-        """
-        Query both MoE and Hybrid systems in parallel and combine results.
-        
+        """Queries both MoE and Hybrid LLM systems in parallel and combines the results.
+
+        This function is central to the AGI's parallel processing capabilities.
+        It dispatches vision and reasoning tasks to both the Mixture of Experts
+        (MoE) and the Hybrid LLM systems simultaneously. It also initiates a
+        "world model" task with a GPT-5-level model to synthesize all available
+        information into a coherent, self-referential narrative of the AGI's
+        conscious experience.
+
         Args:
-            vision_prompt: Prompt for vision analysis
-            reasoning_prompt: Prompt for reasoning
-            image: PIL Image for vision tasks
-            context: Additional context
-            
+            vision_prompt: The prompt for the vision analysis task.
+            reasoning_prompt: The prompt for the reasoning and action-planning task.
+            image: A PIL Image object for the vision tasks. Defaults to None.
+            context: An optional dictionary of additional context for the LLMs.
+
         Returns:
-            Combined response with consensus from both systems
+            A dictionary containing the combined and weighted responses from all
+            LLM systems, including separate vision and reasoning consensuses, the
+            raw results from each system, the synthesized world model narrative,
+            and a calculated overall coherence score.
         """
         if not self.config.use_parallel_mode:
             # Fallback to single system
@@ -3025,11 +3175,19 @@ Connect perception → thought → action into flowing experience.""",
         }
     
     def _weighted_text_consensus(self, text_weight_pairs: List[Tuple[str, float]]) -> str:
-        """
-        Combine multiple text responses with weights.
-        
-        For now, uses simple concatenation with headers.
-        In future, could use LLM to synthesize.
+        """Combines multiple text responses into a single string, weighted by importance.
+
+        This is a simple consensus mechanism that sorts text responses by their
+        assigned weight and concatenates them with headers indicating their
+        priority.
+
+        Args:
+            text_weight_pairs: A list of tuples, where each tuple contains a
+                text string and its corresponding float weight.
+
+        Returns:
+            A single string containing all the provided text, formatted and
+            ordered by weight.
         """
         if not text_weight_pairs:
             return ""
@@ -3051,13 +3209,21 @@ Connect perception → thought → action into flowing experience.""",
         return "\n".join(combined)
     
     def _build_action_context(self, game_state: Any, scene_type: Any) -> Dict[str, Any]:
-        """
-        PRAGMATIC FIX: Minimal context for fast action selection.
-        
-        Philosophy: LLMs are overwhelmed by rich phenomenological context.
-        For ACTION, we need: What scene? Am I stuck? What can I do? What did I just try?
-        
-        This is the sensorimotor context - grounded, immediate, actionable.
+        """Builds a minimal, pragmatic context dictionary for fast action selection.
+
+        This method is designed to provide LLMs with only the most essential,
+        immediately actionable information, avoiding the overhead of a full,
+        rich phenomenological context. This "sensorimotor context" is grounded
+        and focused on what is needed for an immediate decision.
+
+        Args:
+            game_state: The current game state object.
+            scene_type: The current scene type enum.
+
+        Returns:
+            A dictionary containing essential context for action planning,
+            including scene, health, combat status, stuck status, available
+            actions, and recent action history.
         """
         stuck_status = self._detect_stuck()
         
@@ -3076,24 +3242,39 @@ Connect perception → thought → action into flowing experience.""",
         }
     
     def _build_reflection_context(self, vision_prompt: str, reasoning_prompt: str, game_state: Any) -> str:
-        """
-        PRAGMATIC FIX: Full context for meta-reasoning and learning.
-        
-        Philosophy: For REFLECTION, we want rich phenomenological detail.
-        This is for consciousness measurement, learning, and strategic planning.
-        
-        Use this for: World model updates, consciousness measurement, long-term planning.
+        """Builds a full, rich context for meta-reasoning and learning.
+
+        In contrast to `_build_action_context`, this method gathers a comprehensive
+        set of information for deeper cognitive processes like world model updates,
+        consciousness measurement, and long-term strategic planning.
+
+        Args:
+            vision_prompt: The prompt used for the latest vision analysis.
+            reasoning_prompt: The prompt used for the latest reasoning task.
+            game_state: The current game state object.
+
+        Returns:
+            A comprehensive, multi-part string containing detailed context from
+            all major subsystems.
         """
         return self._build_integration_context(vision_prompt, reasoning_prompt, game_state)
     
     def _build_action_context(self, game_state: Any, scene_type: Any) -> Dict[str, Any]:
-        """
-        PRAGMATIC FIX: Minimal context for fast action selection.
-        
-        Philosophy: LLMs are overwhelmed by rich phenomenological context.
-        For ACTION, we need: What scene? Am I stuck? What can I do? What did I just try?
-        
-        This is the sensorimotor context - grounded, immediate, actionable.
+        """Builds a minimal, pragmatic context dictionary for fast action selection.
+
+        This method is designed to provide LLMs with only the most essential,
+        immediately actionable information, avoiding the overhead of a full,
+        rich phenomenological context. This "sensorimotor context" is grounded
+        and focused on what is needed for an immediate decision.
+
+        Args:
+            game_state: The current game state object.
+            scene_type: The current scene type enum.
+
+        Returns:
+            A dictionary containing essential context for action planning,
+            including scene, health, combat status, stuck status, available
+            actions, and recent action history.
         """
         stuck_status = self._detect_stuck()
         
@@ -3112,19 +3293,23 @@ Connect perception → thought → action into flowing experience.""",
         }
     
     def _build_integration_context(self, vision_prompt: str, reasoning_prompt: str, game_state: Any) -> str:
-        """
-        Build comprehensive integration context from all available sources.
-        
-        This gathers:
-        - Current game state (location, health, combat, NPCs)
-        - Recent actions and their outcomes
-        - Visual perception data (CLIP, scene type)
-        - Recent coherence measurements
-        - Available expert perspectives
-        
-        Returns rich context for GPT-5-thinking to synthesize.
-        
-        NOTE: Use _build_action_context() for fast decisions!
+        """Builds a comprehensive, multi-source context for deep synthesis.
+
+        This internal helper function aggregates information from all major AGI
+        subsystems to create a rich, detailed context. This context is primarily
+        used by the highest-level LLMs (like GPT-5-thinking) to synthesize a
+        unified narrative of the AGI's conscious experience. For faster, tactical
+        decisions, `_build_action_context` should be used instead.
+
+        Args:
+            vision_prompt: The prompt used for the latest vision analysis.
+            reasoning_prompt: The prompt used for the latest reasoning task.
+            game_state: The current game state object.
+
+        Returns:
+            A formatted string containing a detailed breakdown of the AGI's
+            current sensorimotor state, perceptual awareness, recent actions,
+            consciousness coherence, and available expert perspectives.
         """
         context_parts = []
         
@@ -3198,11 +3383,19 @@ Connect perception → thought → action into flowing experience.""",
         return "\n".join(context_parts)
     
     def _get_scene_constrained_actions(self, scene_type: Any, game_state: Any) -> List[str]:
-        """
-        PRAGMATIC FIX: Constrain available actions based on scene type.
-        
-        Philosophy: Don't ask LLM to choose from 20 actions when only 5 make sense.
-        This is sensorimotor grounding - actions must be contextually appropriate.
+        """Filters the available actions based on the current scene type.
+
+        This pragmatic approach provides sensorimotor grounding by ensuring that
+        the AGI only considers actions that are contextually appropriate. It
+        prevents the LLM from being overwhelmed with irrelevant choices, for
+        example, by excluding exploration actions while in an inventory menu.
+
+        Args:
+            scene_type: The current scene type enum from the perception system.
+            game_state: The current game state object.
+
+        Returns:
+            A list of action strings that are valid for the current scene.
         """
         from .perception import SceneType
         
@@ -3245,7 +3438,15 @@ Connect perception → thought → action into flowing experience.""",
         ]
     
     async def _initialize_cloud_rl(self):
-        """Initialize cloud-enhanced RL system with RAG and LLM integration."""
+        """Initializes the cloud-enhanced Reinforcement Learning (RL) system.
+
+        This method sets up the `CloudRLMemory` and `CloudRLAgent`, which
+        leverage cloud-based LLMs for advanced RL functionalities. This includes
+        using Retrieval-Augmented Generation (RAG) for contextual experience
+        replay, LLM-based reward shaping, and Mixture of Experts (MoE) for
+        evaluating action outcomes. It also handles loading a previously saved
+        agent and memory to continue learning across sessions.
+        """
         print("\n" + "=" * 70)
         print("INITIALIZING CLOUD-ENHANCED RL SYSTEM")
         print("=" * 70)
@@ -3332,7 +3533,14 @@ Connect perception → thought → action into flowing experience.""",
         print()
     
     async def _initialize_legacy_llms(self):
-        """Initialize legacy local LLM architecture (fallback if hybrid disabled)."""
+        """Initializes the legacy local LLM architecture.
+
+        This method serves as a fallback for initializing the AGI's "brain"
+        if the more advanced Hybrid and MoE systems are disabled. It sets up a
+        single, locally-run LLM (typically via LM Studio) and connects it to
+        all the necessary subsystems, including the base AGI orchestrator, the
+        consciousness bridge, and various reasoning neurons.
+        """
         print("\n[LEGACY] Initializing legacy local LLM architecture...")
         
         try:
@@ -3373,7 +3581,14 @@ Connect perception → thought → action into flowing experience.""",
             traceback.print_exc()
 
     async def _initialize_claude_meta(self) -> None:
-        """Bring up optional Claude client for auxiliary strategic reasoning."""
+        """Initializes an optional Claude client for auxiliary strategic reasoning.
+
+        This method sets up a connection to the Claude API, if enabled in the
+        configuration and if an API key is available. The initialized client is
+        then added as an auxiliary interface to the `MetaStrategist`, allowing it
+        to run in parallel with the primary reasoning LLM (like Huihui) to provide
+        additional strategic insights.
+        """
 
         if not self.config.enable_claude_meta:
             print("[CLAUDE] Auxiliary meta reasoning disabled via config")
@@ -3397,7 +3612,13 @@ Connect perception → thought → action into flowing experience.""",
             self.claude_meta_client = None
 
     async def _initialize_gemini_vision(self) -> None:
-        """Attach Gemini client as an optional vision augment."""
+        """Initializes an optional Gemini client for vision augmentation.
+
+        If enabled in the configuration and an API key is provided, this method
+        sets up a `GeminiClient` and attaches it to the `SkyrimPerception` module.
+        This allows the perception system to complement its local analysis (from
+        CLIP and Qwen) with the powerful vision capabilities of the Gemini model.
+        """
 
         if not self.config.enable_gemini_vision:
             print("[GEMINI] Vision augmentation disabled via config")
@@ -3424,7 +3645,24 @@ Connect perception → thought → action into flowing experience.""",
             self.perception.set_gemini_analyzer(None)
 
     async def _augment_with_gemini(self, perception: Dict[str, Any], cycle_count: int) -> Optional[str]:
-        """Run optional Gemini analysis and attach its summary to the perception payload."""
+        """Performs optional vision analysis with Gemini and augments the perception data.
+
+        This method, if Gemini vision is enabled, sends the current game screenshot
+        to the Gemini API for analysis. The analysis focuses on providing a concise
+        tactical snapshot, identifying threats, interactables, and a recommended
+        focus. The result is then attached to the main perception dictionary.
+        Usage is throttled to complement, rather than overload, the main loop.
+
+        Args:
+            perception: The current perception dictionary, which must contain a
+                'screenshot' key.
+            cycle_count: The current main loop cycle number, used for throttling.
+
+        Returns:
+            The string analysis from Gemini if successful, otherwise None. The
+            perception dictionary is modified in-place by adding a 'gemini_analysis'
+            key.
+        """
 
         if not self.config.enable_gemini_vision or self.gemini_vision_client is None:
             return None
@@ -3495,23 +3733,22 @@ Connect perception → thought → action into flowing experience.""",
         return analysis
 
     async def autonomous_play(self, duration_seconds: Optional[int] = None):
-        """
-        Play Skyrim autonomously.
+        """Starts and manages the main autonomous gameplay loop.
 
-        This is the main loop:
-        1. Perceive current state
-        2. Update world model
-        3. Assess motivation
-        4. Form/update goals
-        5. Plan action
-        6. Execute action
-        7. Learn from outcome
-        8. Repeat
-        
-        Now supports async mode where reasoning and actions run in parallel.
+        This is the core entry point for running the AGI. It orchestrates the
+        entire gameplay process, deciding whether to run in a sequential
+        (perceive-think-act) or asynchronous (parallel) mode based on the
+        configuration. It handles initialization, gracefully manages the main
+        loop's lifecycle, and triggers final cleanup and reporting upon completion
+        or interruption.
+
+        The main loop itself is delegated to either `_autonomous_play_async` or
+        `_autonomous_play_sequential`.
 
         Args:
-            duration_seconds: How long to play (default: config value)
+            duration_seconds: The total duration in seconds for the autonomous
+                play session. If not provided, it defaults to the value set in
+                the `SkyrimConfig`.
         """
         if duration_seconds is None:
             duration_seconds = self.config.autonomous_duration
@@ -3977,11 +4214,17 @@ Scene: {self.perception.last_scene_type.value if hasattr(self.perception, 'last_
                 print(f"[CLEANUP] Warning: {e}")
 
     async def _autonomous_play_async(self, duration_seconds: int, start_time: float):
-        """
-        Async gameplay mode where reasoning, actions, and perception run in parallel.
-        
-        This prevents blocking during LLM reasoning - the agent continues to act.
-        Now includes fast reactive loop for immediate survival responses.
+        """Runs the AGI's main gameplay loop in asynchronous, parallel mode.
+
+        This is the core of the AGI's parallel architecture. It launches and
+        manages several concurrent asyncio tasks for perception, reasoning,
+        action execution, and learning. This design allows the AGI to continue
+        acting and perceiving the world without being blocked by computationally
+        expensive reasoning or learning processes (like LLM calls).
+
+        Args:
+            duration_seconds: The total duration for the gameplay session.
+            start_time: The timestamp when the session began.
         """
         print("[ASYNC] Starting parallel execution loops...")
         
@@ -4015,20 +4258,17 @@ Scene: {self.perception.last_scene_type.value if hasattr(self.perception, 'last_
         print("[ASYNC] All parallel loops completed")
 
     async def _auxiliary_exploration_loop(self, duration_seconds: int, start_time: float):
-        """
-        Auxiliary heuristic pipeline for continuous exploration.
-        
-        Runs independently while LLMs are processing to keep gameplay smooth.
-        Handles basic movement, looking around, and environmental interaction
-        without waiting for heavy reasoning.
-        
-        Actions performed:
-        - Move forward periodically
-        - Look around (camera movement)
-        - Occasional jumps for terrain navigation
-        - Random direction changes for exploration
-        
-        This ensures the character is always active even when LLMs are slow.
+        """Manages a continuous, heuristic-based exploration pipeline.
+
+        This loop runs independently of the main reasoning cycle to ensure the
+        character remains active and responsive, even when the primary LLM-based
+        reasoning is slow. It handles basic movement, camera control, and simple
+        environmental interactions using a set of predefined rules and timers,
+        preventing the AGI from appearing idle.
+
+        Args:
+            duration_seconds: The total duration for the gameplay session.
+            start_time: The timestamp when the session began.
         """
         print("[AUX-EXPLORE] Auxiliary exploration loop started")
         print("[AUX-EXPLORE] Interval: 3.0s (independent of main reasoning)")
@@ -4224,9 +4464,18 @@ Scene: {self.perception.last_scene_type.value if hasattr(self.perception, 'last_
         print(f"[AUX-EXPLORE] Loop ended after {cycle_count} cycles")
 
     async def _perception_loop(self, duration_seconds: int, start_time: float):
-        """
-        Continuously perceive the game state and queue perceptions for reasoning.
-        Uses adaptive throttling to prevent queue overflow.
+        """Continuously perceives the game world and populates the reasoning queue.
+
+        This asynchronous loop is responsible for capturing the game state at regular
+        intervals. It performs the full perception pipeline, including screen
+        capture, visual analysis (CLIP, Qwen, Gemini), and game state extraction.
+        To prevent the reasoning loop from being overwhelmed, it uses an adaptive
+        throttling mechanism that slows down the perception rate if the queue of
+        pending perceptions becomes too full.
+
+        Args:
+            duration_seconds: The total duration for the gameplay session.
+            start_time: The timestamp when the session began.
         """
         print("[PERCEPTION] Loop started")
         print(f"[PERCEPTION] Qwen3-VL status: {'ENABLED' if self.perception_llm else 'DISABLED (None)'}")
@@ -4388,9 +4637,24 @@ Based on this visual and contextual data, provide:
         print(f"[PERCEPTION] Loop ended (skipped {skip_count} cycles)")
 
     async def _reasoning_loop(self, duration_seconds: int, start_time: float):
-        """
-        Continuously process perceptions, compute consciousness, plan actions.
-        Uses semaphore to limit concurrent LLM calls and prevent system overload.
+        """Runs the main asynchronous cognitive processing loop.
+
+        This is the "thinking" part of the AGI's asynchronous architecture. It
+        continuously dequeues perception data, processes it through a complex
+        series of cognitive subsystems, and ultimately plans an action. Key
+        responsibilities include:
+        - Running the HaackLang cognitive calculus and Infinity Engine rhythms.
+        - Updating the central `BeingState`.
+        - Computing consciousness and Lumen balance.
+        - Invoking advanced reasoning systems like Wolfram Alpha and GPT-5.
+        - Performing dialectical reasoning with the full Singularis orchestrator.
+        - Planning the next action by synthesizing inputs from RL, heuristics,
+          and multiple LLM architectures.
+        - Routing the final action to the `ActionArbiter` for execution.
+
+        Args:
+            duration_seconds: The total duration for the gameplay session.
+            start_time: The timestamp when the session began.
         """
         print("[REASONING] Loop started")
         
@@ -6332,8 +6596,17 @@ Applicable Rules: {len(logic_analysis_brief['applicable_rules'])}"""
         print("[REASONING] Loop ended")
 
     async def _action_loop(self, duration_seconds: int, start_time: float):
-        """
-        Continuously execute queued actions.
+        """Runs the asynchronous loop for executing planned actions.
+
+        This loop continuously dequeues actions from the `action_queue` (which is
+        populated by the `_reasoning_loop`). Before execution, it performs a
+        critical context validation to ensure the action is still appropriate.
+        It then executes the action, records the outcome, and queues the results
+        for the `_learning_loop` to process.
+
+        Args:
+            duration_seconds: The total duration for the gameplay session.
+            start_time: The timestamp when the session began.
         """
         print("[ACTION] Loop started")
         
@@ -6428,8 +6701,18 @@ Applicable Rules: {len(logic_analysis_brief['applicable_rules'])}"""
         print("[ACTION] Loop ended")
 
     async def _learning_loop(self, duration_seconds: int, start_time: float):
-        """
-        Continuously process completed actions and learn from outcomes.
+        """Runs the asynchronous loop for processing and learning from action outcomes.
+
+        This loop dequeues completed action data from the `learning_queue`,
+        perceives the resulting game state, and then feeds this "before and
+        after" experience into various learning subsystems. This includes updating
+        the world model, computing rewards for the curriculum-based RL system,
+        storing experiences for the main RL learner, and updating action
+        diversity statistics.
+
+        Args:
+            duration_seconds: The total duration for the gameplay session.
+            start_time: The timestamp when the session began.
         """
         print("[LEARNING] Loop started")
         
@@ -6568,17 +6851,17 @@ Applicable Rules: {len(logic_analysis_brief['applicable_rules'])}"""
         print("[LEARNING] Loop ended")
 
     async def _fast_reactive_loop(self, duration_seconds: int, start_time: float):
-        """
-        Fast reactive loop that executes every second with basic heuristics.
-        
-        This loop provides immediate responses to critical situations without
-        waiting for the slower deliberative reasoning loop. It handles:
-        - Emergency health situations (healing)
-        - Immediate combat threats (blocking, dodging)
-        - Quick environmental responses (falling, fire, traps)
-        
-        The fast loop uses simple heuristics and doesn't involve LLM calls,
-        making it extremely responsive for survival-critical actions.
+        """Runs a fast, heuristic-based loop for immediate, reactive behaviors.
+
+        This loop operates on a shorter interval than the main reasoning loop and
+        does not use LLMs. It provides rapid responses to critical, time-sensitive
+        situations, such as low health or sudden combat, ensuring the AGI can
+        perform essential survival actions without waiting for slower, deliberative
+        thought processes.
+
+        Args:
+            duration_seconds: The total duration for the gameplay session.
+            start_time: The timestamp when the session began.
         """
         print("[FAST-LOOP] Fast reactive loop started")
         print(f"[FAST-LOOP] Interval: {self.config.fast_loop_interval}s")
@@ -6745,9 +7028,15 @@ Applicable Rules: {len(logic_analysis_brief['applicable_rules'])}"""
         print(f"[FAST-LOOP] Loop ended ({cycle_count} cycles, {self.stats['fast_action_count']} actions)")
 
     async def _autonomous_play_sequential(self, duration_seconds: int, start_time: float):
-        """
-        Sequential gameplay mode (original behavior).
-        Kept for backwards compatibility and debugging.
+        """Runs the main gameplay loop in a traditional, sequential manner.
+
+        This method executes the classic "perceive, think, act, learn" cycle in a
+        blocking sequence. It is kept primarily for backward compatibility,
+        debugging, and as a fallback in case the asynchronous mode is disabled.
+
+        Args:
+            duration_seconds: The total duration for the gameplay session.
+            start_time: The timestamp when the session began.
         """
         cycle_count = 0
 
@@ -7266,11 +7555,23 @@ Action: {snapshot['action']}""",
         perception: Dict[str, Any],
         game_state
     ) -> Tuple[bool, str, str]:
-        """
-        Multi-tier failsafe stuck detection (works without cloud LLMs).
-        
+        """Performs a multi-tier, failsafe stuck detection analysis.
+
+        This method uses a variety of heuristics that do not rely on cloud-based
+        LLMs to determine if the AGI is stuck. It checks for action repetition,
+        visual similarity in recent frames, coherence stagnation, and specific
+        patterns indicative of being stuck in menus or combat. This serves as a
+        robust, low-latency backup to LLM-based stuck detection.
+
+        Args:
+            perception: The current perception data dictionary.
+            game_state: The current game state object.
+
         Returns:
-            (is_stuck, reason, recovery_action)
+            A tuple containing:
+            - A boolean indicating if a stuck state is detected.
+            - A string describing the reasons for the detection.
+            - A string with a suggested recovery action.
         """
         current_time = time.time()
         
@@ -7364,11 +7665,21 @@ Action: {snapshot['action']}""",
         perception: Dict[str, Any],
         recent_actions: List[str]
     ) -> Tuple[bool, str]:
-        """
-        Use Gemini vision to detect if player is stuck (Tier 1).
-        
+        """Uses Gemini's vision capabilities for Tier 1 stuck detection.
+
+        This method sends the current screenshot and a history of recent actions
+        to the Gemini vision model, asking it to analyze the situation for signs
+        of being stuck. If Gemini confirms a stuck state, it also suggests a
+        recovery action.
+
+        Args:
+            perception: The current perception data, including the screenshot.
+            recent_actions: A list of the most recent actions taken by the AGI.
+
         Returns:
-            (is_stuck, recovery_action)
+            A tuple containing:
+            - A boolean indicating if a stuck state was detected.
+            - A string with the suggested recovery action, or an empty string.
         """
         if not self.hybrid_llm or not perception.get('screenshot'):
             return (False, "")
@@ -7430,14 +7741,26 @@ RECOVERY: <suggested action to unstuck>"""
         motivation,
         use_full_moe: bool = False
     ) -> Optional[Tuple[str, str]]:
-        """
-        Get action recommendation from parallel cloud LLM system.
-        
+        """Gets an action recommendation from the parallel cloud LLM system.
+
+        This function orchestrates a query to the configured cloud LLM architecture
+        (either Hybrid, MoE, or both in parallel). It constructs vision and
+        reasoning prompts, leverages smart context and curriculum knowledge, and
+        can even run a deep causal analysis with a GPT-5-level model. It includes
+        a fallback to a local LLM if the cloud APIs fail.
+
         Args:
-            use_full_moe: If True, use full MoE+Hybrid. If False, use Hybrid only (faster)
-        
+            perception: The current perception data dictionary.
+            state_dict: A dictionary representing the current game state.
+            q_values: A dictionary of Q-values for available actions from the RL system.
+            available_actions: A list of currently valid action strings.
+            motivation: The current motivation state object.
+            use_full_moe: If True, uses the full MoE+Hybrid parallel mode. If False,
+                defaults to the faster Hybrid-only mode.
+
         Returns:
-            (action, reasoning) or None if cloud LLMs unavailable
+            A tuple containing the recommended action string and the full reasoning
+            text, or None if no recommendation could be obtained.
         """
         if not self.config.use_parallel_mode and not self.moe and not self.hybrid_llm:
             return None
@@ -7659,9 +7982,21 @@ REASONING: <explanation>"""
         scene_type: Any,
         motivation: Any
     ) -> None:
-        """
-        Claude Haiku runs fast reasoning in background.
-        Stores insights to memory independently without blocking action planning.
+        """Performs fast, non-blocking strategic analysis using Claude Haiku.
+
+        This method is designed to run in the background, providing tactical
+        insights without delaying the main action-planning loop. It queries the
+        fast and efficient Claude Haiku model for a quick analysis of the current
+        situation. The resulting insights are not used for immediate action but
+        are instead stored in the cognitive memory (RAG) for future reference
+        and learning.
+
+        Args:
+            perception: The current perception data dictionary.
+            state_dict: A dictionary representing the current game state.
+            game_state: The current game state object.
+            scene_type: The current scene type enum.
+            motivation: The current motivation state object.
         """
         try:
             print("[CLAUDE-HAIKU] Running fast strategic analysis...")
@@ -7728,19 +8063,24 @@ Be concise and actionable."""
         perspectives: Dict[str, str],
         context: Optional[Dict[str, Any]] = None
     ) -> Dict[str, str]:
-        """
-        Perform dialectical synthesis using Huihui MoE.
-        
-        Uses thesis-antithesis-synthesis to resolve contradictions and
-        find higher-order understanding.
-        
+        """Performs a dialectical synthesis of multiple perspectives using Huihui MoE.
+
+        This method implements a Hegelian dialectic (thesis, antithesis, synthesis)
+        to resolve contradictions and achieve a higher-order understanding of a
+        situation. It takes a description of the current situation and a dictionary
+        of conflicting or varied perspectives from different subsystems, then uses
+        a specialized LLM (Huihui) to generate a unified synthesis.
+
         Args:
-            situation: Current situation description
-            perspectives: Dict of perspective_name -> perspective_content
-            context: Optional additional context
-            
+            situation: A string describing the current game situation.
+            perspectives: A dictionary where keys are the names of the perspectives
+                (e.g., "RL System", "Strategic Planner") and values are their
+                textual analyses or recommendations.
+            context: Optional additional context for the reasoning process.
+
         Returns:
-            Dict with 'synthesis', 'reasoning', 'coherence_gain'
+            A dictionary containing the 'synthesis' text, the full 'reasoning'
+            process, and the estimated 'coherence_gain' from the synthesis.
         """
         if not self.huihui_llm:
             return {
@@ -7843,19 +8183,33 @@ COHERENCE GAIN: <estimate 0.0-1.0 how much this increases understanding>
         motivation,
         goal: Optional[str] = None
     ) -> Optional[str]:
+        """Plans the next action by synthesizing inputs from multiple cognitive systems.
+
+        This is a critical, complex method at the heart of the AGI's decision-
+        making process. It follows a hierarchical, multi-stage approach:
+        1.  **Overrides & Failsafes:** It first checks for high-priority overrides
+            from sensorimotor feedback, expert rules, and emergency systems.
+        2.  **Motor Control Layer:** It consults a structured motor control layer
+            for reflexive, navigational, or combat-specific actions.
+        3.  **RL & Heuristics:** It intelligently blends recommendations from the
+            Reinforcement Learning system (Q-values) with heuristic strategies to
+            ensure both learned optimization and behavioral diversity.
+        4.  **Parallel LLM Race:** It initiates a "race" between multiple LLM
+            architectures (e.g., a fast local model like Phi-4, a local MoE, and
+            a cloud-based MoE) to get a high-quality action plan as quickly as
+            possible.
+        5.  **Fallback:** If all LLM systems fail or time out, it falls back to
+            robust, motivation-driven heuristics.
+
+        Args:
+            perception: The current perception data from the perception system.
+            motivation: The current motivation state object.
+            goal: The current high-level goal string. Defaults to None.
+
+        Returns:
+            The string name of the action to be executed, or None if planning fails.
+        """
         try:
-            """
-            Plan next action based on perception, motivation, and goal.
-            Now includes RL-based learning and layer-aware strategic reasoning.
-
-            Args:
-                perception: Current perception data
-                motivation: Motivation state
-                goal: Current goal
-
-            Returns:
-                Action to take
-            """
             checkpoint_start = time.time()
             print(f"[PLANNING-CHECKPOINT] Starting _plan_action at {checkpoint_start:.3f}")
             
@@ -9029,14 +9383,28 @@ Format: ACTION: <action_name>"""
         motivation,
         huihui_context: Optional[Dict[str, str]] = None
     ) -> Optional[str]:
-        """
-        Use Phi-4 for fast action selection, optionally informed by Huihui's strategic reasoning.
-        
+        """Uses a fast, local LLM (like Phi-4) for final action selection.
+
+        This method is a key part of the parallel LLM race in `_plan_action`.
+        It constructs a compact, context-rich prompt and queries a fast, decisive
+        LLM (configured as `action_planning_llm`). The prompt includes essential
+        state information, available actions, and optionally, recommendations from
+        other reasoning systems (like heuristics or the slower Huihui model).
+
         Args:
-            huihui_context: Optional dict with 'recommendation' and 'reasoning' from Huihui
-        
+            perception: The current perception data dictionary.
+            game_state: The current game state object.
+            scene_type: The current scene type enum.
+            current_layer: The active action layer (e.g., 'Combat').
+            available_actions: A list of valid action strings.
+            strategic_analysis: A dictionary of strategic insights.
+            motivation: The current motivation state object.
+            huihui_context: An optional dictionary containing recommendations from a
+                slower, deeper reasoning model running in the background.
+
         Returns:
-            Action string if LLM planning succeeds, None otherwise
+            A string representing the chosen action if the LLM call is successful
+            and a valid action can be parsed, otherwise None.
         """
         # Use dedicated action planning LLM if available, otherwise fallback to main
         llm_interface = self.action_planning_llm if self.action_planning_llm else (
@@ -9170,7 +9538,22 @@ QUICK DECISION - Choose ONE action from available list:"""
         # No match found
 
     def _sensorimotor_override(self, available_actions: List[str], game_state) -> Optional[str]:
-        """Optionally override planning when sensorimotor loop reports a stuck state."""
+        """Checks for and acts on a sensorimotor override condition.
+
+        This function consults the `sensorimotor_state` to see if a high-priority
+        override has been flagged (e.g., due to being visually stuck or in a
+        dialogue loop). If an override is active, it selects an appropriate
+        recovery action from a prioritized list and returns it, effectively
+        bypassing the normal planning process.
+
+        Args:
+            available_actions: A list of currently valid action strings.
+            game_state: The current game state object.
+
+        Returns:
+            The string name of a recovery action if an override is triggered,
+            otherwise None.
+        """
         feedback = self.sensorimotor_state
         if not feedback:
             return None
@@ -9244,7 +9627,21 @@ QUICK DECISION - Choose ONE action from available list:"""
         has_thinking: bool,
         visual_context: str
     ) -> None:
-        """Persist sensorimotor feedback for action planning overrides."""
+        """Updates and persists the sensorimotor feedback state.
+
+        This method is called after a sensorimotor reasoning cycle. It updates
+        the internal `sensorimotor_state` with the latest analysis, visual
+        similarity, and stuck detection heuristics. It determines whether the
+        conditions are met to flag an override for the next planning cycle.
+
+        Args:
+            cycle: The current main loop cycle number.
+            similarity: The visual similarity score compared to the previous frame.
+            analysis: The textual analysis from the sensorimotor reasoning LLM.
+            has_thinking: A boolean indicating if extended "thinking" was part
+                of the analysis.
+            visual_context: The combined visual analysis from various vision models.
+        """
         if self.sensorimotor_last_cycle != -1 and cycle - self.sensorimotor_last_cycle > 6:
             self.sensorimotor_similarity_streak = 0
 
@@ -9295,16 +9692,22 @@ QUICK DECISION - Choose ONE action from available list:"""
         after_state: Dict[str, Any],
         action: str
     ) -> bool:
-        """
-        Evaluate if an action was successful.
-        
+        """Evaluates whether an action was successful based on state changes.
+
+        This method uses simple heuristics to determine the success of an action.
+        Success is generally defined by the absence of negative outcomes (like a
+        significant health decrease) or the presence of positive ones (like a
+        change in scene, indicating progress).
+
         Args:
-            before_state: State before action
-            after_state: State after action
-            action: Action taken
-            
+            before_state: A dictionary representing the game state before the
+                action was taken.
+            after_state: A dictionary representing the game state after the
+                action was taken.
+            action: The string name of the action that was performed.
+
         Returns:
-            True if action was successful
+            True if the action is considered successful, False otherwise.
         """
         # Simple heuristics for success
         # Success if health didn't decrease significantly
@@ -9325,7 +9728,13 @@ QUICK DECISION - Choose ONE action from available list:"""
         return True
 
     async def _test_controller_connection(self):
-        """Test controller connection and basic functionality."""
+        """Tests the virtual controller connection and basic functionality.
+
+        Before starting the main gameplay loop, this method verifies that the
+        virtual controller is initialized correctly. If not in dry-run mode, it
+        also performs a small, quick action (like a slight camera movement) to
+        ensure that the action execution pipeline is working.
+        """
         try:
             print("[CONTROLLER] Testing controller connection...")
             
@@ -9352,12 +9761,19 @@ QUICK DECISION - Choose ONE action from available list:"""
 
 
     async def _execute_action(self, action: str, scene_type: SceneType):
-        """
-        Execute planned action.
+        """Executes a planned action in the game.
+
+        This method is responsible for translating a high-level action string
+        (e.g., 'explore', 'attack') into concrete game inputs via the `SkyrimActions`
+        and `SkyrimControllerBindings` systems. It includes logic for handling
+        different action layers (e.g., switching to the 'Combat' layer for an
+        attack) and context-aware behaviors, such as automatically exiting a menu
+        if a non-menu action is attempted.
 
         Args:
-            action: Action to execute
-            scene_type: Current scene type
+            action: The string name of the action to be executed.
+            scene_type: The current `SceneType` enum, used for context-aware
+                action handling.
         """
         # Validate action
         if not action or not isinstance(action, str):
@@ -9560,14 +9976,21 @@ QUICK DECISION - Choose ONE action from available list:"""
             await self.actions.explore_with_waypoints(duration=2.0)
 
     def _detect_stuck(self) -> Dict[str, Any]:
-        """
-        PRAGMATIC FIX: Multi-tier stuck detection with severity levels.
-        
-        Philosophy: Don't wait for LLM to realize we're stuck.
-        Detect it deterministically and return actionable status.
-        
+        """Performs multi-tier, deterministic stuck detection.
+
+        This method uses a set of pragmatic, rule-based heuristics to quickly
+        determine if the AGI is in a stuck state, without relying on slower LLM
+        analysis. It checks for several indicators, such as action repetition,
+        lack of visual change, and coherence stagnation, and assigns a severity
+        level (low, medium, high) to the detected state.
+
         Returns:
-            Dict with 'is_stuck', 'severity' (low/medium/high), 'reason', 'recovery_action'
+            A dictionary containing:
+            - 'is_stuck' (bool): Whether a stuck state is detected.
+            - 'severity' (str): 'none', 'low', 'medium', or 'high'.
+            - 'reason' (str): A description of why the agent is considered stuck.
+            - 'recovery_action' (str|None): A suggested action to resolve the
+              stuck state.
         """
         stuck_info = {
             'is_stuck': False,
@@ -9645,7 +10068,20 @@ QUICK DECISION - Choose ONE action from available list:"""
         return stuck_info
     
     def _update_stuck_tracking(self, action: str, coherence: float, visual_embedding=None):
-        """Update stuck detection tracking."""
+        """Updates internal states used for stuck detection and tracking.
+
+        This method is called after each action to maintain a history of recent
+        actions, visual embeddings, and coherence values. This data is crucial
+        for the deterministic stuck detection heuristics in `_detect_stuck` and
+        `_detect_stuck_failsafe`. It also records outcomes for reward-guided
+        tuning systems.
+
+        Args:
+            action: The string name of the action that was just executed.
+            coherence: The coherence value measured after the action.
+            visual_embedding: The visual embedding of the scene after the action.
+                Defaults to None.
+        """
         # STUCK TRACKER: Tick cycle and verify pending recoveries
         if visual_embedding is not None:
             self.stuck_tracker.tick_cycle(visual_embedding)
@@ -9709,9 +10145,13 @@ QUICK DECISION - Choose ONE action from available list:"""
         self.last_executed_action = action
     
     def _display_performance_dashboard(self):
-        """
-        Fix 20: Real-time performance monitoring dashboard.
-        Displays LLM vs heuristic usage, rate limit status, timeout frequency.
+        """Displays a real-time performance and status dashboard in the console.
+
+        This method aggregates and prints a comprehensive overview of the AGI's
+        current state, including the breakdown of action sources (LLM vs.
+        heuristic), LLM rate limit status, timing statistics, and the status of
+        numerous advanced subsystems like the State Coordinator, OMEGA Hyperhelix,
+        and Curriculum RL.
         """
         total_actions = self.stats['actions_taken']
         if total_actions == 0:
@@ -9902,13 +10342,17 @@ QUICK DECISION - Choose ONE action from available list:"""
         print(f"{'='*70}\n")
 
     def _update_action_diversity_stats(self, action: str, coherence: float):
-        """
-        Track action diversity and reward patterns for continuous learning adaptation.
-        Implements GPT-4o's recommendation for Hebbian-style learning from outcomes.
-        
+        """Tracks statistics related to action diversity and their outcomes.
+
+        This method implements a recommendation from GPT-4o for continuous,
+        Hebbian-style learning. It logs the frequency of each action and the
+        average coherence (as a proxy for reward) that results from it.
+        Periodically, it triggers `_analyze_action_patterns` to adapt the AGI's
+        behavior based on this data.
+
         Args:
-            action: The action taken
-            coherence: The resulting coherence value (reward proxy)
+            action: The string name of the action that was taken.
+            coherence: The resulting coherence value after the action.
         """
         # Track action frequency
         if action not in self.action_type_counts:
@@ -9928,9 +10372,12 @@ QUICK DECISION - Choose ONE action from available list:"""
             self._analyze_action_patterns()
     
     def _analyze_action_patterns(self):
-        """
-        Analyze action diversity patterns and provide insights.
-        Implements continuous learning adaptation based on outcome analysis.
+        """Analyzes action diversity and reward patterns to provide learning insights.
+
+        This is part of a continuous learning adaptation mechanism. It calculates
+        metrics like action diversity score and identifies the best- and worst-
+        performing actions based on their average resulting coherence. These
+        insights can be used by other systems to adjust action selection strategy.
         """
         if not self.reward_by_action_type:
             return
@@ -9955,9 +10402,16 @@ QUICK DECISION - Choose ONE action from available list:"""
             print(f"[DIVERSITY] Learning from {len(self.reward_by_action_type)} action types")
 
     def _update_dashboard_state(self, action: Optional[str] = None, action_source: Optional[str] = None):
-        """
-        Update dashboard streamer with current AGI state.
-        Called during the main loop to provide real-time updates to webapp.
+        """Updates the real-time dashboard streamer with the AGI's current state.
+
+        This method is called during the main gameplay loop to push a
+        comprehensive snapshot of the AGI's status to the `DashboardStreamer`.
+        This allows for external, real-time monitoring of the AGI's performance
+        and internal state via a web application.
+
+        Args:
+            action: The action currently being planned or executed.
+            action_source: The name of the subsystem that generated the action.
         """
         if not hasattr(self, 'dashboard_streamer') or not self.dashboard_streamer:
             return
@@ -10034,7 +10488,17 @@ QUICK DECISION - Choose ONE action from available list:"""
             print(f"[DASHBOARD] Warning: Update failed: {e}")
     
     def _extract_game_state(self) -> Dict[str, Any]:
-        """Extract game state from perception, handling both dict and GameState object."""
+        """Extracts and standardizes the game state from perception data.
+
+        This is a utility function to reliably get a dictionary representation
+        of the game state, whether the source `game_state` is a dictionary or a
+        `GameState` dataclass object. It provides a consistent data structure for
+        other parts of the system.
+
+        Returns:
+            A dictionary containing key game state information like health,
+            magicka, stamina, combat status, and location.
+        """
         if not self.current_perception:
             return {
                 'health': 100,
@@ -10080,7 +10544,15 @@ QUICK DECISION - Choose ONE action from available list:"""
         }
     
     def _get_active_models(self) -> list:
-        """Get list of currently active LLM models."""
+        """Returns a list of the names of all currently active LLM models.
+
+        This utility function inspects the AGI's configuration and initialized
+        clients to compile a list of all LLM models that are part of the active
+        cognitive architecture (Hybrid, MoE, local, etc.).
+
+        Returns:
+            A list of strings, where each string is the name of an active model.
+        """
         models = []
         
         if hasattr(self, 'hybrid_llm') and self.hybrid_llm:
@@ -10095,7 +10567,12 @@ QUICK DECISION - Choose ONE action from available list:"""
         return models
 
     async def _cleanup_connections(self):
-        """Cleanup all async connections and resources."""
+        """Gracefully closes all asynchronous connections and resources.
+
+        This method is called at the end of a gameplay session to ensure that
+        all open network connections (e.g., to LLM APIs) and other resources are
+        properly terminated, preventing resource leaks.
+        """
         print("\n[CLEANUP] Closing all connections...")
         closed_count = 0
         

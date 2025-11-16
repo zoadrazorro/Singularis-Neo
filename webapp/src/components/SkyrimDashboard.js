@@ -1,3 +1,9 @@
+/**
+ * @fileoverview This file contains the main component for the real-time AGI dashboard
+ * for the Skyrim application. It provides a multi-tab interface for monitoring
+ * various subsystems of the AGI.
+ */
+
 import React, { useState } from 'react';
 import './SkyrimDashboard.css';
 import ConsciousnessPanel from './panels/ConsciousnessPanel';
@@ -10,8 +16,12 @@ import StatsPanel from './panels/StatsPanel';
 import TimelinePanel from './panels/TimelinePanel';
 
 /**
- * Main Skyrim AGI Real-Time Dashboard
- * Multi-window, tabbed interface for comprehensive system monitoring
+ * The main component for the Skyrim AGI real-time dashboard.
+ * It features a tabbed interface to switch between different monitoring panels.
+ * @param {object} props - The component's props.
+ * @param {object} props.data - The live data object for the AGI state.
+ * @param {boolean} props.connected - The WebSocket connection status.
+ * @returns {React.Component} The rendered dashboard component.
  */
 function SkyrimDashboard({ data, connected }) {
   const [activeTab, setActiveTab] = useState('overview');
@@ -123,7 +133,10 @@ function SkyrimDashboard({ data, connected }) {
 }
 
 /**
- * Overview Layout - Multi-panel grid view
+ * A component that renders a multi-panel grid view for the 'Overview' tab.
+ * @param {object} props - The component's props.
+ * @param {object} props.data - The live AGI state data.
+ * @returns {React.Component} The rendered overview layout.
  */
 function OverviewLayout({ data }) {
   return (
@@ -151,7 +164,12 @@ function OverviewLayout({ data }) {
   );
 }
 
-/* Mini Cards for Overview */
+/**
+ * A mini-card for the overview screen, displaying the AGI's current in-game status.
+ * @param {object} props - The component's props.
+ * @param {object} props.data - The live AGI state data.
+ * @returns {React.Component} The rendered status card.
+ */
 function StatusCard({ data }) {
   const health = data.game_state?.health || 0;
   const scene = data.perception?.scene_type || 'unknown';
@@ -183,6 +201,12 @@ function StatusCard({ data }) {
   );
 }
 
+/**
+ * A mini-card for the overview screen, displaying the AGI's current and last actions.
+ * @param {object} props - The component's props.
+ * @param {object} props.data - The live AGI state data.
+ * @returns {React.Component} The rendered action card.
+ */
 function ActionCard({ data }) {
   const currentAction = data.current_action || 'idle';
   const lastAction = data.last_action || 'none';
@@ -206,6 +230,12 @@ function ActionCard({ data }) {
   );
 }
 
+/**
+ * A mini-card for the overview screen, displaying key consciousness metrics.
+ * @param {object} props - The component's props.
+ * @param {object} props.data - The live AGI state data.
+ * @returns {React.Component} The rendered coherence card.
+ */
 function CoherenceCard({ data }) {
   const coherence = data.consciousness?.coherence || 0;
   const phi = data.consciousness?.phi || 0;
@@ -236,6 +266,12 @@ function CoherenceCard({ data }) {
   );
 }
 
+/**
+ * A mini-card for the overview screen, displaying the status of LLM systems.
+ * @param {object} props - The component's props.
+ * @param {object} props.data - The live AGI state data.
+ * @returns {React.Component} The rendered LLM status card.
+ */
 function LLMStatusCard({ data }) {
   const llm = data.llm_status || {};
   const cloudActive = llm.cloud_active || 0;
@@ -263,6 +299,12 @@ function LLMStatusCard({ data }) {
   );
 }
 
+/**
+ * A mini-card for the overview screen, displaying performance metrics.
+ * @param {object} props - The component's props.
+ * @param {object} props.data - The live AGI state data.
+ * @returns {React.Component} The rendered performance card.
+ */
 function PerformanceCard({ data }) {
   const fps = data.performance?.fps || 0;
   const planTime = data.performance?.planning_time || 0;
@@ -289,6 +331,12 @@ function PerformanceCard({ data }) {
   );
 }
 
+/**
+ * A mini-card for the overview screen, displaying action diversity metrics.
+ * @param {object} props - The component's props.
+ * @param {object} props.data - The live AGI state data.
+ * @returns {React.Component} The rendered diversity card.
+ */
 function DiversityCard({ data }) {
   const diversity = data.diversity || {};
   const score = diversity.score || 0;
@@ -312,6 +360,12 @@ function DiversityCard({ data }) {
   );
 }
 
+/**
+ * A mini-card for the overview screen, displaying a list of recent actions.
+ * @param {object} props - The component's props.
+ * @param {object} props.data - The live AGI state data.
+ * @returns {React.Component} The rendered recent actions card.
+ */
 function RecentActionsCard({ data }) {
   const actions = data.recent_actions || [];
   
@@ -333,6 +387,12 @@ function RecentActionsCard({ data }) {
   );
 }
 
+/**
+ * A mini-card for the overview screen, displaying key session metrics.
+ * @param {object} props - The component's props.
+ * @param {object} props.data - The live AGI state data.
+ * @returns {React.Component} The rendered metrics card.
+ */
 function MetricsCard({ data }) {
   const stats = data.stats || {};
   
@@ -361,21 +421,42 @@ function MetricsCard({ data }) {
   );
 }
 
-/* Helper Functions */
+// Helper Functions
+
+/**
+ * Formats a duration in seconds into a "Xm Ys" string.
+ * @param {number} seconds - The duration in seconds.
+ * @returns {string} The formatted duration string.
+ */
 function formatDuration(seconds) {
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
   return `${mins}m ${secs}s`;
 }
 
+/**
+ * Formats a scene name string for display (e.g., "word_word" -> "Word Word").
+ * @param {string} scene - The scene name.
+ * @returns {string} The formatted scene name.
+ */
 function formatSceneName(scene) {
   return scene.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 }
 
+/**
+ * Formats an action name string for display.
+ * @param {string} action - The action name.
+ * @returns {string} The formatted action name.
+ */
 function formatActionName(action) {
   return action.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 }
 
+/**
+ * Returns an icon corresponding to a trend string.
+ * @param {string} trend - The trend string ('increasing', 'decreasing', 'stable').
+ * @returns {string} An emoji icon.
+ */
 function getTrendIcon(trend) {
   switch (trend) {
     case 'increasing': return '📈';
@@ -385,6 +466,11 @@ function getTrendIcon(trend) {
   }
 }
 
+/**
+ * Formats a timestamp into a locale-specific time string.
+ * @param {string} timestamp - The ISO timestamp string.
+ * @returns {string} The formatted time string.
+ */
 function formatTime(timestamp) {
   if (!timestamp) return 'N/A';
   const date = new Date(timestamp);

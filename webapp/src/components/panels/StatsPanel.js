@@ -1,6 +1,19 @@
+/**
+ * @fileoverview This file contains the React component for the Stats Panel,
+ * which displays high-level statistics for the current AGI session.
+ */
+
 import React from 'react';
 import './StatsPanel.css';
 
+/**
+ * A panel component that displays key statistics for the AGI's current session.
+ * This includes cycle count, uptime, success rate, and a breakdown of total
+ * actions by their source (LLM, RL, Heuristic).
+ * @param {object} props - The component's props.
+ * @param {object} props.data - The live AGI state data object.
+ * @returns {React.Component} The rendered Stats Panel.
+ */
 function StatsPanel({ data }) {
   const stats = data.stats || {};
   const cycle = data.cycle || 0;
@@ -56,6 +69,11 @@ function StatsPanel({ data }) {
   );
 }
 
+/**
+ * Formats a duration in seconds into a human-readable string (e.g., "1h 23m 45s").
+ * @param {number} seconds - The total duration in seconds.
+ * @returns {string} The formatted uptime string.
+ */
 function formatUptime(seconds) {
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);

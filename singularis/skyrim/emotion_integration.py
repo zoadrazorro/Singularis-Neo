@@ -30,10 +30,11 @@ from ..emotion import (
 
 @dataclass
 class SkyrimEmotionContext:
-    """
-    Emotion context specific to Skyrim gameplay.
-    
-    Maps game state to emotional triggers.
+    """A dataclass holding Skyrim-specific gameplay context for emotional evaluation.
+
+    This structure maps high-level game state information into a format that
+    can be used as triggers for the emotion engine. It includes data about
+    combat, resource levels, recent successes or failures, and social interactions.
     """
     # Combat state
     in_combat: bool = False
@@ -76,19 +77,21 @@ class SkyrimEmotionContext:
 
 
 class SkyrimEmotionIntegration:
-    """
-    Integrates HuiHui emotion system with Skyrim AGI.
-    
-    Provides emotion-aware decision making and emotional state tracking
-    during gameplay.
+    """Integrates the HuiHui emotion engine with the Skyrim AGI.
+
+    This class acts as a bridge between the raw game state and the abstract
+    emotion system. It processes gameplay events, generates emotional stimuli,
+    updates the agent's emotional state, and provides emotion-influenced
+    modifiers that can be used in the AGI's decision-making processes.
     """
     
     def __init__(self, emotion_config: Optional[EmotionConfig] = None):
-        """
-        Initialize Skyrim emotion integration.
-        
+        """Initializes the Skyrim emotion integration layer.
+
         Args:
-            emotion_config: Configuration for emotion engine
+            emotion_config: An optional configuration object for the underlying
+                            HuiHuiEmotionEngine. If not provided, a default
+                            configuration is used.
         """
         # Create emotion engine
         self.emotion_engine = HuiHuiEmotionEngine(
@@ -113,7 +116,7 @@ class SkyrimEmotionIntegration:
         logger.info("[EMOTION] Skyrim emotion integration initialized")
     
     async def initialize_llm(self):
-        """Initialize LLM for emotion engine."""
+        """Initializes the LLM component of the underlying emotion engine."""
         await self.emotion_engine.initialize_llm()
     
     async def process_game_state(
@@ -121,15 +124,19 @@ class SkyrimEmotionIntegration:
         game_state: Dict[str, Any],
         context: SkyrimEmotionContext
     ) -> EmotionState:
-        """
-        Process current game state and compute emotional response.
-        
+        """Processes the current game state to update the agent's emotions.
+
+        This is the main entry point for the emotion system. It takes the current
+        game state, builds a natural language stimulus, processes it through the
+        emotion engine, and updates internal states and decision weights.
+
         Args:
-            game_state: Current game state from perception
-            context: Skyrim-specific emotion context
-        
+            game_state: A dictionary representing the raw current game state.
+            context: A structured SkyrimEmotionContext object derived from the
+                     game state.
+
         Returns:
-            EmotionState with computed emotions
+            The newly computed EmotionState for the current cycle.
         """
         # Build emotion stimulus from game context
         stimulus = self._build_stimulus(game_state, context)
@@ -162,7 +169,17 @@ class SkyrimEmotionIntegration:
         game_state: Dict[str, Any],
         context: SkyrimEmotionContext
     ) -> str:
-        """Build natural language stimulus for emotion processing."""
+        """Constructs a natural language stimulus string from the game context.
+
+        This string is fed into the emotion engine to trigger an emotional response.
+
+        Args:
+            game_state: The raw game state dictionary.
+            context: The structured SkyrimEmotionContext.
+
+        Returns:
+            A natural language string describing the current situation.
+        """
         parts = []
         
         # Combat situation
@@ -214,7 +231,15 @@ class SkyrimEmotionIntegration:
         emotion_state: EmotionState,
         context: SkyrimEmotionContext
     ):
-        """Update emotion statistics."""
+        """Updates internal statistics about emotions experienced.
+
+        Separates emotions experienced during combat from those experienced
+        during exploration.
+
+        Args:
+            emotion_state: The current EmotionState.
+            context: The current SkyrimEmotionContext.
+        """
         if context.in_combat:
             if emotion_state.primary_emotion not in self.combat_emotions:
                 self.combat_emotions[emotion_state.primary_emotion] = 0
@@ -225,15 +250,14 @@ class SkyrimEmotionIntegration:
             self.exploration_emotions[emotion_state.primary_emotion] += 1
     
     def _update_decision_weights(self, emotion_state: EmotionState):
-        """
-        Update decision weights based on current emotion.
-        
-        Emotions influence tactical decisions:
-        - FEAR → increase caution, decrease aggression
-        - FORTITUDE → increase aggression, decrease caution
-        - CURIOSITY → increase exploration
-        - SADNESS → decrease all drives
-        - JOY → increase all drives
+        """Updates decision-making weights based on the current emotional state.
+
+        This method translates the current primary emotion and its intensity into
+        concrete modifiers for behaviors like aggression, caution, and exploration.
+        For example, high 'FEAR' increases 'caution' and decreases 'aggression'.
+
+        Args:
+            emotion_state: The current EmotionState.
         """
         emotion = emotion_state.primary_emotion
         intensity = emotion_state.intensity
@@ -273,23 +297,22 @@ class SkyrimEmotionIntegration:
             self.emotion_weights['social'] = 0.5 + (intensity * 0.3)
     
     def get_decision_modifier(self, decision_type: str) -> float:
-        """
-        Get emotion-based modifier for a decision type.
-        
+        """Retrieves the current emotion-based modifier for a specific decision type.
+
         Args:
-            decision_type: Type of decision ('aggression', 'caution', 'exploration', 'social')
-        
+            decision_type: The type of decision to get the modifier for.
+                           (e.g., 'aggression', 'caution', 'exploration', 'social').
+
         Returns:
-            Modifier value [0.0, 1.0]
+            A float modifier value, typically between 0.0 and 1.0.
         """
         return self.emotion_weights.get(decision_type, 0.5)
     
     def should_retreat(self) -> bool:
-        """
-        Determine if emotions suggest retreating from combat.
-        
+        """Determines if the current emotional state suggests retreating from combat.
+
         Returns:
-            True if fear/caution is high and aggression is low
+            True if fear and caution are high, or if sadness is intense.
         """
         current_emotion = self.emotion_engine.get_current_state()
         
@@ -305,11 +328,10 @@ class SkyrimEmotionIntegration:
         return False
     
     def should_be_aggressive(self) -> bool:
-        """
-        Determine if emotions suggest aggressive combat.
-        
+        """Determines if the current emotional state suggests aggressive combat tactics.
+
         Returns:
-            True if fortitude/desire is high
+            True if fortitude or desire are high.
         """
         current_emotion = self.emotion_engine.get_current_state()
         
@@ -325,11 +347,10 @@ class SkyrimEmotionIntegration:
         return False
     
     def get_exploration_drive(self) -> float:
-        """
-        Get current exploration drive based on emotions.
-        
+        """Gets the current drive to explore, influenced by emotions like curiosity.
+
         Returns:
-            Exploration drive [0.0, 1.0]
+            A float representing the exploration drive, typically between 0.0 and 1.0.
         """
         current_emotion = self.emotion_engine.get_current_state()
         
@@ -340,7 +361,13 @@ class SkyrimEmotionIntegration:
         return self.emotion_weights['exploration']
     
     def get_session_summary(self) -> Dict[str, Any]:
-        """Get summary of emotions during session."""
+        """Generates a summary of all emotions experienced during the current session.
+
+        Returns:
+            A dictionary containing statistics like the dominant emotion, average
+            valence and intensity, and emotion distributions for combat and
+            exploration.
+        """
         if not self.session_emotions:
             return {
                 'total_emotions': 0,
@@ -381,7 +408,11 @@ class SkyrimEmotionIntegration:
         }
     
     def log_emotion_state(self, cycle: int):
-        """Log current emotion state for debugging."""
+        """Logs the current primary emotion and its properties for debugging.
+
+        Args:
+            cycle: The current AGI cycle number to include in the log message.
+        """
         current = self.emotion_engine.get_current_state()
         logger.info(
             f"[EMOTION] Cycle {cycle}: {current.primary_emotion.value} "
