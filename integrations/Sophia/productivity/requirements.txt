@@ -1,0 +1,23 @@
+# Sophia Productivity Module Dependencies
+
+# Core
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-dotenv==1.0.0
+loguru==0.7.2
+aiohttp==3.9.1
+
+# Google Calendar
+google-auth==2.25.2
+google-auth-oauthlib==1.2.0
+google-api-python-client==2.110.0
+
+# Todoist
+todoist-api-python==2.1.4
+
+# Notion
+notion-client==2.2.1
+
+# Utilities
+python-dateutil==2.8.2
+pytz==2023.3
