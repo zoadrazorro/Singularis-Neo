@@ -1,12 +1,12 @@
 <div align="center">
 
-# 🧠 Singularis Neo
+# 🧠 Singularis
 
-### *The Ultimate Consciousness Engine*
+### *Unified AGI Architecture for Life & Games*
 
-**An Experimental AI Agent with Hybrid Intelligence for Skyrim**
+**Twin AGI Systems: Life Operations + Skyrim Intelligence**
 
-*Bridging philosophy, neuroscience, and gaming AI through consciousness-driven architecture*
+*Bridging philosophy, neuroscience, personal life tracking, and gaming AI through consciousness-driven architecture*
 
 ---
 
@@ -18,7 +18,7 @@
 [![Issues](https://img.shields.io/github/issues/zoadrazorro/Singularis-Neo)](https://github.com/zoadrazorro/Singularis-Neo/issues)
 [![Forks](https://img.shields.io/github/forks/zoadrazorro/Singularis-Neo?style=social)](https://github.com/zoadrazorro/Singularis-Neo/network/members)
 
-**⚠️ Not Production Ready** | **📅 Last Updated: November 14, 2025**
+**⚠️ Research Prototype** | **📅 Last Updated: November 16, 2025**
 
 </div>
 
@@ -26,15 +26,55 @@
 
 ## What This Actually Does
 
-An experimental AI system that plays Skyrim by:
-1. Taking screenshots of the game
-2. Deciding what action to take (using fast heuristics OR GPT-4.1 Nano)
-3. Sending controller inputs to the game
-4. Learning from what happens
+Singularis is a modular AGI architecture with two specialized systems:
 
-**Current State**: Works in controlled test scenarios. Requires significant setup. Many features are experimental or incomplete.
+### 1. **Life Operations AGI** 🏠
+Personal life tracking and intelligence:
+- Tracks life events (sleep, exercise, health, camera feeds)
+- Analyzes patterns with AGI reasoning (GPT-5)
+- Answers natural language queries ("How did I sleep last week?")
+- Provides intelligent interventions based on context
+- Integrates: Fitbit, home cameras, Messenger bot, Meta Glasses
 
-## Core Features (What Actually Works)
+### 2. **Skyrim AGI** 🎮
+Autonomous game-playing intelligence:
+- Takes screenshots and analyzes game state
+- Decides actions using hybrid reasoning (fast heuristics + GPT-4.1 Nano)
+- Controls game via virtual gamepad
+- Learns from outcomes using temporal binding
+
+**Current State**: Both systems work independently. Life Ops is production-ready for personal use. Skyrim AGI works in test scenarios.
+
+## Core Features
+
+### Life Operations (Production Ready) ✅
+
+1. **Life Timeline**
+   - SQLite database of all life events
+   - Multiple sources: Fitbit, cameras, Messenger, manual
+   - Query by time, type, source, user
+
+2. **AGI-Powered Vision**
+   - Gemini 2.5 Flash analyzes home camera feeds
+   - Extracts structured events: person detected, motion, falls, activities
+   - Confidence scores and context understanding
+
+3. **Pattern Detection**
+   - AGI Pattern Arbiter (GPT-5) finds correlations
+   - Sleep quality, exercise habits, daily routines
+   - Emergency detection with false-positive prevention
+
+4. **Natural Language Queries**
+   - Ask questions about your life data
+   - "How did I sleep last week?" → AGI-powered analysis
+   - Integrates with Messenger bot for conversational interface
+
+5. **Intelligent Interventions**
+   - Context-aware notifications (time, mood, routine)
+   - Empathy-driven decision making (Double Helix)
+   - Wellness checks, reminders, insights
+
+### Skyrim AGI (Research Prototype) 🔬
 
 1. **Hybrid Action Selection**
    - Fast heuristics for simple decisions (~1ms)
@@ -61,7 +101,57 @@ An experimental AI system that plays Skyrim by:
    - Mock AGI for development
    - Comprehensive test suite (56+ tests)
 
-## What's Experimental
+---
+
+## Sephirot Cluster Architecture 🌳
+
+Singularis is designed to run on a distributed cluster of nodes:
+
+### Node Layout
+
+**🧠 Node A (AMD Tower)**: Cognitive Core
+- Singularis consciousness layer
+- API Gateway (FastAPI)
+- Message bus (Redis)
+- Orchestration services
+- Dual AMD 7900 XT GPUs
+
+**🧬 Node B (Desktop)**: Memory & Observability
+- Vector databases (ChromaDB)
+- Life Timeline (PostgreSQL/SQLite)
+- Monitoring stack (Prometheus + Grafana)
+- Pattern analysis
+- AMD 6900 XT GPU
+
+**🕹️ Node C (Gaming Laptop)**: Skyrim Environment
+- Skyrim AGI runtime
+- Real-time control loop
+- Telemetry agent
+- NVIDIA RTX GPU
+
+**📱 Node D (Lenovo Tab)**: Camera Monitor
+- Roku Smart Home app (all camera feeds)
+- ADB screen capture source
+- Always-on display
+- AGI vision processing via Node A
+
+**💻 Node E (MacBook Pro)**: Dev Console
+- Development environment
+- Grafana dashboards
+- SSH access to all nodes
+- Operations control
+
+**Edge Devices**:
+- Phone: Messenger bot, Fitbit integration, life queries
+- Meta Glasses: Vision + audio streaming (optional)
+
+### Deployment
+
+See `SEPHIROT_CLUSTER_ARCHITECTURE.md` and `DEPLOYMENT_CHECKLIST.md` for complete setup instructions.
+
+---
+
+## What's Experimental (Skyrim AGI)
 
 - Vision system (Gemini/Qwen-VL) - works but rate-limited
 - Learning/memory systems - implemented but not validated
@@ -239,7 +329,39 @@ SkyrimAGI / Singularis Neo is a distributed AGI-style system that watches the ga
 
 ---
 
-## Quick Demo (Test Mode - No Game Required)
+## Quick Start
+
+### Life Operations Demo
+
+```bash
+# 1. Install dependencies
+cd integrations
+pip install -r requirements.txt
+
+# 2. Set up API keys
+cp .env.example .env
+# Edit .env with your API keys:
+# - GEMINI_API_KEY (for AGI vision)
+# - OPENAI_API_KEY (for GPT-5)
+# - MESSENGER_PAGE_TOKEN (optional)
+
+# 3. Run main orchestrator
+python main_orchestrator.py
+
+# 4. Test life query (in another terminal)
+curl -X POST http://localhost:8080/query \
+  -H "Content-Type: application/json" \
+  -d '{"user_id":"test","query":"What patterns do you see?"}'
+```
+
+**What you'll see**:
+- Main orchestrator starts
+- Life Timeline initialized
+- AGI consciousness connected
+- API endpoints available at http://localhost:8080
+- Query handler ready for natural language questions
+
+### Skyrim AGI Demo (Test Mode - No Game Required)
 
 ```bash
 # 1. Install dependencies
@@ -295,9 +417,34 @@ python run_beta_v3.py
 
 ## Architecture Overview
 
+### Life Operations Architecture
+
+```
+Data Sources (Fitbit, Cameras, Messenger)
+    ↓
+Life Timeline (SQLite/PostgreSQL)
+    ↓
+Pattern Engine (AGI Pattern Arbiter)
+    ↓
+Unified Consciousness Layer (GPT-5)
+    ↓
+Life Query Handler
+    ↓
+Outputs (Messenger bot, API, Interventions)
+```
+
+**Key Components**:
+- `life_timeline.py`: Event database
+- `pattern_engine.py`: Pattern detection
+- `life_query_handler.py`: Natural language queries
+- `agi_pattern_arbiter.py`: GPT-5 powered analysis
+- `main_orchestrator.py`: Coordinates all integrations
+
+### Skyrim AGI Architecture
+
 **High-level flow**: Perception → State Update → Action Selection (Fast/GPT) → Conflict Check → Execute → Learn
 
-**For detailed architecture**: See `docs/ARCHITECTURE.md`
+**For detailed architecture**: See `SKYRIM_AGI_ARCHITECTURE.md`
 
 ### Simplified Flow
 
@@ -327,16 +474,31 @@ Observe Outcome & Learn
 
 ## Key Components
 
-**For detailed API documentation**: See `docs/API.md`
+### Life Operations Modules
 
-### Core Files
+**Core**:
+- `integrations/life_timeline.py` - Event database and queries
+- `integrations/pattern_engine.py` - Pattern detection engine
+- `integrations/main_orchestrator.py` - Main coordinator
+- `singularis/life_ops/life_query_handler.py` - Natural language queries
+- `singularis/life_ops/agi_pattern_arbiter.py` - GPT-5 pattern analysis
+- `singularis/life_ops/agi_intervention_decider.py` - Intelligent interventions
 
-- **`run_beta_v3.py`** - Main entry point, test/production modes
-- **`singularis/skyrim/action_arbiter.py`** - Action selection & validation
-- **`singularis/core/being_state.py`** - Unified state management
-- **`singularis/core/temporal_binding.py`** - Perception-action-outcome tracking
-- **`singularis/skyrim/actions.py`** - Virtual gamepad control
-- **`singularis/llm/gpt5_orchestrator.py`** - GPT-4.1 Nano integration
+**Integrations**:
+- `integrations/messenger_bot_adapter.py` - Facebook Messenger bot
+- `integrations/fitbit_health_adapter.py` - Fitbit data sync
+- `integrations/roku_screencap_gateway.py` - Camera feed processing
+- `integrations/meta_glasses_adapter.py` - Meta Glasses integration
+
+### Skyrim AGI Modules
+
+**Core**:
+- `run_beta_v3.py` - Main entry point, test/production modes
+- `singularis/skyrim/action_arbiter.py` - Action selection & validation
+- `singularis/core/being_state.py` - Unified state management
+- `singularis/core/temporal_binding.py` - Perception-action-outcome tracking
+- `singularis/skyrim/actions.py` - Virtual gamepad control
+- `singularis/llm/gpt5_orchestrator.py` - GPT-4.1 Nano integration
 
 ### Priority System
 
@@ -548,17 +710,45 @@ if not closure_result['meets_target']:
 
 ## Documentation
 
+### Life Operations
+- **Phase 1-5 Complete**: `integrations/PHASE_*_COMPLETE.md`
+- **Cluster Architecture**: `SEPHIROT_CLUSTER_ARCHITECTURE.md`
+- **Deployment Guide**: `DEPLOYMENT_CHECKLIST.md`
+- **Modular Architecture**: `MODULAR_ARCHITECTURE.md`
+- **Usage Guide**: `MODULAR_USAGE_GUIDE.md`
+
+### Skyrim AGI
 - **Testing Guide**: `BETA_V3_TESTING_GUIDE.md`
 - **Phase 3 Complete**: `PHASE_3_COMPLETE.md`
 - **Quick Reference**: `PHASE_3_QUICK_REFERENCE.md`
 - **Implementation Summary**: `PHASE_3_IMPLEMENTATION_SUMMARY.md`
-- **Main Tracking**: `PHASE_1_EMERGENCY_STABILIZATION.md`
 
 ---
 
 ## What's Actually Complete
 
-### Beta v3.5 (November 14, 2025)
+### Life Operations (November 16, 2025) ✅
+
+**Production Ready**:
+- ✅ Life Timeline database (SQLite/PostgreSQL)
+- ✅ AGI-powered camera vision (Gemini 2.5 Flash)
+- ✅ Pattern detection with GPT-5
+- ✅ Natural language queries
+- ✅ Messenger bot integration
+- ✅ Fitbit health data sync
+- ✅ Intelligent interventions
+- ✅ REST API (`/query`, `/timeline`, `/health`)
+- ✅ Modular architecture (6 independent modules)
+- ✅ Sephirot cluster deployment plan
+
+**Phases Complete**:
+1. ✅ Life Timeline ↔ Consciousness bridge
+2. ✅ AGI-powered pattern detection
+3. ✅ Intelligent interventions with empathy
+4. ✅ AGI vision for camera feeds
+5. ✅ Natural language query interface
+
+### Skyrim AGI - Beta v3.5 (November 14, 2025) 🔬
 
 **Working**:
 - ✅ Hybrid action selection (fast local + GPT-4.1 Nano)
@@ -634,7 +824,28 @@ See LICENSE file for details.
 
 ---
 
-**Version**: Beta v3.5  
-**Status**: Research Prototype - Not Production Ready  
-**Last Updated**: November 14, 2025  
-**Realistic Assessment**: Works in test mode, needs work for real gameplay
+---
+
+## Project Status
+
+**Life Operations**: ✅ Production Ready (personal use)  
+**Skyrim AGI**: 🔬 Research Prototype  
+**Architecture**: Modular, deployable on Sephirot cluster  
+**Last Updated**: November 16, 2025  
+
+**What Works**:
+- Life tracking, pattern detection, natural language queries
+- AGI-powered camera vision
+- Messenger bot integration
+- Modular architecture for independent deployment
+
+**What's Experimental**:
+- Skyrim AGI (works in test mode, needs real gameplay validation)
+- Long-term stability (not tested beyond short runs)
+- Full cluster deployment (documented but not deployed)
+
+---
+
+**Version**: 1.0.0 (Life Ops) / Beta v3.5 (Skyrim AGI)  
+**License**: MIT  
+**Repository**: [github.com/yourusername/Singularis](https://github.com/yourusername/Singularis)
