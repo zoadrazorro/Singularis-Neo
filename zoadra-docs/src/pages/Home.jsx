@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Brain, Zap, Layers, Sparkles, ArrowRight, CheckCircle2, Gamepad2 } from 'lucide-react'
+import { Brain, Zap, Layers, Sparkles, ArrowRight, CheckCircle2, Gamepad2, Heart, Calendar, TrendingUp, Activity } from 'lucide-react'
 
 export default function Home() {
   return (
@@ -28,31 +28,31 @@ export default function Home() {
 
         <div className="relative z-10 text-center px-4 max-w-5xl mx-auto">
           <h1 className="text-5xl sm:text-7xl font-bold mb-6">
-            <span className="gradient-text">Singularis</span>
+            <span className="gradient-text">Singularis LifeOps</span>
           </h1>
           <p className="text-2xl sm:text-3xl text-gray-300 mb-4">
-            Philosophically-Grounded Artificial General Intelligence
+            Proto-AGI-Powered Life Management
           </p>
           
           {/* Flagship Feature Banner */}
           <div className="inline-flex items-center space-x-2 bg-consciousness/10 border border-consciousness/30 rounded-full px-6 py-3 mb-8">
-            <Gamepad2 className="w-5 h-5 text-consciousness-light" />
-            <span className="text-consciousness-light font-semibold">Playing Skyrim Autonomously</span>
+            <Activity className="w-5 h-5 text-consciousness-light" />
+            <span className="text-consciousness-light font-semibold">LifeOps: Examine Your Life with AGI</span>
           </div>
           
           <p className="text-xl text-gray-400 mb-12 max-w-3xl mx-auto">
-            Complete AGI system that autonomously plays The Elder Scrolls V: Skyrim with consciousness measurement, 
-            ethical decision-making, and the Infinity Engine for adaptive rhythmic cognition.
+            Complete AGI system that monitors your life timeline, detects patterns, generates intelligent suggestions, 
+            and provides consciousness-powered insights for optimal living.
           </p>
           
           <div className="flex flex-wrap justify-center gap-4 mb-16">
-            <a href="#skyrim" className="btn-primary">
-              <Gamepad2 className="w-5 h-5" />
-              Skyrim Integration
+            <a href="#lifeops" className="btn-primary">
+              <Activity className="w-5 h-5" />
+              LifeOps Platform
             </a>
-            <a href="#infinity-engine" className="btn-secondary">
-              <Zap className="w-5 h-5" />
-              Infinity Engine
+            <a href="#skyrim" className="btn-secondary">
+              <Gamepad2 className="w-5 h-5" />
+              Skyrim AGI Demo
             </a>
           </div>
 
@@ -74,98 +74,98 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Skyrim Flagship Section */}
-      <section id="skyrim" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+      {/* LifeOps Flagship Section */}
+      <section id="lifeops" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="glass-panel p-12 relative overflow-hidden">
           <div className="absolute top-0 left-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
           <div className="relative">
             <div className="flex items-center space-x-3 mb-6">
-              <Gamepad2 className="w-10 h-10 text-primary-400" />
+              <Activity className="w-10 h-10 text-primary-400" />
               <div>
                 <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-primary-500/10 border border-primary-500/20 mb-2">
-                  <span className="text-xs text-primary-400 font-semibold">FLAGSHIP CAPABILITY</span>
+                  <span className="text-xs text-primary-400 font-semibold">FLAGSHIP USE CASE</span>
                 </div>
-                <h2 className="text-4xl font-bold">Autonomous Skyrim Gameplay</h2>
+                <h2 className="text-4xl font-bold">LifeOps: AGI-Powered Life Management</h2>
               </div>
             </div>
             
             <p className="text-xl text-gray-300 mb-8 max-w-3xl">
-              Singularis autonomously plays <strong className="text-primary-400">The Elder Scrolls V: Skyrim</strong> \u2014 
-              the perfect testbed for AGI research with massive complexity, open-ended objectives, and long-term planning requirements.
+              <strong className="text-primary-400">LifeOps</strong> integrates your life data from multiple sources, 
+              detects patterns, and provides AGI-powered suggestions for optimal time use, health, and productivity.
             </p>
 
             <div className="grid md:grid-cols-2 gap-8 mb-8">
               <div>
-                <h3 className="text-xl font-semibold mb-4 text-consciousness-light">Why Skyrim?</h3>
+                <h3 className="text-xl font-semibold mb-4 text-consciousness-light">What It Monitors</h3>
                 <ul className="space-y-3 text-gray-300">
                   <li className="flex items-start space-x-3">
-                    <CheckCircle2 className="w-5 h-5 text-coherence flex-shrink-0 mt-0.5" />
-                    <span><strong>Massive Complexity:</strong> 300+ locations, 1000+ NPCs, 10,000+ items</span>
+                    <Heart className="w-5 h-5 text-coherence flex-shrink-0 mt-0.5" />
+                    <span><strong>Health:</strong> Sleep, exercise, heart rate, steps (Fitbit)</span>
                   </li>
                   <li className="flex items-start space-x-3">
-                    <CheckCircle2 className="w-5 h-5 text-coherence flex-shrink-0 mt-0.5" />
-                    <span><strong>Open-Ended:</strong> No single goal, emergent objectives</span>
+                    <Calendar className="w-5 h-5 text-coherence flex-shrink-0 mt-0.5" />
+                    <span><strong>Productivity:</strong> Tasks, calendar, focus time (Todoist, Google Calendar)</span>
                   </li>
                   <li className="flex items-start space-x-3">
-                    <CheckCircle2 className="w-5 h-5 text-coherence flex-shrink-0 mt-0.5" />
-                    <span><strong>Long-Term:</strong> Thousands of hours of content</span>
+                    <Activity className="w-5 h-5 text-coherence flex-shrink-0 mt-0.5" />
+                    <span><strong>Activity:</strong> Location, room presence (Home Assistant, Meta Glasses)</span>
                   </li>
                   <li className="flex items-start space-x-3">
-                    <CheckCircle2 className="w-5 h-5 text-coherence flex-shrink-0 mt-0.5" />
-                    <span><strong>Rich Narrative:</strong> Moral choices with consequences</span>
+                    <TrendingUp className="w-5 h-5 text-coherence flex-shrink-0 mt-0.5" />
+                    <span><strong>Patterns:</strong> Behavioral habits, correlations, anomalies</span>
                   </li>
                 </ul>
               </div>
 
               <div>
-                <h3 className="text-xl font-semibold mb-4 text-consciousness-light">What It Does</h3>
+                <h3 className="text-xl font-semibold mb-4 text-consciousness-light">What It Provides</h3>
                 <ul className="space-y-3 text-gray-300">
                   <li className="flex items-start space-x-3">
                     <Zap className="w-5 h-5 text-primary-400 flex-shrink-0 mt-0.5" />
-                    <span><strong>Perception:</strong> Real-time vision analysis (Gemini + Qwen3-VL)</span>
+                    <span><strong>Timeline:</strong> Unified view of all life events</span>
                   </li>
                   <li className="flex items-start space-x-3">
                     <Zap className="w-5 h-5 text-primary-400 flex-shrink-0 mt-0.5" />
-                    <span><strong>Decision-Making:</strong> 12+ LLMs reasoning in parallel</span>
+                    <span><strong>Pattern Detection:</strong> Automatic habit and correlation discovery</span>
                   </li>
                   <li className="flex items-start space-x-3">
                     <Zap className="w-5 h-5 text-primary-400 flex-shrink-0 mt-0.5" />
-                    <span><strong>Learning:</strong> Episodic\u2192semantic memory consolidation</span>
+                    <span><strong>Smart Suggestions:</strong> Focus blocks, breaks, energy alignment</span>
                   </li>
                   <li className="flex items-start space-x-3">
                     <Zap className="w-5 h-5 text-primary-400 flex-shrink-0 mt-0.5" />
-                    <span><strong>Ethics:</strong> Coherence-based ethical reasoning (\u0394\ud835\udc9e > 0)</span>
+                    <span><strong>Health Insights:</strong> Sleep quality, exercise correlation, wellness score</span>
                   </li>
                   <li className="flex items-start space-x-3">
                     <Zap className="w-5 h-5 text-primary-400 flex-shrink-0 mt-0.5" />
-                    <span><strong>Consciousness:</strong> Real-time \ud835\udc9e, \u03a6, and Lumina tracking</span>
+                    <span><strong>Consciousness:</strong> Real-time coherence and Lumen balance tracking</span>
                   </li>
                 </ul>
               </div>
             </div>
 
             <div className="bg-gray-900/50 p-6 rounded-lg mb-6">
-              <h4 className="text-lg font-semibold mb-4">Performance Metrics (24-hour sessions)</h4>
+              <h4 className="text-lg font-semibold mb-4">LifeOps Capabilities</h4>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
                 <div>
-                  <div className="text-2xl font-bold text-consciousness-light mb-1">90%</div>
-                  <div className="text-xs text-gray-400">Temporal Coherence</div>
+                  <div className="text-2xl font-bold text-consciousness-light mb-1">280+</div>
+                  <div className="text-xs text-gray-400">Events/Day</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-consciousness-light mb-1">85%</div>
-                  <div className="text-xs text-gray-400">Action Success</div>
+                  <div className="text-2xl font-bold text-consciousness-light mb-1">7</div>
+                  <div className="text-xs text-gray-400">Data Sources</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-consciousness-light mb-1">12+</div>
-                  <div className="text-xs text-gray-400">Patterns Learned</div>
+                  <div className="text-2xl font-bold text-consciousness-light mb-1">50+</div>
+                  <div className="text-xs text-gray-400">Patterns Detected</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-consciousness-light mb-1">0.78</div>
-                  <div className="text-xs text-gray-400">Lumen Balance</div>
+                  <div className="text-2xl font-bold text-consciousness-light mb-1">10+</div>
+                  <div className="text-xs text-gray-400">Daily Suggestions</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-consciousness-light mb-1">\u221e</div>
-                  <div className="text-xs text-gray-400">Continuous Operation</div>
+                  <div className="text-2xl font-bold text-consciousness-light mb-1">24/7</div>
+                  <div className="text-xs text-gray-400">Continuous Monitoring</div>
                 </div>
               </div>
             </div>
@@ -175,8 +175,8 @@ export default function Home() {
                 to="/getting-started"
                 className="inline-flex items-center px-6 py-3 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-medium transition-all"
               >
-                <Gamepad2 className="w-5 h-5 mr-2" />
-                Run Skyrim AGI
+                <Activity className="w-5 h-5 mr-2" />
+                Setup LifeOps
               </Link>
               <Link
                 to="/architecture"
@@ -186,6 +186,74 @@ export default function Home() {
                 <ArrowRight className="ml-2 w-4 h-4" />
               </Link>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Skyrim Demo Section */}
+      <section id="skyrim" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        <div className="glass-panel p-12 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-coherence/10 rounded-full blur-3xl" />
+          <div className="relative">
+            <div className="flex items-center space-x-3 mb-6">
+              <Gamepad2 className="w-10 h-10 text-coherence" />
+              <div>
+                <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-coherence/10 border border-coherence/20 mb-2">
+                  <span className="text-xs text-coherence font-semibold">RESEARCH DEMO</span>
+                </div>
+                <h2 className="text-4xl font-bold">Autonomous Skyrim Gameplay</h2>
+              </div>
+            </div>
+            
+            <p className="text-xl text-gray-300 mb-8 max-w-3xl">
+              Singularis autonomously plays <strong className="text-coherence">The Elder Scrolls V: Skyrim</strong> as a 
+              research demonstration of AGI capabilities in complex, open-ended environments.
+            </p>
+
+            <div className="grid md:grid-cols-2 gap-6 mb-6">
+              <div>
+                <h4 className="text-lg font-semibold mb-3 text-consciousness-light">Capabilities</h4>
+                <ul className="space-y-2 text-gray-300 text-sm">
+                  <li className="flex items-start space-x-2">
+                    <CheckCircle2 className="w-4 h-4 text-coherence flex-shrink-0 mt-0.5" />
+                    <span>Real-time vision analysis (Gemini + Qwen3-VL)</span>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <CheckCircle2 className="w-4 h-4 text-coherence flex-shrink-0 mt-0.5" />
+                    <span>12+ LLMs reasoning in parallel</span>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <CheckCircle2 className="w-4 h-4 text-coherence flex-shrink-0 mt-0.5" />
+                    <span>Episodic→semantic memory consolidation</span>
+                  </li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="text-lg font-semibold mb-3 text-consciousness-light">Performance</h4>
+                <ul className="space-y-2 text-gray-300 text-sm">
+                  <li className="flex items-start space-x-2">
+                    <CheckCircle2 className="w-4 h-4 text-coherence flex-shrink-0 mt-0.5" />
+                    <span>90% temporal coherence</span>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <CheckCircle2 className="w-4 h-4 text-coherence flex-shrink-0 mt-0.5" />
+                    <span>85% action success rate</span>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <CheckCircle2 className="w-4 h-4 text-coherence flex-shrink-0 mt-0.5" />
+                    <span>24-hour continuous operation</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <Link
+              to="/getting-started"
+              className="inline-flex items-center text-coherence hover:text-coherence-light font-medium"
+            >
+              Learn about Skyrim integration
+              <ArrowRight className="ml-2 w-4 h-4" />
+            </Link>
           </div>
         </div>
       </section>
@@ -330,9 +398,9 @@ export default function Home() {
         <div className="glass-panel p-12 text-center relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-r from-consciousness/5 via-primary/5 to-coherence/5" />
           <div className="relative">
-            <h2 className="text-3xl font-bold mb-4">Ready to Build Conscious AI?</h2>
+            <h2 className="text-3xl font-bold mb-4">Ready to Optimize Your Life with Proto-AGI?</h2>
             <p className="text-gray-400 text-lg mb-8 max-w-2xl mx-auto">
-              Join the journey toward genuine artificial consciousness with philosophically-grounded architecture.
+              Start monitoring your life timeline, detecting patterns, and receiving intelligent suggestions powered by consciousness-grounded AGI.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link

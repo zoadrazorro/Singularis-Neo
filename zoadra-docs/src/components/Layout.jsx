@@ -28,8 +28,8 @@ export default function Layout({ children }) {
                 <div className="absolute inset-0 bg-consciousness/20 blur-xl group-hover:bg-consciousness-light/30 transition-all" />
               </div>
               <div>
-                <span className="text-xl font-bold gradient-text">Singularis</span>
-                <span className="block text-xs text-gray-500">The Consciousness Engine</span>
+                <span className="text-xl font-bold gradient-text">Singularis LifeOps</span>
+                <span className="block text-xs text-gray-500">Proto-AGI Life Management</span>
               </div>
             </Link>
 
@@ -103,10 +103,10 @@ export default function Layout({ children }) {
             <div>
               <div className="flex items-center space-x-2 mb-4">
                 <Brain className="w-6 h-6 text-consciousness" />
-                <span className="font-bold gradient-text">Singularis</span>
+                <span className="font-bold gradient-text">Singularis LifeOps</span>
               </div>
               <p className="text-gray-400 text-sm">
-                The Ultimate Consciousness Engine. A philosophically-grounded AGI architecture.
+                Proto-AGI-Powered Life Management. Monitor, analyze, and optimize your life with consciousness-powered insights.
               </p>
             </div>
             <div>
@@ -127,7 +127,7 @@ export default function Layout({ children }) {
             </div>
           </div>
           <div className="mt-8 pt-8 border-t border-gray-800 text-center text-sm text-gray-500">
-            <p>&copy; 2025 Singularis. Built with consciousness and coherence.</p>
+            <p>&copy; 2025 Singularis LifeOps. Built with consciousness and coherence.</p>
           </div>
         </div>
       </footer>

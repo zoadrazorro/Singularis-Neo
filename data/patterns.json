@@ -1,0 +1,71 @@
+{
+  "patterns": [
+    {
+      "id": "pattern_001",
+      "name": "Morning Productivity Peak",
+      "type": "temporal",
+      "description": "Task completion rate is 40% higher between 9-11 AM compared to afternoon hours.",
+      "confidence": 0.87,
+      "occurrences": 23,
+      "first_detected": "2025-11-01T00:00:00Z",
+      "last_updated": "2025-11-16T00:00:00Z",
+      "evidence": [
+        "evt_004",
+        "evt_005"
+      ]
+    },
+    {
+      "id": "pattern_002",
+      "name": "Post-Meeting Energy Drop",
+      "type": "correlation",
+      "description": "Heart rate and focus scores decrease by 15% in the hour following meetings longer than 45 minutes.",
+      "confidence": 0.79,
+      "occurrences": 18,
+      "first_detected": "2025-11-03T00:00:00Z",
+      "last_updated": "2025-11-16T00:00:00Z",
+      "evidence": [
+        "evt_008"
+      ]
+    },
+    {
+      "id": "pattern_003",
+      "name": "Exercise-Sleep Quality Link",
+      "type": "correlation",
+      "description": "Days with 30+ minutes of exercise correlate with 25% better deep sleep quality.",
+      "confidence": 0.92,
+      "occurrences": 31,
+      "first_detected": "2025-10-28T00:00:00Z",
+      "last_updated": "2025-11-16T00:00:00Z",
+      "evidence": [
+        "evt_001",
+        "evt_006"
+      ]
+    },
+    {
+      "id": "pattern_004",
+      "name": "Context Switching Cost",
+      "type": "behavioral",
+      "description": "Switching between projects more than 3 times per day reduces overall productivity by 30%.",
+      "confidence": 0.84,
+      "occurrences": 15,
+      "first_detected": "2025-11-05T00:00:00Z",
+      "last_updated": "2025-11-16T00:00:00Z",
+      "evidence": [
+        "evt_009"
+      ]
+    },
+    {
+      "id": "pattern_005",
+      "name": "Optimal Work Block Duration",
+      "type": "temporal",
+      "description": "90-minute focused work sessions yield highest completion rates with minimal fatigue.",
+      "confidence": 0.88,
+      "occurrences": 27,
+      "first_detected": "2025-11-02T00:00:00Z",
+      "last_updated": "2025-11-16T00:00:00Z",
+      "evidence": [
+        "evt_009"
+      ]
+    }
+  ]
+}

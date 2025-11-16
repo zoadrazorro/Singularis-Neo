@@ -1,7 +1,7 @@
 {
-  "name": "singularis-monitor",
+  "name": "singularis-lifeops",
   "version": "1.0.0",
-  "description": "Real-time monitoring dashboard for Singularis learning",
+  "description": "Singularis LifeOps - Proto-AGI-Powered Life Management Dashboard",
   "private": true,
   "dependencies": {
     "react": "^18.2.0",

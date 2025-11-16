@@ -1,0 +1,74 @@
+{
+  "suggestions": [
+    {
+      "id": "sugg_001",
+      "user_id": "main_user",
+      "type": "focus_block",
+      "priority": "high",
+      "status": "active",
+      "title": "Deep Work Opportunity",
+      "message": "You have a 90-minute gap before your 3:30 meeting. Based on your patterns, this is your peak productivity time. Perfect for 'Write Documentation' task.",
+      "time_slot": "2:00 PM - 3:30 PM",
+      "confidence": 0.89,
+      "reasoning": "High energy + calendar gap + priority match + pattern fit",
+      "created_at": "2025-11-16T13:45:00Z",
+      "expires_at": "2025-11-16T14:00:00Z"
+    },
+    {
+      "id": "sugg_002",
+      "user_id": "main_user",
+      "type": "break",
+      "priority": "medium",
+      "status": "active",
+      "title": "Break Reminder",
+      "message": "You've been in focused work for 2 hours. A 10-minute break will improve your next session's productivity by 25%.",
+      "time_slot": "Now",
+      "confidence": 0.82,
+      "reasoning": "Continuous work detected + pattern analysis + energy optimization",
+      "created_at": "2025-11-16T15:00:00Z",
+      "expires_at": "2025-11-16T15:15:00Z"
+    },
+    {
+      "id": "sugg_003",
+      "user_id": "main_user",
+      "type": "quick_win",
+      "priority": "low",
+      "status": "active",
+      "title": "Quick Task Batch",
+      "message": "You have 3 tasks under 15 minutes each. Knock them out in your 30-minute gap before lunch.",
+      "time_slot": "11:30 AM - 12:00 PM",
+      "confidence": 0.76,
+      "reasoning": "Small calendar gap + low-effort tasks + momentum building",
+      "created_at": "2025-11-16T11:15:00Z",
+      "expires_at": "2025-11-16T11:30:00Z"
+    },
+    {
+      "id": "sugg_004",
+      "user_id": "main_user",
+      "type": "meeting_prep",
+      "priority": "high",
+      "status": "active",
+      "title": "Prepare for Architecture Review",
+      "message": "Your 2:00 PM meeting has 8 attendees. Review the agenda and materials now to maximize effectiveness.",
+      "time_slot": "1:30 PM - 2:00 PM",
+      "confidence": 0.91,
+      "reasoning": "Important meeting + preparation time available + effectiveness boost",
+      "created_at": "2025-11-16T13:15:00Z",
+      "expires_at": "2025-11-16T13:30:00Z"
+    },
+    {
+      "id": "sugg_005",
+      "user_id": "main_user",
+      "type": "energy_alignment",
+      "priority": "medium",
+      "status": "active",
+      "title": "Reschedule Complex Task",
+      "message": "Move 'System Architecture Design' from 4 PM to 10 AM tomorrow. Your morning slots have 2x higher success rate for complex tasks.",
+      "time_slot": "Tomorrow 10:00 AM",
+      "confidence": 0.85,
+      "reasoning": "Energy pattern + task complexity + optimal timing",
+      "created_at": "2025-11-16T15:30:00Z",
+      "expires_at": "2025-11-16T23:59:00Z"
+    }
+  ]
+}

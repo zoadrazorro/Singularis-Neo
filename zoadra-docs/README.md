@@ -1,6 +1,6 @@
-# Zoadra.com - Singularis Documentation
+# Zoadra.com - Singularis LifeOps Documentation
 
-Static React documentation website for the Singularis AGI project.
+Static React documentation website for **Singularis LifeOps**, featuring proto-AGI-powered life management as the flagship use case.
 
 ## 🚀 Quick Start
 

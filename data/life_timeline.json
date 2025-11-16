@@ -1,0 +1,114 @@
+{
+  "events": [
+    {
+      "id": "evt_001",
+      "user_id": "main_user",
+      "timestamp": "2025-11-16T06:30:00Z",
+      "source": "fitbit",
+      "type": "sleep",
+      "confidence": 0.95,
+      "importance": 0.8,
+      "features": "{\"duration\": 7.5, \"quality\": \"good\", \"deep_sleep\": 2.1}",
+      "parent_event_id": null
+    },
+    {
+      "id": "evt_002",
+      "user_id": "main_user",
+      "timestamp": "2025-11-16T07:00:00Z",
+      "source": "fitbit",
+      "type": "heart_rate",
+      "confidence": 0.98,
+      "importance": 0.5,
+      "features": "{\"bpm\": 72, \"resting\": true}",
+      "parent_event_id": null
+    },
+    {
+      "id": "evt_003",
+      "user_id": "main_user",
+      "timestamp": "2025-11-16T08:00:00Z",
+      "source": "google_calendar",
+      "type": "meeting",
+      "confidence": 1.0,
+      "importance": 0.7,
+      "features": "{\"title\": \"Team Standup\", \"duration\": 30, \"attendees\": 5}",
+      "parent_event_id": null
+    },
+    {
+      "id": "evt_004",
+      "user_id": "main_user",
+      "timestamp": "2025-11-16T09:00:00Z",
+      "source": "todoist",
+      "type": "task_created",
+      "confidence": 1.0,
+      "importance": 0.6,
+      "features": "{\"title\": \"Review PR #234\", \"priority\": 3, \"project\": \"Development\"}",
+      "parent_event_id": null
+    },
+    {
+      "id": "evt_005",
+      "user_id": "main_user",
+      "timestamp": "2025-11-16T10:30:00Z",
+      "source": "todoist",
+      "type": "task_completed",
+      "confidence": 1.0,
+      "importance": 0.7,
+      "features": "{\"title\": \"Review PR #234\", \"duration\": 45}",
+      "parent_event_id": "evt_004"
+    },
+    {
+      "id": "evt_006",
+      "user_id": "main_user",
+      "timestamp": "2025-11-16T11:00:00Z",
+      "source": "fitbit",
+      "type": "exercise",
+      "confidence": 0.92,
+      "importance": 0.75,
+      "features": "{\"type\": \"walk\", \"duration\": 30, \"calories\": 150}",
+      "parent_event_id": null
+    },
+    {
+      "id": "evt_007",
+      "user_id": "main_user",
+      "timestamp": "2025-11-16T12:00:00Z",
+      "source": "fitbit",
+      "type": "steps",
+      "confidence": 0.99,
+      "importance": 0.6,
+      "features": "{\"count\": 8543, \"distance\": 6.2}",
+      "parent_event_id": null
+    },
+    {
+      "id": "evt_008",
+      "user_id": "main_user",
+      "timestamp": "2025-11-16T14:00:00Z",
+      "source": "google_calendar",
+      "type": "meeting",
+      "confidence": 1.0,
+      "importance": 0.8,
+      "features": "{\"title\": \"Architecture Review\", \"duration\": 60, \"attendees\": 8}",
+      "parent_event_id": null
+    },
+    {
+      "id": "evt_009",
+      "user_id": "main_user",
+      "timestamp": "2025-11-16T15:30:00Z",
+      "source": "notion",
+      "type": "work_session",
+      "confidence": 0.85,
+      "importance": 0.7,
+      "features": "{\"project\": \"LifeOps Integration\", \"duration\": 90, \"focus_score\": 0.82}",
+      "parent_event_id": null
+    },
+    {
+      "id": "evt_010",
+      "user_id": "main_user",
+      "timestamp": "2025-11-16T16:45:00Z",
+      "source": "home_assistant",
+      "type": "room_enter",
+      "confidence": 0.95,
+      "importance": 0.3,
+      "features": "{\"room\": \"office\", \"activity\": \"working\"}",
+      "parent_event_id": null
+    }
+  ]
+}
