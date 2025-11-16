@@ -1,0 +1,73 @@
+# Integration Requirements for Messenger Bot + Meta AI Glasses + Fitbit
+
+# Core Framework
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.4.0
+
+# Facebook Messenger
+fbmessenger>=6.0.0
+pymessenger>=0.0.7.0
+
+# Fitbit
+fitbit>=0.3.1
+python-fitbit>=0.1.4
+authlib>=1.2.0
+
+# Async HTTP
+aiohttp>=3.9.0
+httpx>=0.25.0
+
+# Authentication & Security
+python-jose[cryptography]>=3.3.0
+python-multipart>=0.0.6
+passlib[bcrypt]>=1.7.4
+cryptography>=41.0.0
+
+# Database
+psycopg2-binary>=2.9.9  # PostgreSQL
+sqlalchemy>=2.0.0
+alembic>=1.12.0
+asyncpg>=0.29.0  # Async PostgreSQL
+
+# Redis (for caching/sessions)
+aioredis>=2.0.1
+redis>=5.0.0
+
+# Real-time Communication
+python-socketio>=5.10.0
+websockets>=12.0
+
+# Data Processing
+numpy>=1.24.0
+pandas>=2.1.0
+
+# Computer Vision (for Roku camera gateway)
+opencv-python>=4.8.0
+opencv-contrib-python>=4.8.0  # Optional: extra features
+
+# Embeddings (already in main requirements)
+sentence-transformers>=2.2.0
+scikit-learn>=1.3.0
+
+# Logging
+loguru>=0.7.0
+
+# Environment Variables
+python-dotenv>=1.0.0
+
+# Testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0
+httpx>=0.25.0  # For testing FastAPI
+
+# Monitoring (optional)
+prometheus-client>=0.18.0
+sentry-sdk[fastapi]>=1.35.0
+
+# Rate Limiting
+slowapi>=0.1.9
+
+# Background Tasks
+celery>=5.3.0  # Optional: for heavy background processing
