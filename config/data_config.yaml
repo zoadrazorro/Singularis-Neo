@@ -1,0 +1,355 @@
+# DATA System Configuration
+# ========================
+# Configuration for Distributed Abductive Technical Agent (DATA)
+# Based on OKComputer Distributed AGI System Blueprint
+
+# System Identification
+system:
+  name: "DATA-Proto-AGI"
+  version: "1.0.0"
+  environment: "development"  # development, staging, production
+  description: "Distributed MoE-LoRA routing system for Singularis"
+
+# Hardware Node Configuration (Sephirot Cluster)
+nodes:
+  node_a:  # AMD Tower - Command Center
+    role: "command_center"
+    hostname: "localhost"  # Change to "main-pc.local" in production
+    port: 6379
+    hardware:
+      gpu_count: 2
+      gpu_model: "AMD 7900 XT"
+      vram_gb: 48
+      ram_gb: 128
+      cpu_cores: 16
+    capabilities:
+      - "global_workspace"
+      - "moe_routing"
+      - "symbolic_reasoning"
+      - "training_coordination"
+      - "action_planning"
+    max_capacity: 0.80
+    priority_weight: 1.5
+    
+  node_b:  # Desktop - Memory & Retrieval
+    role: "memory_specialist"
+    hostname: "localhost"  # Change to "desktop.local" in production
+    port: 6380
+    hardware:
+      gpu_count: 1
+      gpu_model: "AMD 6900 XT"
+      vram_gb: 16
+      ram_gb: 16
+      cpu_cores: 8
+    capabilities:
+      - "memory_management"
+      - "rag_operations"
+      - "vector_store"
+      - "episodic_memory"
+      - "knowledge_consolidation"
+    max_capacity: 0.75
+    priority_weight: 1.2
+    
+  node_c:  # Gaming Laptop - Real-time Inference
+    role: "real_time_inference"
+    hostname: "localhost"  # Change to "gaming-laptop.local" in production
+    port: 6381
+    hardware:
+      gpu_count: 1
+      gpu_model: "NVIDIA RTX"
+      vram_gb: 8
+      ram_gb: 16
+      cpu_cores: 8
+    capabilities:
+      - "fast_inference"
+      - "world_simulation"
+      - "action_generation"
+      - "real_time_control"
+    max_capacity: 0.85
+    priority_weight: 1.3
+    
+  node_e:  # MacBook Pro - Mobile Cognition
+    role: "mobile_cognition"
+    hostname: "localhost"  # Change to "macbook.local" in production
+    port: 6382
+    hardware:
+      gpu_count: 0  # Uses Metal/MLX
+      gpu_model: "Apple M3 Pro"
+      vram_gb: 18  # Unified memory
+      ram_gb: 18
+      cpu_cores: 12
+    capabilities:
+      - "mlx_inference"
+      - "mobile_interface"
+      - "development"
+      - "monitoring"
+    max_capacity: 0.70
+    priority_weight: 1.0
+
+# MoE-LoRA Configuration
+moe:
+  base_model: "meta-llama/Llama-2-7b-hf"  # Base model for all experts
+  num_experts: 8
+  top_k: 2  # Number of experts to route to
+  noise_std: 0.1  # Exploration noise
+  load_balancing_loss: true
+  
+  # Expert Definitions
+  experts:
+    reasoning:
+      name: "logical_reasoning_expert"
+      specialization:
+        - "logic"
+        - "mathematics"
+        - "formal_reasoning"
+        - "deduction"
+        - "problem_solving"
+      lora_config:
+        r: 16
+        alpha: 32
+        dropout: 0.1
+        target_modules: ["q_proj", "v_proj", "k_proj", "o_proj"]
+      node_assignment: "node_a"
+      capacity: 0.25
+      
+    memory:
+      name: "episodic_memory_expert"
+      specialization:
+        - "retrieval"
+        - "consolidation"
+        - "pattern_matching"
+        - "association"
+        - "recall"
+      lora_config:
+        r: 8
+        alpha: 16
+        dropout: 0.05
+        target_modules: ["q_proj", "v_proj"]
+      node_assignment: "node_b"
+      capacity: 0.20
+      
+    perception:
+      name: "sensory_perception_expert"
+      specialization:
+        - "vision"
+        - "language"
+        - "multimodal"
+        - "pattern_recognition"
+        - "feature_extraction"
+      lora_config:
+        r: 12
+        alpha: 24
+        dropout: 0.1
+        target_modules: ["q_proj", "v_proj", "k_proj"]
+      node_assignment: "node_c"
+      capacity: 0.20
+      
+    action:
+      name: "action_planning_expert"
+      specialization:
+        - "planning"
+        - "decision_making"
+        - "execution"
+        - "optimization"
+        - "control"
+      lora_config:
+        r: 16
+        alpha: 32
+        dropout: 0.1
+        target_modules: ["q_proj", "v_proj", "o_proj"]
+      node_assignment: "node_a"
+      capacity: 0.25
+      
+    creativity:
+      name: "creative_synthesis_expert"
+      specialization:
+        - "generation"
+        - "synthesis"
+        - "novelty"
+        - "divergent_thinking"
+        - "imagination"
+      lora_config:
+        r: 20
+        alpha: 40
+        dropout: 0.15
+        target_modules: ["q_proj", "v_proj", "k_proj", "o_proj"]
+      node_assignment: "node_a"
+      capacity: 0.15
+      
+    emotional:
+      name: "emotional_intelligence_expert"
+      specialization:
+        - "empathy"
+        - "social_reasoning"
+        - "emotional_awareness"
+        - "rapport"
+        - "sentiment"
+      lora_config:
+        r: 10
+        alpha: 20
+        dropout: 0.1
+        target_modules: ["q_proj", "v_proj"]
+      node_assignment: "node_b"
+      capacity: 0.10
+      
+    learning:
+      name: "meta_learning_expert"
+      specialization:
+        - "adaptation"
+        - "generalization"
+        - "abstraction"
+        - "meta_cognition"
+        - "transfer"
+      lora_config:
+        r: 24
+        alpha: 48
+        dropout: 0.1
+        target_modules: ["q_proj", "v_proj", "k_proj", "o_proj"]
+      node_assignment: "node_a"
+      capacity: 0.20
+      
+    communication:
+      name: "communication_expert"
+      specialization:
+        - "language"
+        - "explanation"
+        - "clarification"
+        - "dialogue"
+        - "translation"
+      lora_config:
+        r: 14
+        alpha: 28
+        dropout: 0.1
+        target_modules: ["q_proj", "v_proj", "o_proj"]
+      node_assignment: "node_e"
+      capacity: 0.15
+
+# Global Workspace Configuration
+global_workspace:
+  capacity: 7  # Miller's magic number
+  attention_window: 0.1  # seconds
+  broadcast_interval: 0.05  # seconds
+  salience_threshold: 0.7
+  attention_decay: 0.95
+  
+  # Consciousness parameters
+  consciousness:
+    access_threshold: 0.8
+    broadcast_duration: 0.2
+    feedback_loop: true
+    
+  # Processor priorities
+  processors:
+    perception: 1.0
+    memory: 1.2
+    reasoning: 1.5
+    action: 1.3
+
+# Communication Configuration
+communication:
+  protocol: "grpc"  # grpc, rest, websocket
+  compression: "gzip"  # gzip, none
+  encryption: true
+  heartbeat_interval: 1  # seconds
+  timeout: 30  # seconds
+  max_message_size_mb: 512
+  
+  # Connection pool
+  connection_pool_size: 10
+  retry_attempts: 3
+  retry_delay: 1
+  
+  # Load balancing
+  load_balancing:
+    strategy: "adaptive"  # adaptive, round_robin, least_connections
+    metrics_interval: 5
+    fallback_nodes: true
+    health_check_interval: 10
+
+# Memory System Configuration
+memory:
+  # RAG Configuration
+  rag:
+    vector_store: "faiss"  # faiss, chromadb, pinecone
+    embedding_model: "sentence-transformers/all-MiniLM-L6-v2"
+    chunk_size: 512
+    chunk_overlap: 50
+    top_k_retrieval: 5
+    similarity_threshold: 0.7
+    
+  # Episodic Memory
+  episodic:
+    storage_backend: "sqlite"  # sqlite, postgresql, redis
+    ttl_hours: 720  # 30 days
+    compression: true
+    indexing_strategy: "temporal"
+    
+  # Working Memory
+  working_memory:
+    capacity: 9  # items
+    decay_rate: 0.1
+    rehearsal_mechanism: true
+
+# Performance Monitoring
+monitoring:
+  enabled: true
+  interval_seconds: 5
+  
+  # System metrics
+  system_metrics:
+    - "cpu"
+    - "memory"
+    - "gpu"
+    - "network"
+    - "disk"
+    
+  # Application metrics
+  application_metrics:
+    - "latency"
+    - "throughput"
+    - "accuracy"
+    - "error_rate"
+    
+  # Logging
+  logging:
+    level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+    format: "json"
+    output: "file_and_console"
+    rotation: true
+    retention_days: 30
+
+# Scaling Configuration
+scaling:
+  auto_scaling:
+    enabled: true
+    min_nodes: 2
+    max_nodes: 10
+    scale_up_threshold: 80  # percent
+    scale_down_threshold: 20  # percent
+    
+  # Resource limits
+  resources:
+    cpu_request: "1000m"
+    cpu_limit: "4000m"
+    memory_request: "4Gi"
+    memory_limit: "16Gi"
+
+# Integration with Singularis
+singularis_integration:
+  enabled: true
+  consciousness_bridge: true
+  life_ops_integration: true
+  skyrim_agi_integration: true
+  
+  # Consciousness layer
+  consciousness:
+    unified_layer_endpoint: "http://localhost:8080/consciousness"
+    enable_double_helix: true
+    enable_temporal_binding: true
+    
+  # Expert coordination
+  expert_coordination:
+    use_gpt5_orchestrator: true
+    fallback_to_local: true
+    hybrid_mode: true
+

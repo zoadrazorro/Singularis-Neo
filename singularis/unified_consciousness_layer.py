@@ -47,6 +47,15 @@ from loguru import logger
 
 from .llm.openai_client import OpenAIClient
 
+# DATA system integration
+try:
+    from .data import DATASystem
+    from .data.singularis_integration import DATAConsciousnessIntegration
+    DATA_AVAILABLE = True
+except ImportError:
+    DATA_AVAILABLE = False
+    logger.warning("DATA system not available")
+
 
 class NanoExpertRole(Enum):
     """Specialized roles for GPT-5-nano experts."""

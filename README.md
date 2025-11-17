@@ -85,7 +85,40 @@ Autonomous game-playing intelligence with **complete 4-layer world understanding
 
 ## Core Features
 
+### DATA System (Proto-AGI) 🤖 ✨ **NEW**
+
+**Distributed Abductive Technical Agent** - Named after Star Trek's Data
+
+A distributed Multi-Agentic MoE-LoRA system that routes queries to specialized experts across hardware nodes:
+
+- **8 Specialized Experts**: Reasoning, Memory, Perception, Action, Creativity, Emotional, Learning, Communication
+- **Global Workspace Theory**: Consciousness-inspired attention mechanism
+- **Distributed Routing**: Hardware-aware expert selection across Sephirot cluster
+- **LoRA Adaptation**: Parameter-efficient fine-tuning for domain specialization
+- **Integration Ready**: Works with consciousness layer, life ops, and Skyrim AGI
+- **Mock Mode**: Fully functional architecture without requiring full models
+
+**Quick Start**:
+```bash
+python start_data_system.py
+# OR
+python examples/data_example.py
+# OR
+python examples/data_integration_example.py  # Integration with core systems
+```
+
+**Integration**: Fully wired into Consciousness Layer, Life Operations, and Skyrim AGI via non-invasive bridges. See `DATA_INTEGRATION_GUIDE.md`
+
+**Documentation**: See `DATA_README.md`, `docs/DATA_ARCHITECTURE.md`, and `DATA_WIRING_COMPLETE.md`
+
 ### Life Operations (Production Ready) ✅
+
+**📚 User Guides Available:**
+- **Simple Start**: `LIFEOPS_GETTING_STARTED.md` - Friendly product guide with real scenarios
+- **Quick Reference**: `LIFEOPS_QUICK_REFERENCE.md` - One-page overview
+- **Product Demo**: `LIFEOPS_PRODUCT_GUIDE.md` - Visual product walkthrough
+- **Cheat Sheet**: `LIFEOPS_CHEAT_SHEET.md` - Print-friendly reference card
+- **Technical**: `LIFEOPS_USERS_GUIDE.md` - Complete technical documentation
 
 1. **Life Timeline**
    - SQLite database of all life events
