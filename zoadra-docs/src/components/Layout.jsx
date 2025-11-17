@@ -11,6 +11,19 @@ const navigation = [
   { name: 'API Reference', path: '/api' },
 ]
 
+const explorationNav = [
+  { name: 'AGI History', path: '/agi-history' },
+  { name: 'Project History', path: '/project-history' },
+  { name: 'SkyrimAGI', path: '/skyrim-agi' },
+  { name: 'Development Philosophy', path: '/development-philosophy' },
+]
+
+const blueprintNav = [
+  { name: 'Singularis Overview', path: '/blueprint-singularis' },
+  { name: 'SkyrimAGI Blueprint', path: '/blueprint-skyrimagi' },
+  { name: 'LifeOps Blueprint', path: '/blueprint-lifeops' },
+]
+
 export default function Layout({ children }) {
   const location = useLocation()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -34,12 +47,12 @@ export default function Layout({ children }) {
             </Link>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-1">
+            <div className="hidden lg:flex items-center space-x-1">
               {navigation.map((item) => (
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`px-4 py-2 rounded-lg transition-all ${
+                  className={`px-3 py-2 rounded-lg transition-all text-sm ${
                     location.pathname === item.path
                       ? 'bg-primary-500/10 text-primary-400 font-medium'
                       : 'text-gray-400 hover:text-gray-100 hover:bg-gray-800/50'
@@ -48,6 +61,55 @@ export default function Layout({ children }) {
                   {item.name}
                 </Link>
               ))}
+              
+              {/* Exploration Dropdown */}
+              <div className="relative group">
+                <button className="px-3 py-2 rounded-lg text-sm text-gray-400 hover:text-gray-100 hover:bg-gray-800/50 transition-all">
+                  Exploration ▾
+                </button>
+                <div className="absolute right-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                  <div className="glass-panel border border-gray-800 rounded-lg overflow-hidden">
+                    {explorationNav.map((item) => (
+                      <Link
+                        key={item.path}
+                        to={item.path}
+                        className={`block px-4 py-3 text-sm transition-all ${
+                          location.pathname === item.path
+                            ? 'bg-primary-500/10 text-primary-400 font-medium'
+                            : 'text-gray-400 hover:text-gray-100 hover:bg-gray-800/50'
+                        }`}
+                      >
+                        {item.name}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Blueprint Dropdown */}
+              <div className="relative group">
+                <button className="px-3 py-2 rounded-lg text-sm text-gray-400 hover:text-gray-100 hover:bg-gray-800/50 transition-all">
+                  Blueprints ▾
+                </button>
+                <div className="absolute right-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                  <div className="glass-panel border border-gray-800 rounded-lg overflow-hidden">
+                    {blueprintNav.map((item) => (
+                      <Link
+                        key={item.path}
+                        to={item.path}
+                        className={`block px-4 py-3 text-sm transition-all ${
+                          location.pathname === item.path
+                            ? 'bg-primary-500/10 text-primary-400 font-medium'
+                            : 'text-gray-400 hover:text-gray-100 hover:bg-gray-800/50'
+                        }`}
+                      >
+                        {item.name}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              
               <a
                 href="https://github.com/yourusername/singularis"
                 target="_blank"
@@ -61,7 +123,7 @@ export default function Layout({ children }) {
             {/* Mobile menu button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 text-gray-400 hover:text-gray-100"
+              className="lg:hidden p-2 text-gray-400 hover:text-gray-100"
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
@@ -70,7 +132,7 @@ export default function Layout({ children }) {
 
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-gray-800 bg-gray-900/95 backdrop-blur-xl">
+          <div className="lg:hidden border-t border-gray-800 bg-gray-900/95 backdrop-blur-xl">
             <div className="px-4 py-4 space-y-2">
               {navigation.map((item) => (
                 <Link
@@ -86,6 +148,48 @@ export default function Layout({ children }) {
                   {item.name}
                 </Link>
               ))}
+              
+              {/* Exploration Section */}
+              <div className="pt-2 mt-2 border-t border-gray-800">
+                <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase">
+                  Exploration
+                </div>
+                {explorationNav.map((item) => (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`block px-4 py-3 rounded-lg transition-all ${
+                      location.pathname === item.path
+                        ? 'bg-primary-500/10 text-primary-400 font-medium'
+                        : 'text-gray-400 hover:text-gray-100 hover:bg-gray-800/50'
+                    }`}
+                  >
+                    {item.name}
+                  </Link>
+                ))}
+              </div>
+
+              {/* Blueprint Section */}
+              <div className="pt-2 mt-2 border-t border-gray-800">
+                <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase">
+                  Blueprints
+                </div>
+                {blueprintNav.map((item) => (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`block px-4 py-3 rounded-lg transition-all ${
+                      location.pathname === item.path
+                        ? 'bg-primary-500/10 text-primary-400 font-medium'
+                        : 'text-gray-400 hover:text-gray-100 hover:bg-gray-800/50'
+                    }`}
+                  >
+                    {item.name}
+                  </Link>
+                ))}
+              </div>
             </div>
           </div>
         )}
