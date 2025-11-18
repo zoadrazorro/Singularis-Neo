@@ -47,6 +47,7 @@ from loguru import logger
 
 from .llm.openai_client import OpenAIClient
 from .core.runtime_flags import LOCAL_ONLY_LLM
+from .core.modular_network import ModularNetwork, NetworkTopology, ModuleType
 
 # Meta-MoE Router with ExpertArbiter
 try:
@@ -148,6 +149,11 @@ class UnifiedConsciousnessLayer:
         cygnus_ip: Optional[str] = None,
         macbook_ip: Optional[str] = None,
         enable_macbook_fallback: bool = False,
+        # Modular Network configuration
+        use_modular_network: bool = True,
+        network_topology: NetworkTopology = NetworkTopology.HYBRID,
+        num_network_nodes: int = 256,  # Nodes in consciousness network
+        num_network_modules: int = 8,  # Modules (one per subsystem type)
     ):
         """
         Initialize unified consciousness layer.
@@ -215,6 +221,29 @@ class UnifiedConsciousnessLayer:
         # Life Timeline Bridge (optional)
         self.life_timeline_bridge: Optional[Any] = None
         
+        # Modular Network (brain-like topology for consciousness)
+        self.modular_network: Optional[ModularNetwork] = None
+        self.use_modular_network = use_modular_network
+        
+        if use_modular_network:
+            self.modular_network = ModularNetwork(
+                num_nodes=num_network_nodes,
+                num_modules=num_network_modules,
+                topology=network_topology,
+                node_type="consciousness_node",
+                intra_module_density=0.3,  # Dense within modules
+                inter_module_density=0.05,  # Sparse between modules
+            )
+            
+            logger.info(
+                f"[CONSCIOUSNESS] Modular network initialized | "
+                f"Nodes: {num_network_nodes} | Modules: {num_network_modules} | "
+                f"Topology: {network_topology.value}"
+            )
+            
+            # Map nano experts to network modules
+            self._map_experts_to_network()
+        
         # Meta-MoE Router with ExpertArbiter (optional)
         self.meta_moe_router: Optional[MetaMoERouter] = None
         self.expert_arbiter: Optional[ExpertArbiter] = None
@@ -254,6 +283,33 @@ class UnifiedConsciousnessLayer:
             f"Mode: {mode_desc} | Endpoint: {endpoint_desc}"
         )
 
+    def _map_experts_to_network(self):
+        """Map nano experts to modular network modules."""
+        if not self.modular_network:
+            return
+        
+        # Map expert roles to module types
+        role_to_module = {
+            NanoExpertRole.LLM_COORDINATOR: ModuleType.COORDINATION,
+            NanoExpertRole.LOGIC_REASONER: ModuleType.REASONING,
+            NanoExpertRole.MEMORY_MANAGER: ModuleType.MEMORY,
+            NanoExpertRole.ACTION_PLANNER: ModuleType.ACTION,
+            NanoExpertRole.SYNTHESIZER: ModuleType.SYNTHESIS,
+        }
+        
+        # Store mapping
+        self.expert_to_module_map = {}
+        for role, module_type in role_to_module.items():
+            # Find module with matching type
+            for module_id, module in self.modular_network.modules.items():
+                if module.module_type == module_type:
+                    self.expert_to_module_map[role] = module_id
+                    break
+        
+        logger.info(
+            f"[CONSCIOUSNESS] Mapped {len(self.expert_to_module_map)} experts to network modules"
+        )
+    
     def _get_specialization_prompt(self, role: NanoExpertRole) -> str:
         """Get specialization prompt for each nano expert."""
         prompts = {

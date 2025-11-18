@@ -24,6 +24,13 @@ from enum import Enum
 import numpy as np
 from loguru import logger
 
+try:
+    from ..core.modular_network import ModularNetwork, NetworkTopology, ModuleType
+    MODULAR_NETWORK_AVAILABLE = True
+except ImportError:
+    MODULAR_NETWORK_AVAILABLE = False
+    logger.warning("[SWARM] Modular network not available")
+
 
 class AgentRole(Enum):
     """Micro-agent specialization roles."""
@@ -115,8 +122,13 @@ class SwarmIntelligence:
         self.agents: Dict[int, MicroAgent] = {}
         self._initialize_agents()
         
-        # Build network topology
-        self._build_topology()
+        # Build network topology using ModularNetwork
+        self.modular_network: Optional[ModularNetwork] = None
+        if MODULAR_NETWORK_AVAILABLE:
+            self._build_modular_topology()
+        else:
+            # Fallback to manual topology
+            self._build_topology()
         
         # Swarm state
         self.state = SwarmState()
@@ -148,8 +160,42 @@ class SwarmIntelligence:
                 activation=random.uniform(0.0, 0.1),  # Small initial activation
             )
     
+    def _build_modular_topology(self):
+        """Build topology using ModularNetwork (brain-like)."""
+        # Map topology type
+        topology_map = {
+            "scale_free": NetworkTopology.SCALE_FREE,
+            "small_world": NetworkTopology.SMALL_WORLD,
+            "random": NetworkTopology.MODULAR,
+        }
+        
+        network_topology = topology_map.get(self.topology_type, NetworkTopology.HYBRID)
+        
+        # Create modular network
+        num_modules = 8  # One per AgentRole
+        self.modular_network = ModularNetwork(
+            num_nodes=self.num_agents,
+            num_modules=num_modules,
+            topology=network_topology,
+            node_type="swarm_agent",
+            intra_module_density=0.3,
+            inter_module_density=0.05,
+        )
+        
+        # Copy connections from modular network to agents
+        for agent_id, agent in self.agents.items():
+            network_node = self.modular_network.get_node(agent_id)
+            if network_node:
+                agent.connections = network_node.connections.copy()
+        
+        logger.info(
+            f"[SWARM] Built modular topology: "
+            f"{self.modular_network.stats['avg_degree']:.1f} avg degree, "
+            f"{self.modular_network.stats['avg_clustering']:.3f} clustering"
+        )
+    
     def _build_topology(self):
-        """Build network topology between agents."""
+        """Build network topology between agents (fallback)."""
         if self.topology_type == "scale_free":
             self._build_scale_free_topology()
         elif self.topology_type == "small_world":
