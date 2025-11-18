@@ -12,11 +12,11 @@ Singularis v5 introduces a **revolutionary distributed Meta-MoE architecture** w
 
 ### 🚀 Major Features
 
-1. **4-Device Cluster Architecture**
-   - Cygnus (AMD 2x7900XT): 10 specialized 4B expert models
-   - Router (AMD 6900XT): Orchestration + LifeOps + DATA-Brain
-   - MacBook Pro M3: Large MoE (9GB) + AURA-Brain (9GB) in orchestra
-   - NVIDIA Laptop: Dev/Ops (optional)
+1. **4-Device Cluster Architecture - Complete Reasoning Triad**
+   - **Cygnus** (AMD 2x7900XT): 10 specialized 4B expert models (Deductive/Symbolic)
+   - **Router** (AMD 6900XT): Orchestration + LifeOps + DATA-Brain (Swarm Intelligence)
+   - **MacBook Pro M3**: Large MoE (9GB) + AURA-Brain (9GB) in orchestra (Inductive/Biological)
+   - **NVIDIA Laptop** (RTX 5060 8GB): Abductive Positronic Network (Hypothesis Generation)
 
 2. **Meta-MoE with Context-Aware Routing**
    - ExpertArbiter: Intelligent expert selection with continuous learning
@@ -42,7 +42,13 @@ Singularis v5 introduces a **revolutionary distributed Meta-MoE architecture** w
    - Weighted synthesis: Router combines symbolic + biological responses
    - Metal acceleration for neural simulation
 
-6. **Local-Only LLM Architecture**
+6. **Complete Reasoning Triad**
+   - **Deductive** (Cygnus): Rules → Conclusions (symbolic logic)
+   - **Inductive** (AURA-Brain): Examples → Patterns (biological learning)
+   - **Abductive** (Positronic): Observations → Best Explanation (hypothesis generation)
+   - All three modes work in concert for complete AGI reasoning
+
+7. **Local-Only LLM Architecture**
    - Zero cloud API calls
    - All inference on local hardware
    - Full data privacy
@@ -112,7 +118,10 @@ Singularis v5 introduces a **revolutionary distributed Meta-MoE architecture** w
         │                     │
         └──────────┬──────────┘
                    ↓
-        Combined Response (Cygnus + MoE + AURA)
+        Combined Response (Deductive + Inductive + Abductive)
+                   │
+                   ↓
+        Complete Reasoning: Symbolic + Biological + Hypothetical
 ```
 
 ---
@@ -381,7 +390,76 @@ Critical queries → All three (orchestra)
 
 ---
 
-### 5. LifeOps Integration
+### 5. Abductive Positronic Network
+
+**NVIDIA RTX 5060 (8GB) generates explanatory hypotheses:**
+
+```python
+from singularis.positronic import AbductivePositronicNetwork, HypothesisType
+
+# Create positronic network (runs on NVIDIA laptop)
+network = AbductivePositronicNetwork(
+    num_nodes=512,
+    num_modules=5,  # One per HypothesisType
+    device="cuda",
+    enable_cuda=True,
+)
+
+# Generate hypotheses from observations
+observations = [
+    "User slept poorly last night",
+    "Heart rate was elevated",
+    "Stress levels high during day"
+]
+
+hypotheses = await network.generate_hypotheses(
+    observations=observations,
+    context={'user_id': 'user123', 'urgent': True},
+    max_hypotheses=10,
+    min_confidence=0.5,
+)
+
+# Review generated hypotheses
+for h in hypotheses:
+    print(f"{h.hypothesis_type.value}: {h.content}")
+    print(f"  Score: {h.score():.2f} (conf: {h.confidence:.2f})")
+    print(f"  Causes: {h.causes}")
+    print(f"  Effects: {h.effects}")
+
+# Get best causal hypothesis
+best_causal = network.get_best_hypothesis(HypothesisType.CAUSAL)
+print(f"\nBest explanation: {best_causal.content}")
+
+# Build causal chain
+chain = network.get_causal_chain("poor sleep", max_depth=5)
+print(f"\nCausal chain: {' → '.join([h.content for h in chain])}")
+```
+
+**Hypothesis Types:**
+1. **Causal:** Cause-effect relationships ("X causes Y")
+2. **Diagnostic:** Symptom → diagnosis ("Symptoms indicate Z")
+3. **Predictive:** Current → future state ("This leads to...")
+4. **Explanatory:** Observation → explanation ("This explains...")
+5. **Counterfactual:** What-if scenarios ("If not X, then...")
+
+**Reasoning Triad:**
+```
+Deductive (Cygnus):  Rules → Conclusions
+Inductive (AURA):    Examples → Patterns  
+Abductive (Positronic): Observations → Best Explanation
+```
+
+**Benefits:**
+- **Hypothesis Generation:** Creates multiple explanatory hypotheses
+- **Causal Inference:** Builds cause-effect chains
+- **Diagnostic Reasoning:** Symptoms → underlying conditions
+- **Counterfactual Thinking:** "What if" scenarios
+- **CUDA Acceleration:** Fast parallel hypothesis generation
+- **Modular Topology:** 512 nodes with brain-like connectivity
+
+---
+
+### 6. LifeOps Integration
 
 **Health and life data analysis** with AGI:
 

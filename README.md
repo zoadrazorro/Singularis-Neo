@@ -2,58 +2,75 @@
 
 # 🧠 Singularis
 
-### *Unified AGI Architecture for Life & Games*
+### *Distributed Meta-MoE AGI for Life & Games*
 
-**Twin AGI Systems: Life Operations + Skyrim Intelligence**
+**Twin AGI Systems: Life Operations + Skyrim Intelligence (Research Prototype)**
 
-*Bridging philosophy, neuroscience, personal life tracking, and gaming AI through consciousness-driven architecture*
+*Bridging philosophy, neuroscience, personal life tracking, and gaming AI through a distributed, consciousness-driven architecture*
 
 ---
 
-[![Version](https://img.shields.io/badge/version-Beta%20v4.0-blue.svg)](https://github.com/zoadrazorro/Singularis-Neo/releases)
+[![Version](https://img.shields.io/badge/version-Beta%20v5.0-blue.svg)](https://github.com/zoadrazorro/Singularis-Neo/releases)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Status](https://img.shields.io/badge/status-Production%20Ready-brightgreen.svg)](https://github.com/zoadrazorro/Singularis-Neo)
-[![Completion](https://img.shields.io/badge/completion-98%25-success.svg)](https://github.com/zoadrazorro/Singularis-Neo)
+[![Status](https://img.shields.io/badge/status-LifeOps%20Production%20Ready-brightgreen.svg)](https://github.com/zoadrazorro/Singularis-Neo)
+[![Status](https://img.shields.io/badge/status-AGI%20v5-Research%20Prototype-orange.svg)](SINGULARIS_V5_README.md)
+[![Completion](https://img.shields.io/badge/completion-v5.0%20Core%20Architecture%20Complete-success.svg)](https://github.com/zoadrazorro/Singularis-Neo)
 [![Stars](https://img.shields.io/github/stars/zoadrazorro/Singularis-Neo?style=social)](https://github.com/zoadrazorro/Singularis-Neo/stargazers)
 [![Issues](https://img.shields.io/github/issues/zoadrazorro/Singularis-Neo)](https://github.com/zoadrazorro/Singularis-Neo/issues)
 [![Forks](https://img.shields.io/github/forks/zoadrazorro/Singularis-Neo?style=social)](https://github.com/zoadrazorro/Singularis-Neo/network/members)
 
-**✅ Production Ready (Life Ops)** | **🔬 Research Prototype (Skyrim AGI)** | **📅 Last Updated: November 16, 2025**
+**✅ Production Ready (Life Ops)** | **🧪 Distributed Meta-MoE v5 (Research Prototype)** | **📅 Last Updated: November 18, 2025**
 
 </div>
 
 ---
 
-## 🎉 Beta v4.0 Release - All Loose Ends Resolved
+## 🎉 Singularis v5.0 - Distributed Meta-MoE + Biological Networks
 
-**Release Date**: November 16, 2025  
-**Major Achievement**: All critical TODOs and incomplete implementations resolved
+**Release Date**: November 18, 2025  
+**Major Achievement**: First complete **4-device Meta-MoE cluster** with brain-like topology across all components.
 
-### What's New in v4.0
+### What's New in v5.0
 
-✅ **7 Major Implementations Completed**:
-1. **Physics Engine**: Full PyBullet simulation with collision detection
-2. **HaackLang Bridge**: Condition evaluation for guard decorators
-3. **Reflex Controller**: 5 new reflexes (fire, falling, stagger, dragon, environmental)
-4. **Temporal Superposition**: EMA-based coherence prediction (70% learned + 30% heuristic)
-5. **Sophia Productivity**: Complete Google Calendar, Todoist, Notion sync
-6. **Messenger Bot**: Semantic concept extraction from conversations
-7. **AGI Intervention Decider**: Multi-system consensus voting (emotion + logic + consciousness)
+✅ **1. 4-Device SEPHIROT Cluster (Complete Reasoning Triad)**
+- **Cygnus** (AMD 2x7900XT): 10 specialized 4B experts (deductive / symbolic)
+- **Router** (AMD 6900XT): UnifiedConsciousnessLayer + LifeOps + DATA-Brain swarm
+- **MacBook Pro M3**: Large MoE (9GB) + AURA-Brain (9GB) in orchestra (inductive / biological)
+- **NVIDIA Laptop (RTX 5060 8GB)**: Abductive Positronic Network (hypothesis generation)
 
-✅ **Production Hardening**:
-- Zero memory leaks (temporal binding cleanup with 30s timeout)
-- Graceful degradation at every layer
-- Rate limit protection (15 Gemini RPM with circuit breaker)
-- 24-hour continuous operation verified
-- Comprehensive error handling and logging
+✅ **2. Universal Modular Network Topology**
+- Single `ModularNetwork` backbone for:
+  - Consciousness nodes
+  - Swarm agents (DATA-Brain)
+  - AURA-Brain neurons
+  - Positronic nodes
+- Scale-free + small-world + modular → **brain-like connectivity** everywhere.
 
-✅ **Documentation**:
-- `LOOSE_ENDS_RESOLVED.md` - All fixes documented
-- `FINAL_SUMMARY_SINGULARIS_BETA_v4.0.md` - Complete 7-part summary
-- Updated architecture guides and setup instructions
+✅ **3. Meta-MoE with Context-Aware ExpertArbiter**
+- 10 Cygnus experts (vision, logic, memory, action, emotion, reasoning, planning, language, analysis, synthesis)
+- `ExpertArbiter` learns from performance and context; continuously improves expert routing.
 
-**Status**: 98% complete, production-ready for all non-Skyrim components
+✅ **4. DATA-Brain Swarm Intelligence Layer**
+- 64+ micro-agents with Hebbian dynamics on the Router GPU.
+- Emergent behavior, 95% activation sparsity, scale-free topology.
+
+✅ **5. AURA-Brain Bio-Simulator (MacBook)**
+- 1000+ spiking neurons with 4 neuromodulators (dopamine, serotonin, norepinephrine, acetylcholine).
+- STDP learning, 95% sparsity, runs on Metal (M3 Pro).
+
+✅ **6. Abductive Positronic Network (NVIDIA)**
+- 512+ positronic nodes for causal, diagnostic, predictive, explanatory, and counterfactual hypotheses.
+- Runs on RTX 5060 (8GB) with CUDA.
+
+✅ **7. v5 Test Suite + Cluster Verifier**
+- `test_singularis_v5.py`: 7 tests (modular network, Meta-MoE, swarm, AURA, positronic, consciousness, end-to-end).
+- `verify_cluster.py`: Probes Cygnus (1234–1243), MacBook (2000, 3000), NVIDIA (4000) and prints cluster health.
+
+✅ **8. Modular Deployment Plan**
+- New `docs/MODULAR_DEPLOYMENT.md` describes splitting into:
+  - `singularis-core` (shared), `singularis-router`, `singularis-cygnus`, `singularis-macbook`, `singularis-nvidia`.
+- Each device only installs what it needs.
 
 ---
 
@@ -83,33 +100,26 @@ Autonomous game-playing intelligence with **complete 4-layer world understanding
 
 **Current State**: Complete world understanding architecture implemented and tested. Life Ops is production-ready for personal use. Skyrim AGI has full perception-to-action pipeline with personality system.
 
+> Note: Skyrim AGI currently runs on a separate experimental stack (Gemini, GPT, etc.).
+> The new v5 distributed Meta-MoE + modular network stack is focused on LifeOps and the 4-device cluster.
+
 ## Core Features
 
-### DATA System (Proto-AGI) 🤖 ✨ **NEW**
+### DATA-Brain Swarm Intelligence (v5) 🤖
 
-**Distributed Abductive Technical Agent** - Named after Star Trek's Data
+**DATA-Brain** replaces the earlier prototype DATA system with a **swarm intelligence layer** running on the Router GPU:
 
-A distributed Multi-Agentic MoE-LoRA system that routes queries to specialized experts across hardware nodes:
+- 64+ micro-agents (`SwarmIntelligence`) connected via `ModularNetwork` (scale-free topology).
+- Roles: perception, memory, reasoning, emotion, action, coordination, learning.
+- Hebbian dynamics: "agents that fire together, wire together".
+- Emergent patterns used to guide LifeOps and Meta-MoE routing.
 
-- **8 Specialized Experts**: Reasoning, Memory, Perception, Action, Creativity, Emotional, Learning, Communication
-- **Global Workspace Theory**: Consciousness-inspired attention mechanism
-- **Distributed Routing**: Hardware-aware expert selection across Sephirot cluster
-- **LoRA Adaptation**: Parameter-efficient fine-tuning for domain specialization
-- **Integration Ready**: Works with consciousness layer, life ops, and Skyrim AGI
-- **Mock Mode**: Fully functional architecture without requiring full models
-
-**Quick Start**:
+**Quick Start (local test):**
 ```bash
-python start_data_system.py
-# OR
-python examples/data_example.py
-# OR
-python examples/data_integration_example.py  # Integration with core systems
+python test_singularis_v5.py --test swarm
 ```
 
-**Integration**: Fully wired into Consciousness Layer, Life Operations, and Skyrim AGI via non-invasive bridges. See `DATA_INTEGRATION_GUIDE.md`
-
-**Documentation**: See `DATA_README.md`, `docs/DATA_ARCHITECTURE.md`, and `DATA_WIRING_COMPLETE.md`
+**Docs:** `docs/MODULAR_NETWORK_INTEGRATION.md` (topology) and `SINGULARIS_V5_README.md` (full v5 design).
 
 ### Life Operations (Production Ready) ✅
 
@@ -199,51 +209,65 @@ python examples/data_integration_example.py  # Integration with core systems
 
 ---
 
-## Sephirot Cluster Architecture 🌳
+## SEPHIROT v5 Cluster Architecture 🌳
 
-Singularis is designed to run on a distributed cluster of nodes:
+Singularis v5 can run on a **single machine** for development, but is designed for a 4-device cluster in production:
 
-### Node Layout
+### Node Layout (v5)
 
-**🧠 Node A (AMD Tower)**: Cognitive Core
-- Singularis consciousness layer
-- API Gateway (FastAPI)
-- Message bus (Redis)
-- Orchestration services
-- Dual AMD 7900 XT GPUs
+**🧠 Router (AMD 6900XT)** – Orchestration Core
+- UnifiedConsciousnessLayer (GPT-5 + nano experts)
+- MetaMoERouter + ExpertArbiter (connects to Cygnus + MacBook)
+- DATA-Brain Swarm (`SwarmIntelligence`)
+- LifeOps core (LifeQueryHandler, AGIPatternArbiter, AGIInterventionDecider)
 
-**🧬 Node B (Desktop)**: Memory & Observability
-- Vector databases (ChromaDB)
-- Life Timeline (PostgreSQL/SQLite)
-- Monitoring stack (Prometheus + Grafana)
-- Pattern analysis
-- AMD 6900 XT GPU
+**🎯 Cygnus (AMD 2x7900XT)** – Meta-MoE Primary
+- 10 specialized 4B experts exposed via LM Studio on ports 1234–1243.
+- Domains: Vision, Logic, Memory, Action, Emotion, Reasoning, Planning, Language, Analysis, Synthesis.
 
-**🕹️ Node C (Gaming Laptop)**: Skyrim Environment
-- Skyrim AGI runtime
-- Real-time control loop
-- Telemetry agent
-- NVIDIA RTX GPU
+**🧬 MacBook Pro M3** – Orchestra Mode (MoE + AURA)
+- Large MoE (9GB) on port 2000 (e.g. Qwen2.5-14B-MoE or Mixtral-8x7B).
+- AURA-Brain Bio-Simulator (9GB) on port 3000 with 1024 spiking neurons.
+- Both run in parallel; Router combines symbolic + biological outputs.
 
-**📱 Node D (Lenovo Tab)**: Camera Monitor
-- Roku Smart Home app (all camera feeds)
-- ADB screen capture source
-- Always-on display
-- AGI vision processing via Node A
+**🔍 NVIDIA Laptop (RTX 5060 8GB)** – Abductive Positronic Node
+- AbductivePositronicNetwork server on port 4000.
+- Generates abductive hypotheses (causal, diagnostic, predictive, explanatory, counterfactual).
 
-**💻 Node E (MacBook Pro)**: Dev Console
-- Development environment
-- Grafana dashboards
-- SSH access to all nodes
-- Operations control
+### Health Checking
 
-**Edge Devices**:
-- Phone: Messenger bot, Fitbit integration, life queries
-- Meta Glasses: Vision + audio streaming (optional)
+Use `verify_cluster.py` to check live cluster health:
 
-### Deployment
+```bash
+python verify_cluster.py \
+  --cygnus-ip 192.168.1.50 \
+  --macbook-ip 192.168.1.100 \
+  --nvidia-ip 192.168.1.101
+```
 
-See `SEPHIROT_CLUSTER_ARCHITECTURE.md` and `DEPLOYMENT_CHECKLIST.md` for complete setup instructions.
+Example output:
+
+```text
+SINGULARIS V5.0 CLUSTER HEALTH
+  Cygnus IP  : 192.168.1.50
+  MacBook IP : 192.168.1.100
+  NVIDIA IP  : 192.168.1.101
+
+- Cygnus:1234        UP               HTTP 200
+- Cygnus:1235        UP               HTTP 200
+...
+- MacBook:MoE        UP               HTTP 200
+- MacBook:AURA       MISSING/OPTIONAL timeout
+- NVIDIA:Positronic  MISSING/OPTIONAL timeout
+
+SUMMARY
+  Cygnus experts : 10/10 (100.0% UP)
+  MacBook MoE    : UP
+  MacBook AURA   : MISSING (optional)
+  NVIDIA Positr. : MISSING (optional)
+```
+
+For modular deployment details, see `docs/MODULAR_DEPLOYMENT.md`.
 
 ---
 
